@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ContentFilters</key>
+	<dict/>
+	<key>auto_connect</key>
+	<true/>
+	<key>data</key>
+	<dict>
+		<key>connection</key>
+		<dict>
+			<key>database</key>
+			<string>ibm_jam</string>
+			<key>host</key>
+			<string>127.0.0.1</string>
+			<key>kcid</key>
+			<string>191482784012456058</string>
+			<key>name</key>
+			<string>Local MAMP</string>
+			<key>port</key>
+			<integer>3306</integer>
+			<key>rdbms_type</key>
+			<string>mysql</string>
+			<key>sslCACertFileLocation</key>
+			<string></string>
+			<key>sslCACertFileLocationEnabled</key>
+			<integer>0</integer>
+			<key>sslCertificateFileLocation</key>
+			<string></string>
+			<key>sslCertificateFileLocationEnabled</key>
+			<integer>0</integer>
+			<key>sslKeyFileLocation</key>
+			<string></string>
+			<key>sslKeyFileLocationEnabled</key>
+			<integer>0</integer>
+			<key>type</key>
+			<string>SPTCPIPConnection</string>
+			<key>useSSL</key>
+			<integer>0</integer>
+			<key>user</key>
+			<string>root</string>
+		</dict>
+		<key>session</key>
+		<dict>
+			<key>connectionEncoding</key>
+			<string>utf8</string>
+			<key>contentFilter</key>
+			<dict/>
+			<key>contentPageNumber</key>
+			<integer>1</integer>
+			<key>contentSelection</key>
+			<data>
+			YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFy
+			Y2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJX
+			TlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAF
+			gAdUdHlwZVRyb3dzXxAdU2VsZWN0aW9uRGV0YWlsVHlwZU5TSW5k
+			ZXhTZXTSFwsYGVxOU1JhbmdlQ291bnQQAIAG0hscHR5aJGNsYXNz
+			bmFtZVgkY2xhc3Nlc1pOU0luZGV4U2V0oh8gWk5TSW5kZXhTZXRY
+			TlNPYmplY3TSGxwiI1xOU0RpY3Rpb25hcnmiIiBfEA9OU0tleWVk
+			QXJjaGl2ZXLRJidUZGF0YYABAAgAEQAaACMALQAyADcAQABGAE0A
+			VQBgAGcAagBsAG4AcQBzAHUAdwB8AIEAoQCmALMAtQC3ALwAxwDQ
+			ANsA3gDpAPIA9wEEAQcBGQEcASEAAAAAAAACAQAAAAAAAAAoAAAA
+			AAAAAAAAAAAAAAABIw==
+			</data>
+			<key>contentSortCol</key>
+			<string>first_name</string>
+			<key>contentSortColIsAsc</key>
+			<true/>
+			<key>contentViewport</key>
+			<string>{{0, 14591}, {925, 637}}</string>
+			<key>isToolbarVisible</key>
+			<true/>
+			<key>queries</key>
+			<string>select dom, count(*) as number 
+	from (select substring_index(AuthorEmail,'@',-1) as dom 
+		from value_jam 
+		where AuthorEmail&lt;&gt;'') as a 
+	group by dom 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/ibm-code/metadata/values_domains.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+;
+
+select dom, count(*) as number 
+	from (select substring_index(AuthorEmail,'@',-1) as dom 
+		from world_jam 
+		where AuthorEmail&lt;&gt;'') as a 
+	group by dom 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/ibm-code/metadata/world_domains.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+;
+
+select `Div`, count(*) as number 
+	from world_jam 
+	group by `Div` 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/ibm-code/metadata/world_Div.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+;
+select `Div`, count(*) as number 
+	from value_jam 
+	group by `Div` 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/ibm-code/metadata/value_Div.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+;
+
+
+select JobResp, count(*) as cnt from combined group by JobResp having cnt=1;
+
+
+select 'Field' from (show columns from value_jam) as a;
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'value_jam';
+
+show columns from value_jam;
+
+
+select parent, count(*) as cnt from combined group by parent order by cnt desc limit 1000;
+
+create table user_names select `From` as full_name from value_jam group by `From`;
+insert into user_names select `From` as full_name from world_jam group by `From`;
+
+alter table user_names add column first_name varchar(30);
+update user_names set first_name =  substring_index(full_name,' ',1); 
+
+select distinct(first_name) from user_names;
+alter table user_names drop column gender;
+create index nam on gender (first_name);
+create table gendered_names select full_name, un.first_name, gender 
+	from user_names un left join gender on ucase(un.first_name)=gender.first_name;
+create table distinct_gendered_names
+	select * from gendered_names
+	group by full_name;
+drop table gendered_names;
+rename table distinct_gendered_names to gendered_names;	
+	
+select distinct(ucase(first_name)) from gendered_names where gender is Null;
+
+
+# names that start with initial, cleaned by hand
+select distinct(full_name) from gendered_names where length(first_name)&lt;3 and gender is null;
+
+Update gendered_names set gender = "male" where full_name in ("M. Kent Burel", "C. Ed Brown", "L. Maurice Carter","J. Vincent Sandoval","J. Kevin Lowe","G. Jamieson Bryan","R. Martin Pascual","C. Gilbert Godshall","P. Douglas Hermann","F. Joseph AuBuchon","J. Randall MacDonald","T. Keith Wright","J. Scott Sims","J. L. Williams II","K. Mohammed Bashirudeen","R. David Jay","C. Ryan Coulter","C. Briant Wolfe","T. Richard Erickson","A. Steven Krantz","H. Peter Hofstee","K. Paul Muller","B. William Irlbeck","J. Richard Behun","C. Spencer Brown","R. Colby Mims","L. TRENTON MARSH","W. Lee Brink","E. Scott Von Kamecke","C. Kenneth Ewell","S. Jay Nalli","J. Bruce Harreld","J. Patrick Brennan","Dj Fagg","R. Keith Dahlgren","G. Franco Bertoletti","G. Paolo Avesani","C. Steven Lingafelt","H. Wesley Poteet","R. Breck Barker","J. Keaton Hearn","D. Lyle Russell");
+
+Update gendered_names set gender = "female" where full_name in ("M. Elsbeth Sweeney","A. Silvia Bernotti","C. Diane Jetmund-Perigny","M. Linda Beaufort","M. Eileen Flynn","J. Candice D'Orsay","H. Nancy Breed","R. Shannon Kurtz","C. Diane Jetmund","M. Gabriella Russo","M. Gloria G. Lopez Menchon","M. Catia Mellica");
+
+Update gendered_names set gender = "unknown" where full_name in ("O. J. O Connell","J. Graaff De","JR Mosca","SC C. Powers","NL Noble","V. J. Van Eeden","JP Farrell","A. P. Dorp Van","J. L_F Gloudemans","T. L. H. Rooy van","J. G. Voort Van De","F. Von Dielingen","HM Mehale","F. Van Der Merwe","A. F. R. Heijden Van Der","M. Wonderen Van","E. F. van Kersen","H. J. Dorenmalen Van","R. A_G Moon","JD Mcmaster","WP Lindemann","CR Greyling","G. J. M. Kempen Van","LC Sithole","PC Potgieter","CF Botha","SJ Bonney","AM Van Rensburg","CJ Bennett","LN Thebehali","RD Ward","CM Lehmkuhl","CB Butler","CM Worwood","I- Taylor","JM Ruthven","MS Brookes","DR Hoffman","AM Cilliers","JM Copeland","JG Pienaar","HM Hill","A. Van Den Heever","N. Fraser Ker","CW Kelway","SJ Frasco","GJ De Klerk","M. A. Put Van De","CL De Nobrega","MS Dawood","RG Wale","R. P. Wit De","AJ Patel","CA Schnehage","Ds Hutchings","DM Ntlhokwe","N. Smidt de","CD Dimmick","JP Frenza","R. P. Engelshoven Van","E. A. J. Burg Van Der","T. J. Vries De","F. P. A. Kooten Van","JM Mao-Cheia","A. Das Gupta","L. Out-Van Staveren","L. Van Der Merwe","GA Whitehead","J. De Kock","A. El Gabry","HJ Court","M. D. Meer Van Der","AA Lottering","TM Mahlaule","J. Blank De","MS Brahmadu","J. R. Werkhoven Van","SM Jeggo","VM Moshe","Di Podmore","OI Bello","MS Shashikumar","Bv Vaidyanath","CM Mahlakwane","R. Vos Van Der","H. Run Van","E. J. Overbeek Van","EA Mcclymont","D. Du Toit",
+"JR Foulds","A. B. Hagens - Bakker","TR Muralidhara","AM Ramaphakela","L. Le Roux","P. A. Spbm Clarke","H. Dam Van","DC Hulley","V. Noble Le","E. C. T. Puckle Hobbs","AJ Grimbeck","A. Nouhuys-Van Dalfsen");
+
+CREATE TABLE extra_gender_lookups (first_name varchar(30), gender varchar(20), probability float, docs float);
+
+# now that we've got a list of first names with genders, let's map them back into the gendered_names table
+# indexes will make everyone's lives better
+create index first_name on extra_gender_lookups(first_name);
+create index first_name on gendered_names(first_name);
+
+# in gendered_names, we want to distingish known-unknowns from those we haven't looked up yet
+UPDATE extra_gender_lookups set gender="NOLOOKUP" where gender is null;
+
+update gendered_names gn, extra_gender_lookups egl
+	set gn.gender = egl.gender
+	where ucase(gn.first_name) = ucase(egl.first_name) and gn.gender is NULL;
+
+
+
+select count(distinct(ucase(first_name))) from gendered_names where gender is Null;
+select count(distinct(ucase(first_name))) from gendered_names where gender="NOLOOKUP";
+
+select distinct(gender) from gendered_names;
+
+select * from gendered_names where gender="NOLOOKUP";
+select distinct(full_name) from gendered_names where gender="NOLOOKUP";
+update gendered_names set gender="unknown" where first_name ="E.";
+update gendered_names set gender="unknown" where first_name ="L.";
+update gendered_names set gender="unknown" where first_name ="M.";
+update gendered_names set gender="NOLOOKUP" where `full_name` like "M. Pilar%";
+update gendered_names set gender="male" where `full_name` like "Klaus%";
+
+update gendered_names set gender="male" where first_name like "Hans-%";
+
+Select * from value_jam where `From` like "%donof%";
+
+
+select * from extra_gender_lookups where ucase(first_name)="PILAR";
+update gendered_names set gender="NOLOOKUP" where binary gender="UNKNOWN";
+
+# it'd be good to have a reference for any new first names for which we've gained genders
+#   just in case we mess up, let's make a backup gender table
+create table gender_backup  LIKE gender;
+insert gender_backup select * from gender;
+
+# now insert into gender all names for which we now have values
+# we have to exclude any initials: length == 1 or, period in the second slot
+insert gender 
+select gn.first_name, gn.gender 
+	from (select ucase(first_name) as first_name, gender 
+			from gendered_names 
+			where length(first_name) &gt; 1 and substring(first_name,2)&lt;&gt;"."
+			group by ucase(first_name)) gn 
+		left join gender 
+	on ucase(gn.first_name) = gender.first_name 
+	where gender.gender is null
+		and gn.gender in ('male','female')
+;
+
+select * from gender where length(first_name) &lt;= 1 or substring(first_name,2)=".";
+
+
+# one of the forums doesn't have names -- make sure not to use its data!
+#where FORUMID=100802
+#   make sure it's contained to just that forum
+select `HOW LONG HAVE YOU WORKED AT IBM?`, max(FORUMID) as fidmax, min(FORUMID) as fidmin, count(*) 
+	from client_experience_jam
+	group by `HOW LONG HAVE YOU WORKED AT IBM?`;
+# cool -- the non-year values have only the one forum affected	
+	
+# how many of the missing names do we have that USERID elsewhere?
+create table ce_users 
+	select USERID, `NAME`	as full_name 
+		from client_experience_jam
+		where FORUMID&lt;&gt;100802
+		group by USERID;
+create index uid on ce_users (USERID);
+
+select USERID, ceu.full_name 
+	from client_experience_jam
+	left join ce_users ceu
+	using (USERID)
+	
+	where ceu.full_name is null
+	group by USERID;
+# 3556 users without names in the forum.  Let's skip it for now.  We'll have the names information from other forums anyway
+
+# now we've got another block of names from client_experience.  let's pull them and see how many we don't know already
+create table ce_names
+	select `NAME` as full_name, substring_index(`NAME`,' ',1) as first_name 
+	from client_experience_jam
+	where FORUMID &lt;&gt; 100802
+	group by `NAME`; 
+	
+alter table ce_names add column second_name varchar(30);
+
+# how many full names are new?
+# we want to match on ucase, and this is WAY faster with indexes
+alter table user_names add column ucase_name varchar(255);
+alter table ce_names add column ucase_name varchar(255);
+update user_names set ucase_name = ucase(full_name);
+update ce_names set ucase_name = ucase(full_name);
+
+create index unam on user_names(ucase_name);
+create index unam on ce_names(ucase_name);
+
+select count(*), sum(un.full_name is null) 
+	from ce_names cen 
+		left join user_names un 
+		on un.ucase_name = cen.ucase_name;
+	#oof -- only 1500 names overlap
+
+# split names separated by hyphens
+update ce_names
+	set first_name = substring_index(first_name,'-',1), 		 
+		second_name = substring_index(first_name,'-',-1)  
+	where substring_index(first_name,'-',1)&lt;&gt;first_name 
+;
+
+update ce_names
+	set first_name = substring_index(first_name,'_',1), 		 
+		second_name = substring_index(first_name,'_',-1)  
+	where substring_index(first_name,'_',1)&lt;&gt;first_name 
+;
+
+# update those names we already have gender for
+alter table ce_names add column gender varchar(20);
+update ce_names cen, gender g
+	set cen.gender = g.gender
+	where ucase(cen.first_name) = g.first_name;
+
+
+# grab the second names of people with a first initial and a second name
+update ce_names 
+	set second_name = substring_index(substring_index(full_name,' ',2),' ',-1)  
+	where substring_index(full_name,' ',2)&lt;&gt;full_name  
+		and (length(first_name) = 1 or substring(first_name,2,1)=".")
+;
+update ce_names set second_name = null 
+	where (length(second_name) = 1 or substring(second_name,2,1)=".");
+
+update ce_names cen, gender g
+	set cen.gender = g.gender
+	where ucase(cen.second_name) = g.first_name
+		and cen.second_name is not null and cen.gender is null;
+
+select second_name from ce_names where gender is null and second_name is not null;		
+		
+# finally, get anyone where we know already that we don't have a genderIO lookup for their name
+select distinct ucase(first_name) from gendered_names where gender="NOLOOKUP";		
+
+update ce_names cen, gendered_names gen
+	set cen.gender="NOLOOKUP" 
+	where ucase(cen.first_name) = ucase(gen.`first_name`)
+		and gen.gender="NOLOOKUP"
+		and cen.gender is null
+		and cen.second_name is null;
+
+# in case there are any where we had a second name that is also unknown
+update ce_names cen, gendered_names gen
+	set cen.gender="NOLOOKUP" 
+	where ucase(cen.second_name) = ucase(gen.`first_name`)
+		and gen.gender="NOLOOKUP"
+		and cen.gender is null;
+
+# at this point, we're back to looking up names in genderIO
+# 7240 to go!
+select count(distinct(ucase(first_name))) from ce_names where gender is Null;
+
+select distinct(ucase(first_name)) from ce_names where gender is Null limit 10 offset 3000;
+
+select * from `extra_gender_lookups` where first_name = "HAPPY";
+
+
+
+
+# did anyone change from non manager to manager between the two jams?
+
+select vj.AuthorEmail, vj.JobResp, wj.JobResp, vj.manager, wj.manager 
+	from value_jam vj join world_jam wj
+	on vj.AuthorEmail = wj.AuthorEmail
+	where vj.`manager` = wj.`manager`;
+	
+	
+select AuthorEmail, JobResp from value_jam group by AuthorEmail;
+select AuthorEmail, JobResp from world_jam group by AuthorEmail;
+
+select * from world_jam where CommentId = "&lt;ffd7497c22.9326a6f9.WORLDJAM@d25was503.mkm.can.ibm.com&gt;";
+
+
+select CommentId, count(*) as cnt from combined group by CommentId having cnt&gt;1;
+select * from world_jam where CommentId="&lt;ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com&gt;";</string>
+			<key>table</key>
+			<string>extra_gender_lookups</string>
+			<key>view</key>
+			<string>SP_VIEW_CUSTOMQUERY</string>
+			<key>windowVerticalDividerPosition</key>
+			<real>202</real>
+		</dict>
+	</dict>
+	<key>encrypted</key>
+	<false/>
+	<key>format</key>
+	<string>connection</string>
+	<key>queryFavorites</key>
+	<array/>
+	<key>queryHistory</key>
+	<array>
+		<string>select distinct(ucase(first_name)) from ce_names where gender is Null limit 10 offset 3000</string>
+		<string># at this point, we're back to looking up names in genderIO
+# 7240 to go!
+select count(distinct(ucase(first_name))) from ce_names where gender is Null</string>
+		<string>select * from `extra_gender_lookups` where first_name = "HAPPY"</string>
+		<string>select USERID, ceu.full_name 
+	from client_experience_jam
+	left join ce_users ceu
+	using (USERID)
+	
+	where ceu.full_name is null
+	group by USERID</string>
+		<string>select USERID, ceu.full_name 
+	from client_experience_jam
+	left join ce_users ceu
+	using (USERID)
+	group by USERID
+	where ceu.full_name is null</string>
+		<string>select USERID, ceu.full_name 
+	from client_experience_jam
+	left join ce_users ceu
+	using (USERID)
+	where ceu.full_name is null</string>
+		<string>select USERID, ceu.full_name 
+	from client_experience_jam
+	left join ce_users ceu
+	using (USERID)</string>
+		<string>create index uid on ce_users (USERID)</string>
+		<string># cool -- the non-year values have only the one forum affected	
+	
+# how many of the missing names do we have that USERID elsewhere?
+create table ce_users 
+	select USERID, `NAME`	as full_name 
+		from client_experience_jam
+		where FORUMID&lt;&gt;100802
+		group by USERID</string>
+		<string># one of the forums doesn't have names -- make sure not to use its data!
+#where FORUMID=100802
+#   make sure it's contained to just that forum
+select `HOW LONG HAVE YOU WORKED AT IBM?`, max(FORUMID) as fidmax, min(FORUMID) as fidmin, count(*) 
+	from client_experience_jam
+	group by `HOW LONG HAVE YOU WORKED AT IBM?`</string>
+		<string># one of the forums doesn't have names -- make sure not to use its data!
+#where FORUMID=100802
+#   make sure it's contained to just that forum
+select `HOW LONG HAVE YOU WORKED AT IBM?`, max(FORUMID), min(FORUMID), count(*) 
+	from client_experience_jam
+	group by `HOW LONG HAVE YOU WORKED AT IBM?`</string>
+		<string># at this point, we're back to looking up names in genderIO
+# 7309 to go!
+select count(distinct(ucase(first_name))) from ce_names where gender is Null</string>
+		<string># in case there are any where we had a second name that is also unknown
+update ce_names cen, gendered_names gen
+	set cen.gender="NOLOOKUP" 
+	where ucase(cen.second_name) = ucase(gen.`first_name`)
+		and gen.gender="NOLOOKUP"
+		and cen.gender is null</string>
+		<string>update ce_names cen, gendered_names gen
+	set cen.gender="NOLOOKUP" 
+	where ucase(cen.first_name) = ucase(gen.`first_name`)
+		and gen.gender="NOLOOKUP"
+		and cen.gender is null
+		and cen.second_name is null</string>
+		<string>select second_name from ce_names where gender is null and second_name is not null</string>
+		<string>update ce_names cen, gender g
+	set cen.gender = g.gender
+	where ucase(cen.second_name) = g.first_name
+		and cen.second_name is not null and cen.gender is null</string>
+		<string>update ce_names set second_name = null 
+	where (length(second_name) = 1 or substring(second_name,2,1)=".")</string>
+		<string># grab the second names of people with a first initial and a second name
+update ce_names 
+	set second_name = substring_index(substring_index(full_name,' ',2),' ',-1)  
+	where substring_index(full_name,' ',2)&lt;&gt;full_name  
+		and (length(first_name) = 1 or substring(first_name,2,1)=".")</string>
+		<string>update ce_names cen, gender g
+	set cen.gender = g.gender
+	where ucase(cen.first_name) = g.first_name</string>
+		<string># update those names we already have gender for
+alter table ce_names add column gender varchar(20)</string>
+	</array>
+	<key>rdbms_type</key>
+	<string>mysql</string>
+	<key>rdbms_version</key>
+	<string>5.5.34</string>
+	<key>version</key>
+	<integer>1</integer>
+</dict>
+</plist>

@@ -1,0 +1,51 @@
+removed:
+
+grady booch ibm fellow ibm rational chief scientist,  42
+
+tom_watson:
+"thomas watson","tom_watson"
+"mr watsons","tom_watson"
+"tom watsons","tom_watson"
+"mr watson","tom_watson"
+"mr. watson,"tom_watson"
+
+watson_jr:
+tom watson jr","watson_jr"
+"tj watson jr","watson_jr"
+"thomas j watson","watson_jr"
+"tj watson","watson_jr"
+"thomas j watson jr","watson_jr"
+"thomas watson jr","watson_jr"
+"watson jrs","watson_jr"
+"
+watson_sr:
+tom watson sr","watson_sr"
+"tj watson sr","watson_sr"
+"mr watson sr","watson_sr"
+
+
+
+palmisano:
+
+"sam palmisanos","sam_palmisano"
+"sam palmisano","sam_palmisano"
+"mr palmisano","sam_palmisano"
+"sam p","sam_palmisano"
+"Sam Palmisamo","sam_palmisano"
+"palmisano","sam_palmisano"
+"Samuael Palmisano","sam_palmisano"
+"Samual J. Palmisano","sam_palmisano"
+"Mr. Palmisano","sam_palmisano"
+"Sam J. Palmisano","sam_palmisano"
+"Sam  Palmisano","sam_palmisano"
+"
+lou_gerstner"
+"Gerstner","lou_gerstner"
+"louis gerstner","lou_gerstner"
+"Lu Gerstner","lou_gerstner"
+"lou gerstener","lou_gerstner"
+"Mr gerstner","lou_gerstner"
+"Luo Gerstner","lou_gerstner"
+"mr. gestner","lou_gerstner"
+"Lou  Gerstner","lou_gerstner"
+"

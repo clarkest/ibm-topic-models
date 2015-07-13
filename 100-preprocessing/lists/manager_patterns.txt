@@ -1,0 +1,18 @@
+president
+ceo
+cfo
+chief
+executive
+vp
+v.p.
+vice president
+dir
+dr
+director
+treasurer
+mgr
+manager
+manages
+mngr
+managing
+exec
