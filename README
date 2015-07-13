@@ -12,8 +12,8 @@ The code is split into four stages:
     IBM NER.ipynb -- uses stanford's NLP Named Entity Recognition to identify ngrams that are Named Entitites (http://nlp.stanford.edu/software/CRF-NER.shtml)
   /bin: Perl Preprocessing scripts.  See 100-preprocessing/recipe for directions on running these files with and without the ngrams and plurals
 200 topic models: code for producing and visualizing topic models. Should be straightforward to swap in another mallet-compatible step for the model production and another mnallet-compatible visualization for the visualizing.
-  load_docs_train_models.R: defines functions for creating LDA topic models using mallet
-  lda_visualize.R: uses the LDA mallet functions to fit topic models and produce LDAvis visualizations of them
+  load_docs_train_models.R: loads the document files and uses the LDA mallet functions to fit topic models
+  lda_visualize.R:  function to produce LDAvis visualizations of mallet compatible topic models.
 300 post-model-analyses: R code for: 
   graphing topics against metadata variables, 
   looking at topic word similarity
