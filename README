@@ -1,0 +1,20 @@
+IBM topic modeling code for the three jams.  
+
+The code is split into four stages:
+
+000 doc-prep: code for taking the raw IBM jams data and preparing the .tsv files that are fed into the preprocessing stage
+100 preprocessing: code for transforming the raw .tsv files into those needed for mallet.  Includes:
+  Ipython Notebooks for Plural and Ngram Identification:
+    plural_identification.ipynb -- produces a list of singular-plural pairs that appear in the corpus
+      requres python inflect (https://pypi.python.org/pypi/inflect)
+    ngram_identification_turbotopics.ipynb -- produces a list of repeated ngrams that appear in the corpus
+      requires turbotopics (https://github.com/Blei-Lab/turbotopics)
+    IBM NER.ipynb -- uses stanford's NLP Named Entity Recognition to identify ngrams that are Named Entitites (http://nlp.stanford.edu/software/CRF-NER.shtml)
+  /bin: Perl Preprocessing scripts.  See 100-preprocessing/recipe for directions on running these files with and without the ngrams and plurals
+200 topic models: code for producing and visualizing topic models. Should be straightforward to swap in another mallet-compatible step for the model production and another mnallet-compatible visualization for the visualizing.
+  load_docs_train_models.R: defines functions for creating LDA topic models using mallet
+  lda_visualize.R: uses the LDA mallet functions to fit topic models and produce LDAvis visualizations of them
+300 post-model-analyses: R code for: 
+  graphing topics against metadata variables, 
+  looking at topic word similarity
+  looking at topic co-occurence.
