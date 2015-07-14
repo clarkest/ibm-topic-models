@@ -15,7 +15,7 @@ n.topics <- 30
 #   a folder "model_states" containing .gz of topic models and .Rdata documents object
 #   a folder "outputs" where this code sends the graph images
 
-wd <- "/Users/clarkbernier/Dropbox/IBM Local/data"
+wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 
 stop.word.file <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/200-topic-models/en.txt"
@@ -23,7 +23,7 @@ model.name <- "ngram_model"
 
 
 # load the persisted documents -- these are needed before we can load a model from state
-file.name <- paste0(paste("model_states", model.name, sep="/"), "-docs.Rdata")
+file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
 # this shoudl create an object called "documents"
 load(file.name)
 mallet.instances <- mallet.import(documents$id, 

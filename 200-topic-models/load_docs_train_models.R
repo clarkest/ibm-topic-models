@@ -5,11 +5,11 @@ library(mallet)
 library(countrycode)
 
 n.topics <- 30
-wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-code"
+wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 # wd <- "C:/Users/clarkest/Dropbox/IBM Local/ibm-code"
 setwd(wd)
 
-model.dir <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-code/model_states"
+model.dir <- "models_dir"
 model.name <- "ngram_model"
 iters <- 800
 maxims <- 25
@@ -18,11 +18,11 @@ maxims <- 25
 #   Loading and processing data   #
 ###################################
 
-values <- read.delim("preprocessing/values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-world.file <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-code/preprocessing/world-manager-bigrams_new.tsv"
+values <- read.delim("place_docs_here/values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
+world.file <- "place_docs_here/world-manager-bigrams_new.tsv"
 
-#values <- read.delim("preprocessing/nongrams-values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-#world.file <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-code/preprocessing/nongrams-world-manager-bigrams.tsv"
+#values <- read.delim("place_docs_here/nongrams-values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
+#world.file <- "place_docs_here/nongrams-world-manager-bigrams.tsv"
 
 world <- read.delim(world.file, 
                     encoding="UTF-8", 
