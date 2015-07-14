@@ -381,11 +381,10 @@ heatmap(corr.matrix, Rowv=NA, Colv="Rowv", symm=TRUE)
 vocab.diff.by.factor <- function(factors, docs, topic.model, doc.subset=NULL) {
   # TODO, expand to do more than just the FIRST factor
   factor <- factors[1]
-  factor.lvls <- levels(factor(docs[doc.subset, factor]))
-  
   if (is.null(doc.subset)) {
     doc.subset = !is.na(docs$text)
   }
+  factor.lvls <- levels(factor(docs[doc.subset, factor]))
   
   words.by.factor <- list()
   # get the word propensity list for each factor
@@ -420,7 +419,7 @@ vocab.diff.by.factor("forum", documents, topic.model, documents$jam=="world")
 # -- by values jam
 vocab.diff.by.factor("forum", documents, topic.model, documents$jam=="values")
 
-# Compare across the fora, since we saw that prevalences can be very different
+# Compare across managers/non-managers
 vocab.diff.by.factor("manager", documents, topic.model)
 
 
