@@ -18,8 +18,20 @@ maxims <- 25
 #   Loading and processing data   #
 ###################################
 
-values <- read.delim("place_docs_here/values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-world.file <- "place_docs_here/world-manager-bigrams_new.tsv"
+values <- read.delim("place_docs_here/values-docs-ngrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
+values.nongrams <- read.delim("place_docs_here/values-docs-nongrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
+
+values$id <- as.factor(values$id)
+values.nongrams$id <- as.factor(values.nongrams$id)
+non.to.n.overlaps <- sapply(values.nongrams$id, function(x) is.element(x, values$id))
+sum(!non.to.n.overlaps)
+values.nongrams[!non.to.n.overlaps, "text"]
+n.to.non.overlaps <- sapply(values$id, function(x) is.element(x, values.nongrams$id))
+sum(!n.to.non.overlaps)
+values[!n.to.non.overlaps, "text"]
+
+
+world.file <- "place_docs_here/world-docs-nongrams.tsv"
 
 #values <- read.delim("place_docs_here/nongrams-values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
 #world.file <- "place_docs_here/nongrams-world-manager-bigrams.tsv"

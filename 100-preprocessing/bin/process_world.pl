@@ -3,7 +3,7 @@ binmode STDOUT, ":utf8";
 my @source = ();
 my @target = ();
 
-open REPS, "abbrevs.csv";
+open REPS, "lists/abbrevs.csv";
 while (<REPS>) {
     chomp;
     my @fields = split /,/, $_;
@@ -17,7 +17,7 @@ while (<REPS>) {
 close REPS;
 
 #my %plur_replacements = ();
-open REPS, "plurals.csv";
+open REPS, "lists/plurals.csv";
 while (<REPS>) {
     chomp;
     my @fields = split /,/, $_;
@@ -31,7 +31,7 @@ while (<REPS>) {
 close REPS;
 
 #my %phrase_replacements = ();
-open REPS, "new_phrases.txt";
+open REPS, "lists/new_phrases.txt";
 while (<REPS>) {
     chomp;
     # my $source = $_;
@@ -47,7 +47,7 @@ close REPS;
 
 my @jobtitles = ();
 
-open MANAGERS, "manager_patterns.txt";
+open MANAGERS, "lists/manager_patterns.txt";
 while (<MANAGERS>) {
     chomp;
     push @jobtitles, $_;
@@ -112,14 +112,23 @@ while (<>) {
     my $title = $fields[12];
     my $text = $fields[17];
 
-    # remove titles
-    $text =~ s/^\Q$title\E//;
     
     # drop HTML
     $text =~ s/<[^>]+>//g;
     
     # drop URLs
     $text =~ s/http\S+//g;
+
+    # boilerplate
+    $text =~ s/\QNote: Comment formatted to fit web page.\E//;
+    $text =~ s/Note: Reply formatted to fit web page.//;
+
+    # get rid of repeated white space in both, as it throws off matches
+    $text =~ s/\h+/ /g;
+    $title =~ s/\h+/ /g;
+
+    # remove titles
+    $text =~ s/^\Q$title\E//;
 
     # replace " with '
     $text =~ s/"/'/g;
@@ -131,10 +140,6 @@ while (<>) {
 
     $title =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
     $title =~ s/[\xe2]\W+/ /g;
-
-    # boilerplate
-    $text =~ s/\QNote: Comment formatted to fit web page.\E//;
-    $text =~ s/Note: Reply formatted to fit web page.//;
 
     #foreach my $source (keys %replacements) {
     for my $i (0..$#source) {

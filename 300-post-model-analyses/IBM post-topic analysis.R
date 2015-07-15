@@ -359,6 +359,43 @@ heatmap(corr.matrix, Rowv=NA, Colv="Rowv", symm=TRUE)
 
 
 
+#############
+# can we use topic co-occurence as a way of seeing how different two models are 
+# in terms of classifying docs?
+#############
+
+# Create a second, no-ngram topic model
+
+ngram.documents <- documents
+nongram.model.name <- "nongram_model"
+
+# load the persisted documents -- these are needed before we can load a model from state
+nongram.file.name <- paste0(paste("models_dir", nongram.model.name, sep="/"), "-docs.Rdata")
+# this shoudl create an object called "documents"
+load(nongram.file.name)
+nongram.documents <- documents
+nongram.mallet.instances <- mallet.import(nongrams.documents$id, 
+                                  nongrams.documents$text, 
+                                  stop.word.file, 
+                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]")
+
+## Initialize from a previously trained state
+iters <- 800
+maxims <- 20
+model_num <- 6
+model.label = paste(nongram.model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
+file.name <- paste(model.dir, paste0(model.label, ".gz"), sep="/")
+nongram.topic.model <- MalletLDA(num.topics=n.topics)
+nongram.topic.model$loadDocuments(nongram.mallet.instances)
+nongram.topic.model$initializeFromState(.jnew("java.io.File", file.name))
+
+# the documents don't line up exactly, so we need to map the two sets together
+non.to.n.overlaps <- sapply(nongram.documents$id, function(x) is.element(x, ngram.documents$id))
+sum(non.to.n.overlaps)
+nongram.documents[!non.to.n.overlaps, "text"]
+n.to.non.overlaps <- sapply(ngram.documents$id, function(x) is.element(x, nongram.documents$id))
+sum(n.to.non.overlaps)
+ngram.documents[!n.to.non.overlaps, "text"]
 
 ########################
 # pull out interesting topics by forum/topic ?
