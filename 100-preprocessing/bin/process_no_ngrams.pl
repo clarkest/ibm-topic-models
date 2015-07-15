@@ -81,6 +81,10 @@ while (<>) {
     
     # drop URLs
     $text =~ s/http\S+//g;
+    
+    # drop arrows
+    $text =~ s/->//g;  
+    $title =~ s/->//g; 
 
     # boilerplate
     $text =~ s/\QNote: Comment formatted to fit web page.\E//;

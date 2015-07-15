@@ -106,6 +106,10 @@ while (<>) {
     # drop HTML
     $text =~ s/<[^>]+>//g;
     
+    # drop arrows
+    $text =~ s/->//g;  
+    $title =~ s/->//g; 
+    
     # drop URLs
     $text =~ s/http\S+//g;
 
