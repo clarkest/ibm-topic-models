@@ -32,11 +32,12 @@ values[!n.to.non.overlaps, "text"]
 
 
 world.file <- "place_docs_here/world-docs-nongrams.tsv"
+world.file <- "place_docs_here/world-temp/processed_nongrams.txt"
 
 #values <- read.delim("place_docs_here/nongrams-values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
 #world.file <- "place_docs_here/nongrams-world-manager-bigrams.tsv"
 
-world <- read.delim(world.file, 
+world.nongrams <- read.delim(world.file, 
                     encoding="UTF-8", 
                     colClasses=c("factor", "character", "character", "character", 
                                  "character", "factor", "factor", "factor", 
@@ -46,6 +47,15 @@ world <- read.delim(world.file,
                     sep="\t", 
                     quote=""
 )
+world$commentid <- as.factor(world$commentid)
+world.nongrams$commentid <- as.factor(world.nongrams$commentid)
+non.to.n.overlaps <- sapply(world.nongrams$commentid, function(x) is.element(x, world$commentid))
+sum(!non.to.n.overlaps)
+world.nongrams[!non.to.n.overlaps, "text"]
+n.to.non.overlaps <- sapply(world$commentid, function(x) is.element(x, world.nongrams$commentid))
+sum(!n.to.non.overlaps)
+world[!n.to.non.overlaps, "text"]
+
 
 #removing these outright to not affect the 8-hr blocks
 #world[world$CreationDate == "10/29/2004",]$CreationDate <- "10/28/2004"

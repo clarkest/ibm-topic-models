@@ -84,7 +84,11 @@ while (<>) {
     
     # drop arrows
     $text =~ s/->//g;  
-    $title =~ s/->//g; 
+    $title =~ s/->//g;  
+
+    # for good measure, just kill off any remaining > or <
+    $text =~ s/[>,<]//g;  
+    $title =~ s/[>,<]//g;  
 
     # boilerplate
     $text =~ s/\QNote: Comment formatted to fit web page.\E//;
@@ -100,6 +104,28 @@ while (<>) {
     $text =~ s/"/'/g;
     $title =~ s/"/'/g;
 
+    # check for duplicates -- BEFORE doing the text replacement.  
+    ## this keeps the dupes reduction consistent between ngram and nongram
+    ## implementations
+    my %current_words = ();
+    my @tokens = split /\s+/, $text;
+    foreach my $token (@tokens) {
+       $current_words{$token}++;
+    }
+
+    my $is_duplicate = 0;
+    if (defined $sender_cache{ $fields[0] }) {
+    foreach my $previous_message (@{$sender_cache{ $fields[0] }}) {
+        if (l1_diff(\%current_words, $previous_message) < 3) {
+        $is_duplicate = 1;
+        
+        #my $previous_text = substr(join(" ", sort keys(%{$previous_message})), 0, 45);
+        #my $current_text = substr(join(" ", sort keys(%current_words)), 0, 45);
+        #print "$previous_text\t$current_text\n";
+        }
+    }
+    }
+    
     #foreach my $source (keys %replacements) {
     for my $i (0..$#source) {
 	   #my $target = $replacements{$source};
@@ -112,25 +138,6 @@ while (<>) {
     $fields[18] = $text;
     $fields[15] = $title;
 
-    ## check for duplicates
-    my %current_words = ();
-    my @tokens = split /\s+/, $text;
-    foreach my $token (@tokens) {
-	   $current_words{$token}++;
-    }
-
-    my $is_duplicate = 0;
-    if (defined $sender_cache{ $fields[0] }) {
-	foreach my $previous_message (@{$sender_cache{ $fields[0] }}) {
-	    if (l1_diff(\%current_words, $previous_message) < 3) {
-		$is_duplicate = 1;
-		
-		#my $previous_text = substr(join(" ", sort keys(%{$previous_message})), 0, 45);
-		#my $current_text = substr(join(" ", sort keys(%current_words)), 0, 45);
-		#print "$previous_text\t$current_text\n";
-	    }
-	}
-    }
 
     if (! $is_duplicate) { print join("\t", @fields) . "\n"; }
     
