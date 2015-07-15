@@ -172,19 +172,20 @@ while (<>) {
     }
     }
 
-    #foreach my $source (keys %replacements) {
-    for my $i (0..$#source) {
-       #my $target = $replacements{$source};
-       #$text =~ s/\Q$source\E/$target/gi;
-       #$title =~ s/\Q$source\E/$target/gi;
-       $text =~ s/\b$source[$i]\b/$target[$i]/gi;
-       $title =~ s/\b$source[$i]\b/$target[$i]/gi;
+    if (! $is_duplicate) { 
+        #foreach my $source (keys %replacements) {
+        for my $i (0..$#source) {
+           #my $target = $replacements{$source};
+           #$text =~ s/\Q$source\E/$target/gi;
+           #$title =~ s/\Q$source\E/$target/gi;
+           $text =~ s/\b$source[$i]\b/$target[$i]/gi;
+           $title =~ s/\b$source[$i]\b/$target[$i]/gi;
+        }
+
+        $fields[18] = $text;
+        $fields[15] = $title;
+        print join("\t", @fields) . "\n"; 
     }
-
-    $fields[12] = $title;
-    $fields[17] = $text;
-
-    if (! $is_duplicate) { print join("\t", @fields) . "\n"; }
     
     push @{$sender_cache{ $fields[0] }}, \%current_words;
 }
