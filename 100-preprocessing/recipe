@@ -10,8 +10,9 @@ python bin/comma_to_tab.py world-trans.csv > world-trans.tsv
 perl -w bin/process.pl ../place_docs_here/values-cleaned.tsv > ../place_docs_here/values-docs-ngrams.tsv
 
 perl -w bin/process_world.pl ../place_docs_here/reloaded_world.tsv > ../place_docs_here/world-temp/processed.txt
-perl -w bin/dedupe_world.pl ../place_docs_here/world-temp/processed.txt > world-temp/deduped.txt
-perl -w bin/write_overlaps.pl ../place_docs_here/world-temp/deduped.txt > place_docs_here/world-temp/10gram_sequences.txt
+
+perl -w bin/write_overlaps.pl ../place_docs_here/world-temp/processed.txt > ../place_docs_here/world-temp/10gram_sequences.txt
+
 perl -w bin/delete_overlaps.pl ../place_docs_here/world-temp/10gram_sequences.txt ../place_docs_here/world-temp/deduped.txt > ../place_docs_here/world-docs-ngrams.tsv
 
 
@@ -20,6 +21,7 @@ perl -w bin/delete_overlaps.pl ../place_docs_here/world-temp/10gram_sequences.tx
 perl -w bin/process_no_ngrams.pl ../place_docs_here/values-cleaned.tsv > ../place_docs_here/values-docs-nongrams.tsv
 
 perl -w bin/process_world_no_ngrams.pl ../place_docs_here/reloaded_world.tsv > ../place_docs_here/world-temp/processed_nongrams.txt
-perl -w bin/dedupe_world.pl ../place_docs_here/world-temp/processed_nongrams.txt > world-temp/deduped_nongrams.txt
-perl -w bin/write_overlaps.pl ../place_docs_here/world-temp/deduped_nongrams.txt > ../place_docs_here/world-temp/10gram_sequences_nongrams.txt
+
+perl -w bin/write_overlaps.pl ../place_docs_here/world-temp/processed_nongrams.txt > ../place_docs_here/world-temp/10gram_sequences_nongrams.txt
+
 perl -w bin/delete_overlaps.pl ../place_docs_here/world-temp/10gram_sequences_nongrams.txt ../place_docs_here/world-temp/deduped_nongrams.txt > ../place_docs_here/world-docs-nongrams.tsv

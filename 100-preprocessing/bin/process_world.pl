@@ -182,8 +182,8 @@ while (<>) {
            $title =~ s/\b$source[$i]\b/$target[$i]/gi;
         }
 
-        $fields[18] = $text;
-        $fields[15] = $title;
+        $fields[17] = $text;
+        $fields[12] = $title;
         print join("\t", @fields) . "\n"; 
     }
     
