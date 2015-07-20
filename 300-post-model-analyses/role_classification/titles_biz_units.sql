@@ -32,7 +32,7 @@ select business_unit, job from
 	temp_bu_lookup bu join world_titles wt
 	on wt.business_unit = bu.bu
 	where business_unit !="" and job!=""
-	INTO OUTFILE ‘/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/300-post-model-analyses/role_classification/biz_units_jobs.tsv’ 
+	INTO OUTFILE "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/300-post-model-analyses/role_classification/biz_units_jobs.tsv"
 	FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '"' 
 	LINES TERMINATED BY '\n';
 	
