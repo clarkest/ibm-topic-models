@@ -1,0 +1,1370 @@
+ColumnDataClassifier invoked on Wed Jul 15 15:36:15 PDT 2015 with arguments:
+   -prop titles_classify.prop -printClassifier HighWeight
+1.useLowercaseSplitWords = true
+useQN = true
+useClassFeature = false
+testFile = ./biz_units_jobs.test
+1.useSplitNGrams = true
+1.minNGramLeng = 2
+intern = true
+1.splitWordsRegexp = "s"
+goldAnswerColumn = 0
+displayedColumn = 1
+printClassifierParam = 200
+QNsize = 15
+sigma = 3
+tolerance = 1e-4
+trainFile = ./biz_units_jobs.train
+1.useLowercaseSplitWordPairs = true
+1.maxNGramLeng = 6
+printClassifier = HighWeight
+Reading dataset from ./biz_units_jobs.train ... done [2.5s, 9389 items].
+numDatums: 9389
+numDatumsPerLabel: {TG STAFF=493.0, PUBLIC SECTOR=1236.0, SOFTWARE GROUP=189.0, FN=53.0, SG&A=419.0, REAL ESTATE=766.0, PROCUREMENT=104.0, SALES & DISTRIBUTION=70.0, HX=31.0, DEVELOPER RELATIONS=27.0, FINANCE=67.0, SI=51.0, SEC F&S OPS=61.0, PC DIVISION=54.0, SO=22.0, NONE=519.0, RETAIL STORE SOLS DIV=25.0, RESEARCH=134.0, 11=35.0, 34=21.0, WW SALES=798.0, SW=29.0, MS=79.0, 17=75.0, SYS GROUP MFG=230.0, EL=41.0, MARKETING=44.0, IS=196.0, GS=37.0, HUMAN RESOURCES=424.0, TA=27.0, 0=546.0, 2=1471.0, CHIEF FINANCIAL OFFICER=43.0, 4=18.0, SMB FINANCE=73.0, 6=58.0, SOFTWARE SALES=280.0, 80=46.0, 9=12.0, STRATEGIC OUTSOURCING=446.0, 64=39.0}
+numLabels: 42 [SG&A, 2, MS, PUBLIC SECTOR, IS, WW SALES, 0, HUMAN RESOURCES, SOFTWARE GROUP, SI, TG STAFF, STRATEGIC OUTSOURCING, 64, REAL ESTATE, SEC F&S OPS, RESEARCH, MARKETING, SMB FINANCE, 6, 17, SOFTWARE SALES, SO, SALES & DISTRIBUTION, FINANCE, PC DIVISION, 11, NONE, SYS GROUP MFG, GS, TA, SW, CHIEF FINANCIAL OFFICER, PROCUREMENT, 34, 9, 80, DEVELOPER RELATIONS, FN, EL, HX, RETAIL STORE SOLS DIV, 4]
+numFeatures (Phi(X) types): 157834 [1-S#-onte, 1-S#- De, 1-S#-ntent, 1-S#- Devel, 1-S#-ontent, ...]
+..............Caught OutOfMemoryError, changing m = 13
+..............................................................................................................................................................................
+QNMinimizer terminated due to average improvement: | newest_val - previous_val | / |newestVal| < TOL 
+Built this classifier: LinearClassifier [printing top 200 features]
+(1-LSW-v,SG&A)                                                    4.2517
+(1-LSW-1,HUMAN RESOURCES)                                         4.2517
+(1-S#-NA,PUBLIC SECTOR)                                           3.0604
+(1-LSW-pe,2)                                                      2.8133
+(1-LSW-hr,0)                                                      2.7826
+(1-S#-Mr,2)                                                       2.6927
+(1-LSW-mr,2)                                                      2.6927
+(1-LSW-pr,2)                                                      2.5995
+(1-LSW-se,REAL ESTATE)                                            2.5891
+(1-LSW-ce,STRATEGIC OUTSOURCING)                                  2.5572
+(1-LSW-se,IS)                                                     2.5397
+(1-S#-BT,HUMAN RESOURCES)                                         2.4979
+(1-LSW-bt,HUMAN RESOURCES)                                        2.4386
+(1-S#-SE,IS)                                                      2.3981
+(1-S#-CE,STRATEGIC OUTSOURCING)                                   2.3857
+(1-S#-PM,STRATEGIC OUTSOURCING)                                   2.3426
+(1-LSW-pm,IS)                                                     2.2654
+(1-S#-PR,2)                                                       2.2545
+(1-LSW-manager,SG&A)                                              2.2519
+(1-LSW-na,PUBLIC SECTOR)                                          2.2282
+(1-LSW-na,STRATEGIC OUTSOURCING)                                  2.2252
+(1-S#-se,REAL ESTATE)                                             2.1028
+(1-S#-HR,0)                                                       2.0758
+(1-S#-PE,2)                                                       2.0245
+(1-LSW-pm,STRATEGIC OUTSOURCING)                                  1.9970
+(1-LSW-na,WW SALES)                                               1.9812
+(1-LSW-its,PUBLIC SECTOR)                                         1.9764
+(1-S#-PM,IS)                                                      1.9571
+(1-S#-DM,NONE)                                                    1.9269
+(1-LSW-professional development,2)                                1.8845
+(1-LSW-application developer,PUBLIC SECTOR)                       1.8741
+(1-LSW-na,TG STAFF)                                               1.8207
+(1-LSW-internal communications manager,STRATEGIC OUTSOURCING)     1.7728
+(1-LSW-na,SOFTWARE GROUP)                                         1.7567
+(1-LSW-sap,0)                                                     1.7240
+(1-LSW-its,NONE)                                                  1.6872
+(1-LSW-ams,0)                                                     1.6869
+(1-LSW-internal communications,2)                                 1.6802
+(1-S#-na,2)                                                       1.6771
+(1-S#-RSM,RESEARCH)                                               1.6637
+(1-S#-eS,REAL ESTATE)                                             1.6628
+(1-LSW-business development,SOFTWARE GROUP)                       1.6611
+(1-LSW-ww business development,PUBLIC SECTOR)                     1.6475
+(1-LSW-na,CHIEF FINANCIAL OFFICER)                                1.6182
+(1-S#-Ma,2)                                                       1.6165
+(1-S#-AM,PUBLIC SECTOR)                                           1.6162
+(1-LSW-rsm,RESEARCH)                                              1.6088
+(1-LSW-communications,STRATEGIC OUTSOURCING)                      1.5570
+(1-S#-na,CHIEF FINANCIAL OFFICER)                                 1.5541
+(1-S#-MC,SG&A)                                                    1.5531
+(1-LSW-application development,0)                                 1.5293
+(1-S#-RS,RESEARCH)                                                1.5278
+(1-S#-SSR,STRATEGIC OUTSOURCING)                                  1.5209
+(1-LSW-programmer,PUBLIC SECTOR)                                  1.5045
+(1-LSW-db2,PUBLIC SECTOR)                                         1.5036
+(1-S#-AP,0)                                                       1.4965
+(1-LSW-emc,SG&A)                                                  1.4788
+(1-S#-EMC,SG&A)                                                   1.4788
+(1-LSW-sdm,2)                                                     1.4746
+(1-S#-n/,PROCUREMENT)                                             1.4564
+(1-S#-SDM,2)                                                      1.4532
+(1-S#-pe,2)                                                       1.4522
+(1-S#-N/A,HUMAN RESOURCES)                                        1.4515
+(1-LSW-business controls,PUBLIC SECTOR)                           1.4431
+(1-S#-Tax,2)                                                      1.4369
+(1-S#-DB,PUBLIC SECTOR)                                           1.4348
+(1-S#-ax,2)                                                       1.4339
+(1-S#-eSM,REAL ESTATE)                                            1.4220
+(1-LSW-mfg,TG STAFF)                                              1.4137
+(1-S#-na,SOFTWARE GROUP)                                          1.3961
+(1-S#-an,2)                                                       1.3916
+(1-S#-AMS,0)                                                      1.3904
+(1-S#-ERC,RETAIL STORE SOLS DIV)                                  1.3895
+(1-S#-ISC,SYS GROUP MFG)                                          1.3861
+(1-LSW-operations manager,2)                                      1.3856
+(1-S#-n/a,PROCUREMENT)                                            1.3821
+(1-S#-/a,PROCUREMENT)                                             1.3821
+(1-LSW-ssr,IS)                                                    1.3809
+(1-LSW-n/a,HUMAN RESOURCES)                                       1.3790
+(1-LSW-mmh,TG STAFF)                                              1.3789
+(1-S#-MH,TG STAFF)                                                1.3789
+(1-S#-MMH,TG STAFF)                                               1.3789
+(1-S#-RC,RETAIL STORE SOLS DIV)                                   1.3675
+(1-S#-/A,HUMAN RESOURCES)                                         1.3635
+(1-S#-MFG,TG STAFF)                                               1.3632
+(1-S#-FG,TG STAFF)                                                1.3632
+(1-S#-ER,RETAIL STORE SOLS DIV)                                   1.3579
+(1-S#-na,TG STAFF)                                                1.3561
+(1-S#-BAM,PUBLIC SECTOR)                                          1.3494
+(1-S#-MM,TG STAFF)                                                1.3493
+(1-S#-st,PUBLIC SECTOR)                                           1.3442
+(1-LSW-esm,REAL ESTATE)                                           1.3372
+(1-LSW-erc,RETAIL STORE SOLS DIV)                                 1.3338
+(1-LSW-tax,2)                                                     1.3323
+(1-S#-SI,TG STAFF)                                                1.3207
+(1-S#-MF,TG STAFF)                                                1.3146
+(1-LSW-project manager,STRATEGIC OUTSOURCING)                     1.3123
+(1-LSW-executive project manage,2)                                1.3075
+(1-LSW-n/a,PROCUREMENT)                                           1.3064
+(1-LSW-bam,PUBLIC SECTOR)                                         1.3054
+(1-S#-DB2,PUBLIC SECTOR)                                          1.3014
+(1-LSW-partner,PUBLIC SECTOR)                                     1.2891
+(1-S#-N/,HUMAN RESOURCES)                                         1.2868
+(1-LSW-associate partner, bcs,NONE)                               1.2839
+(1-LSW-pdm,NONE)                                                  1.2774
+(1-S#-BA,PUBLIC SECTOR)                                           1.2679
+(1-S#-SM,RESEARCH)                                                1.2633
+(1-LSW-project manager,IS)                                        1.2565
+(1-LSW-development,WW SALES)                                      1.2416
+(1-LSW-solution architect,2)                                      1.2300
+(1-LSW-public relations,2)                                        1.2202
+(1-LSW-delivery project manager,2)                                1.2136
+(1-LSW-consultant,PUBLIC SECTOR)                                  1.2059
+(1-S#-SD,2)                                                       1.2028
+(1-LSW-development manager,2)                                     1.2021
+(1-S#-n Proj,PUBLIC SECTOR)                                       1.1987
+(1-S#-SR,STRATEGIC OUTSOURCING)                                   1.1950
+(1-LSW-developer,0)                                               1.1919
+(1-S#-SC,SYS GROUP MFG)                                           1.1869
+(1-LSW-internal communication,IS)                                 1.1838
+(1-S#-MS,0)                                                       1.1820
+(1-LSW-applications manager,2)                                    1.1795
+(1-S#-AP ,2)                                                      1.1770
+(1-S#-PDM,NONE)                                                   1.1759
+(1-S#-ANAGER,2)                                                   1.1742
+(1-S#-NAGER,2)                                                    1.1742
+(1-S#-AGER,2)                                                     1.1742
+(1-LSW-business development,SOFTWARE SALES)                       1.1723
+(1-LSW-support engineer,2)                                        1.1712
+(1-S#-er,0)                                                       1.1703
+(1-S#-DM,2)                                                       1.1700
+(1-S#-GER,2)                                                      1.1613
+(1-S#-Ta,2)                                                       1.1599
+(1-LSW-senior business analyst,PUBLIC SECTOR)                     1.1546
+(1-LSW-human resources,NONE)                                      1.1530
+(1-LSW-business operations,0)                                     1.1516
+(1-LSW-senior software developer,0)                               1.1491
+(1-LSW-senior i/t specialist,2)                                   1.1443
+(1-S#-TS,NONE)                                                    1.1442
+(1-LSW-project executive,2)                                       1.1390
+(1-S#-te,2)                                                       1.1310
+(1-S#-SS,IS)                                                      1.1269
+(1-LSW-associate project manage,2)                                1.1248
+(1-LSW-services manager,2)                                        1.1239
+(1-S#-B2,PUBLIC SECTOR)                                           1.1231
+(1-LSW-it specialist, iseries,2)                                  1.1197
+(1-LSW-advisory sales operations specialist,REAL ESTATE)          1.1196
+(1-LSW-associate partner, business consulting services,PUBLIC SECTOR)  1.1171
+(1-S#-na,WW SALES)                                                1.1108
+(1-S#-SR,IS)                                                      1.1054
+(1-LSW-program director,STRATEGIC OUTSOURCING)                    1.0992
+(1-S#-WG,WW SALES)                                                1.0983
+(1-LSW-it consultant,2)                                           1.0978
+(1-LSW-associate partner,SALES & DISTRIBUTION)                    1.0975
+(1-LSW-project manager, pmp,0)                                    1.0950
+(1-LSW-senior business controls,2)                                1.0931
+(1-S#- Prog,2)                                                    1.0916
+(1-S#-TG,TG STAFF)                                                1.0914
+(1-LSW-i/t architect,WW SALES)                                    1.0867
+(1-S#-li,2)                                                       1.0836
+(1-LSW-consulting i/t specialist,80)                              1.0835
+(1-S#-ER,PUBLIC SECTOR)                                           1.0739
+(1-S#-AP,2)                                                       1.0713
+(1-S#-SS,STRATEGIC OUTSOURCING)                                   1.0681
+(1-S#-SWG,WW SALES)                                               1.0672
+(1-LSW-technical services,0)                                      1.0569
+(1-S#-AM,0)                                                       1.0567
+(1-LSW-finance,2)                                                 1.0563
+(1-LSW-sales,REAL ESTATE)                                         1.0545
+(1-LSW-software developer,2)                                      1.0485
+(1-LSW-sales operations specialist,MS)                            1.0415
+(1-S#-io,2)                                                       1.0358
+(1-S#-n Prog,0)                                                   1.0317
+(1-LSW-project management,PUBLIC SECTOR)                          1.0310
+(1-LSW-ssr,STRATEGIC OUTSOURCING)                                 1.0238
+(1-S#-CR,2)                                                       1.0229
+(1-LSW-ww business operations,SOFTWARE GROUP)                     1.0222
+(1-S#-Sr,PUBLIC SECTOR)                                           1.0197
+(1-LSW-consulting it architect,WW SALES)                          1.0178
+(1-LSW-business operations manager,PUBLIC SECTOR)                 1.0176
+(1-LSW-service management,0)                                      1.0136
+(1-S#-SAP,0)                                                      1.0057
+(1-LSW-architect,PUBLIC SECTOR)                                   1.0012
+(1-LSW-advisory sales specialist, iseries,MS)                     0.9981
+(1-S#-SSR,IS)                                                     0.9960
+(1-LSW-public relations manager,WW SALES)                         0.9940
+(1-LSW-senior software engineer,2)                                0.9882
+(1-LSW-senior it architect,NONE)                                  0.9880
+(1-S#-SA,0)                                                       0.9846
+(1-LSW-business analyst,2)                                        0.9841
+(1-S#-IT,NONE)                                                    0.9795
+(1-LSW-certified senior it architect,PUBLIC SECTOR)               0.9794
+(1-LSW-professional,0)                                            0.9734
+(1-LSW-management development -,2)                                0.9728
+(1-LSW-principal,NONE)                                            0.9709
+(1-S#-SDM,NONE)                                                   0.9706
+(1-LSW-partner, business consulting services,2)                   0.9697
+(1-LSW-management development,HUMAN RESOURCES)                    0.9689
+(1-LSW-senior it architect,REAL ESTATE)                           0.9645
+(1-S#-SM,REAL ESTATE)                                             0.9627
+
+Reading dataset from ./biz_units_jobs.test ... done [0.6s, 1092 items].
+Output format: dataColumn1	goldAnswer	classifierAnswer	P(clAnswer)	P(goldAnswer)
+IT Specialist	IS	0	0.234	0.127
+AMS Integrated Delivery Manager	11	NONE	0.990	0.000
+Project Administrator	2	NONE	0.936	0.017
+TREASURY SETTLEMENT ADMINISTRATOR	2	PUBLIC SECTOR	0.989	0.006
+PROCUREMENT SPECIALIST	2	2	0.997	0.997
+Graphic Artist	2	SG&A	0.376	0.112
+CONSULTANT	2	0	0.652	0.007
+Program Manager, Top Talent, Executive Resources & Technical Resources	0	HUMAN RESOURCES	0.952	0.000
+Business Manager - State Farm Client Team	REAL ESTATE	REAL ESTATE	0.986	0.986
+DIW Re-engineering	TG STAFF	TG STAFF	0.810	0.810
+Client Representative	17	2	0.287	0.000
+IT Specialist - Networking	2	2	0.575	0.575
+Business Consulting Services / SAP HCM	PUBLIC SECTOR	PUBLIC SECTOR	0.680	0.680
+Country Manager, Public Sector	MS	MS	0.909	0.909
+Mainframe Storage Management	PUBLIC SECTOR	PUBLIC SECTOR	0.745	0.745
+Life Sciences Enabling Technologies	PUBLIC SECTOR	PUBLIC SECTOR	0.686	0.686
+Segment Manager	2	NONE	0.381	0.078
+WW Integrated Marketing Communications Lead	SOFTWARE SALES	MARKETING	0.664	0.195
+300mm Maintenance Engineer - RIE/MTL/Vacuum Systems	TG STAFF	TG STAFF	0.671	0.671
+INTEGRATED MKTG COMMS SPECIALIST	2	2	0.997	0.997
+Test Engineer	EL	NONE	0.940	0.000
+SAN File System Architecture and PerformanceOnDemand Infrastructure Storage Resource Manager	SG&A	SG&A	0.830	0.830
+FISC	WW SALES	SYS GROUP MFG	0.437	0.027
+Director of Sales, Financial Services Sector - Italy	IS	IS	0.995	0.995
+Management Development Leader Italy	IS	NONE	0.771	0.060
+WebSphere & Java Messaging L3 Service (x-WebSphere MQ Development : Eclipse Plug-in)	HX	HX	0.932	0.932
+Manager - Software Group - IGS Americas Migration Team	REAL ESTATE	PUBLIC SECTOR	0.673	0.232
+WebSphere Business Development WW-TechAccMngr - Dassault Systémes !! Manager is Mark Sherman/Pittsburgh	2	WW SALES	0.948	0.049
+Manager, Testing & Suppo	2	0	0.799	0.002
+DB2 Translation Focal Point	PUBLIC SECTOR	2	0.711	0.098
+Systems Mgmt Integr Prof - Adv	PUBLIC SECTOR	SG&A	0.843	0.146
+Req Pro QE Engineering	WW SALES	PUBLIC SECTOR	0.271	0.170
+IT-Architect WW Business Transformation Team	SW	PUBLIC SECTOR	0.435	0.000
+Account Support Manager, IBM Server Group	PUBLIC SECTOR	2	0.755	0.013
+EMEA Network Tower Lead	NONE	2	0.943	0.006
+Manager, On Demand Provisioning Development	WW SALES	WW SALES	0.999	0.999
+Staff Application Programmer	0	0	0.999	0.999
+Snr IT Specialist	2	2	0.848	0.848
+ASSOCIATE MARKETING MANAGER	SMB FINANCE	2	0.970	0.000
+Communications Writer	FINANCE	2	0.219	0.002
+Mgr, Global Workforce Flexibility Project Office	HUMAN RESOURCES	HUMAN RESOURCES	1.000	1.000
+Consultant	PUBLIC SECTOR	PUBLIC SECTOR	0.340	0.340
+EMEA Workfoce Diversity Specialist	NONE	NONE	0.977	0.977
+Managing Consultant, Financial Services Sector, BCS	0	NONE	0.401	0.000
+Vice President, zSeries Hardware Products	TG STAFF	TG STAFF	0.519	0.519
+Intranet Writer	REAL ESTATE	PUBLIC SECTOR	0.771	0.001
+VP, Technical Strategy and Worldwide Operations, IBM Research	RESEARCH	RESEARCH	0.310	0.310
+Client Relationship Mgr	2	REAL ESTATE	0.752	0.065
+Industrial Sector Manager	NONE	NONE	0.394	0.394
+PCD Global Account Manager - Industrial Sector	2	NONE	0.590	0.001
+IGF Global Pricing	SMB FINANCE	SMB FINANCE	0.366	0.366
+Software Engineer	0	0	0.481	0.481
+Vice President, Provisioning and Security Development, IBM SWG	WW SALES	WW SALES	1.000	1.000
+Application Programmer	0	0	0.982	0.982
+EMEA Integrated Mktg Mgr, IBM Forum Centers	2	GS	0.383	0.059
+BT - AS/400	2	PUBLIC SECTOR	0.230	0.009
+Technical Sales Specialist-eServer,zSeries-SW, HW, Capacity Planning-Techline, Western Region	REAL ESTATE	REAL ESTATE	1.000	1.000
+Senior IT Specialist	PUBLIC SECTOR	2	0.317	0.245
+Partner, Practice Area Leader, Supply Chain Management, Industrial	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+STSM,  Bioinformatics data and application integration	PUBLIC SECTOR	WW SALES	0.499	0.177
+Project Manager, SOVA order validation, Deliver MES & New orders together, BOSCO for Configuration Mgmt	SYS GROUP MFG	PUBLIC SECTOR	0.994	0.000
+Financing Sales Executive, ibmcom	SEC F&S OPS	SOFTWARE SALES	0.327	0.286
+Language Environment & C/C++ run-time library development	SG&A	SG&A	1.000	1.000
+East Fishkill Site Controller	TG STAFF	TG STAFF	0.878	0.878
+Lotus WW Business Development Manager	SOFTWARE GROUP	SOFTWARE GROUP	0.999	0.999
+Expense/Resource Analyst Fed CSO and Supply Mgement Expense Exception Co-ordinator for Cust Fulfillment	SYS GROUP MFG	SYS GROUP MFG	0.915	0.915
+P6 GXC Design Engineer	SG&A	SG&A	0.949	0.949
+Senior Consultant	2	2	0.403	0.403
+Staff Human Resource Professional	0	0	0.994	0.994
+ASIC Hardware Emulation and EDA Tools	TG STAFF	TG STAFF	0.998	0.998
+Corporate Learning	HUMAN RESOURCES	HUMAN RESOURCES	0.993	0.993
+Hardware Business Practices Development, Systems Group (including zSeries, ESS, On-Demand)	PUBLIC SECTOR	TG STAFF	0.965	0.000
+ITS PARTS PLANNING ANALYST	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.988	0.988
+Finance I/T Architecture	HUMAN RESOURCES	HUMAN RESOURCES	0.930	0.930
+ASSOCIATE MARKET INTELLIGENCE SPECIALIST (ADVANCED	2	2	0.999	0.999
+Global Electronics Industry - On Demand and Special Projects Lead	SALES & DISTRIBUTION	PUBLIC SECTOR	0.936	0.000
+PVC Services for the Americas	FINANCE	REAL ESTATE	0.991	0.000
+Application programmer	0	0	0.781	0.781
+Senior Communications Specialist	HUMAN RESOURCES	2	0.640	0.060
+VP, SMB PeopleSoft	SOFTWARE SALES	REAL ESTATE	0.407	0.030
+WW Industry Solutions Proof of Value (Mark Bishof's Org)	WW SALES	WW SALES	0.925	0.925
+System Tester	2	WW SALES	0.606	0.003
+Managing Consultant, On Demand Infrastructure	STRATEGIC OUTSOURCING	HUMAN RESOURCES	0.379	0.012
+Business Partner PC Warranty Service & Programmes	STRATEGIC OUTSOURCING	2	0.768	0.002
+Vice President - Services, UnitedHealth Group	PUBLIC SECTOR	PUBLIC SECTOR	0.976	0.976
+HR Partner-Microprocessor Tech Dev (Mark Papermaster);Systems Design (Tony Befi);Systems Tech(Rick Baum)	SG&A	SG&A	0.876	0.876
+National Account Sales Executive	SEC F&S OPS	STRATEGIC OUTSOURCING	0.871	0.006
+iTSR Region Grand Est PACA	2	2	0.992	0.992
+Global Communications Sector Research Business Executive	RESEARCH	SOFTWARE SALES	0.954	0.040
+Concurrent Maintenance	SG&A	2	0.979	0.000
+VP, Teleweb and Partner Transformation	SYS GROUP MFG	SYS GROUP MFG	0.898	0.898
+Vice President - Business Development, PvC	FINANCE	PUBLIC SECTOR	0.392	0.002
+Research Staff Member	RESEARCH	RESEARCH	0.750	0.750
+eServer pSeries Security & RAS	SG&A	TG STAFF	0.649	0.220
+Senior Education Specialist, Climate Consultant	2	NONE	0.879	0.006
+downloadGrid  ? that's me :)	SG&A	SG&A	0.382	0.382
+Sales Competencies/Coaching Operations Specialist	HUMAN RESOURCES	HUMAN RESOURCES	0.595	0.595
+Senior Software Sales Represenative	REAL ESTATE	REAL ESTATE	0.843	0.843
+SSR - Systems Services Rep	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.923	0.923
+Governmental Programs Executive	HUMAN RESOURCES	HUMAN RESOURCES	0.984	0.984
+Prgr Mngr Supply Chain Optimization	NONE	SYS GROUP MFG	0.732	0.001
+Dist Channels Management	2	2	0.304	0.304
+VP Finance, iSeries	TG STAFF	TG STAFF	0.893	0.893
+z/VM CP I/O Development	SG&A	SG&A	0.972	0.972
+Executive Consultant	2	PUBLIC SECTOR	0.484	0.024
+Manager, Strategy & Business Transformation	SYS GROUP MFG	SG&A	0.547	0.044
+MLC Process Inspection Engineering	TG STAFF	TG STAFF	0.933	0.933
+Client Services Manager, Public Sector - Alberta	SMB FINANCE	REAL ESTATE	0.999	0.000
+Senior Security Consultant	PUBLIC SECTOR	2	0.955	0.035
+Contractor	2	PUBLIC SECTOR	0.277	0.014
+Client Services Manager,Nationwide Insurance - Client Executive - Huntington Bank	REAL ESTATE	REAL ESTATE	0.985	0.985
+Assoc Partner Human Capital Solutions	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+Managing Consultant	NONE	PUBLIC SECTOR	0.390	0.106
+Rational brand Technical Services Sales - Western Region	WW SALES	REAL ESTATE	0.990	0.008
+Manager, ClearTeam Engineering	WW SALES	WW SALES	0.618	0.618
+Mgr, Serial Link Development	TG STAFF	SG&A	0.926	0.028
+IT Specialist	0	0	0.234	0.234
+DB2 UDB Replication Development -  Q Capture	PUBLIC SECTOR	PUBLIC SECTOR	0.997	0.997
+Communications Manager	2	2	0.392	0.392
+Accounts Receivable, Services Team - Dallas	SYS GROUP MFG	SYS GROUP MFG	0.565	0.565
+Manager, Enterprise Systems Mgmt	PUBLIC SECTOR	PUBLIC SECTOR	0.634	0.634
+Project Manager	2	PUBLIC SECTOR	0.230	0.225
+AMS Sales Manager	PUBLIC SECTOR	NONE	0.490	0.037
+ISG MI Microsoft Focal Point	TG STAFF	SG&A	0.826	0.078
+IBM Certified Used Equpiment Sales Exec - iSeries Specialist	SEC F&S OPS	REAL ESTATE	0.632	0.000
+Project Manager	PUBLIC SECTOR	PUBLIC SECTOR	0.230	0.230
+Country Communications Manager	NONE	NONE	0.975	0.975
+Director, Cendant Service Delivery	PUBLIC SECTOR	WW SALES	0.566	0.355
+Project Manager, PTS - Process & Quality	FN	2	0.381	0.089
+WW PCD & xSeries eXplore Database Admin & Business Process Support	PROCUREMENT	SYS GROUP MFG	0.918	0.001
+Delivery Engagement Mgr - Americas Delivery Engagement Services	PUBLIC SECTOR	PUBLIC SECTOR	0.997	0.997
+MANAGER CUSTOMER FULFILLMENT	2	2	0.992	0.992
+Vice President, Corporate Strategy	HUMAN RESOURCES	HUMAN RESOURCES	1.000	1.000
+Director - AMS, Public Sector IBM Americas	PUBLIC SECTOR	REAL ESTATE	0.995	0.005
+Audience Leader, CRM Siebel for Field Sales Professionals	SYS GROUP MFG	TG STAFF	0.482	0.002
+Healthcare & Life Sciences South EMEA Marketing & Channel Manager	NONE	34	0.393	0.002
+VP, Worldwide SMB Financing - IBM Global Financing	SMB FINANCE	SMB FINANCE	0.994	0.994
+IT Architect	0	2	0.269	0.001
+Territory Manager	4	REAL ESTATE	0.401	0.001
+Advisory I/T Specialist: Technical Sales Support	0	0	0.998	0.998
+Sinter Equipment Engineer	TG STAFF	TG STAFF	0.994	0.994
+Director, Sales Enablement & Execution, Global Sales Ops, IBM S&D	SOFTWARE SALES	SOFTWARE SALES	1.000	1.000
+Associate General Counsel - Public Sector	REAL ESTATE	PUBLIC SECTOR	0.437	0.014
+Learning Partner, IBM Learning - Americas, Supporting SWG Sales	HUMAN RESOURCES	HUMAN RESOURCES	0.946	0.946
+Director, internal and executive communications, Sales and Distribution	SOFTWARE SALES	TG STAFF	0.707	0.251
+Vice President Sales - Electronics Industry	REAL ESTATE	REAL ESTATE	0.996	0.996
+IT Security Officer Netherlands & FIM S&D	NONE	NONE	0.826	0.826
+CAL On Demand Learning Team, Vancouver Innovation Centre Learning Solutions Leader	17	NONE	0.973	0.000
+EXECUTIVE, OF SWG SOUTH CHINA	6	6	0.516	0.516
+Directeur Region Provence                                                                    Mediterranee	2	2	1.000	1.000
+ADVISORY I/T SPECIALIST	2	2	0.506	0.506
+eDRAM Process Integration	TG STAFF	TG STAFF	0.984	0.984
+STAFF SOFTWARE ENGINEER	2	2	0.552	0.552
+BCS Partner	PUBLIC SECTOR	SALES & DISTRIBUTION	0.785	0.136
+Business Development Manager	NONE	WW SALES	0.246	0.229
+WebSphere Business Portal Technical Sales	NONE	SOFTWARE GROUP	0.889	0.000
+Circuit Design Engineer	EL	SG&A	0.711	0.000
+TREASURY ANALYSIS - SENIOR MANAGER	2	2	1.000	1.000
+Business Area Manager, On Demand Technology (w3); Manager, Financial Systems/w3 PM CoC	PUBLIC SECTOR	PUBLIC SECTOR	0.957	0.957
+Senior Consultant and Project Executive	PUBLIC SECTOR	NONE	0.825	0.155
+UMI Development	PUBLIC SECTOR	WW SALES	0.538	0.005
+zSeries Marketing Manager	TG STAFF	TG STAFF	0.816	0.816
+EUS Service Delivery Manager - Kansas, Missouri & Nebraska	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.599	0.599
+Client Manager - Distribution Sector	REAL ESTATE	REAL ESTATE	0.986	0.986
+Communications Manager, Western Region	REAL ESTATE	STRATEGIC OUTSOURCING	0.523	0.009
+Tivoli Framework Development	WW SALES	WW SALES	1.000	1.000
+SAM - Integrated Account AXA	2	IS	0.752	0.001
+EMEA Backoffice for z/OS DFSMS and z/OS Storage Software	IS	SG&A	0.958	0.000
+DPE	PUBLIC SECTOR	2	0.157	0.069
+Sales Transformation Manager	HUMAN RESOURCES	HUMAN RESOURCES	0.944	0.944
+IT/Specialist	2	NONE	0.693	0.026
+Technical Sales Specialist, Systems Architect, Eastern Region	REAL ESTATE	REAL ESTATE	0.981	0.981
+Lead Ledger Linkage Project Office	SYS GROUP MFG	HUMAN RESOURCES	0.998	0.000
+Market Manager	64	2	0.566	0.001
+IT Specialist	17	0	0.234	0.049
+Manager, Solutions, Distribution Sector, Nordic	2	REAL ESTATE	0.341	0.164
+Director Talent, SWG	HUMAN RESOURCES	WW SALES	0.542	0.378
+Program Director, WebSphere Business Integration Product Marketing	WW SALES	WW SALES	1.000	1.000
+IT Architect AS/400 (AS/400 Development center)	2	WW SALES	0.815	0.002
+Human Resources Manager	2	NONE	0.932	0.036
+Senior Consultant	2	2	0.403	0.403
+Software Sales	WW SALES	REAL ESTATE	0.931	0.020
+SWG Business Operations	WW SALES	SOFTWARE GROUP	0.710	0.043
+Client Manager - DCX Engineering	REAL ESTATE	REAL ESTATE	0.375	0.375
+Territory Partner Manager	NONE	REAL ESTATE	0.660	0.004
+Crack Programmer	WW SALES	WW SALES	0.272	0.272
+HR Partner - ITS Tech Support West Region	PUBLIC SECTOR	2	0.982	0.000
+Enterprise Delivery Services-Center of Competency	HUMAN RESOURCES	PUBLIC SECTOR	0.781	0.015
+Client Executive	0	2	0.562	0.001
+Director,  Distributed Svcs	PUBLIC SECTOR	PUBLIC SECTOR	0.985	0.985
+SENIOR SALES SPECIALIST - MANAGER	2	2	0.997	0.997
+Web Media Director	17	SOFTWARE SALES	0.347	0.006
+CLIENT REPRESENTATIVE	REAL ESTATE	REAL ESTATE	0.935	0.935
+Consultant: Enterprise Content Mgmt	HUMAN RESOURCES	HUMAN RESOURCES	0.731	0.731
+IGS Client Satisfaction Manager EMEA	2	NONE	0.699	0.293
+Privacy & Security Services, IT Specialist	NONE	PUBLIC SECTOR	0.931	0.001
+IBM Software Group Services Sales	NONE	WW SALES	0.995	0.001
+Client Representative	REAL ESTATE	2	0.287	0.151
+Software I/T Architect	REAL ESTATE	NONE	0.314	0.043
+Instructional Designer	SALES & DISTRIBUTION	PUBLIC SECTOR	0.973	0.000
+VP and CTO, US Federal	WW SALES	REAL ESTATE	0.494	0.165
+Project Executive - ECMC	PUBLIC SECTOR	PUBLIC SECTOR	0.917	0.917
+Senior I/T Specialist, IBM Software Services for Lotus Americas	SOFTWARE GROUP	SOFTWARE GROUP	0.998	0.998
+Program Director, Business Development	SOFTWARE GROUP	WW SALES	0.725	0.098
+East Region, eSM BUE, Industrial	REAL ESTATE	REAL ESTATE	0.998	0.998
+Technical Manager, Media Design Studio II, and Team Lead, DB2	6	PUBLIC SECTOR	0.844	0.019
+Cluster Unit Executive, Telecommunications Industry	REAL ESTATE	PUBLIC SECTOR	0.431	0.120
+General Manager, Global Business Partners	SOFTWARE SALES	SOFTWARE SALES	0.998	0.998
+Software Architect - SMB      Central Region: Great Lakes	REAL ESTATE	REAL ESTATE	0.982	0.982
+Manager, Corporate Components Group	PROCUREMENT	HUMAN RESOURCES	0.484	0.000
+EMEA Corporate Community Relations Programme Manager	NONE	2	0.699	0.301
+Vice President ibmcom EMEA	2	2	0.991	0.991
+Data Management Channels Business Development - Northeast US	REAL ESTATE	REAL ESTATE	0.984	0.984
+Manager, WebSphere Development - I18N, Security, ID, Lab Admin	WW SALES	WW SALES	1.000	1.000
+IT specialist	0	IS	0.496	0.445
+Workforce Development Solutions Executive, AP	PUBLIC SECTOR	PUBLIC SECTOR	0.970	0.970
+PROJECT EXECUTIVE	REAL ESTATE	80	0.960	0.002
+Client Svcs Mgr - Disney	REAL ESTATE	REAL ESTATE	0.924	0.924
+Manager & Strategy Communications	HUMAN RESOURCES	SG&A	0.448	0.146
+WW Leader--C&N Global Facilitation Centre	PUBLIC SECTOR	SALES & DISTRIBUTION	0.527	0.010
+Paris Innovation Center program manager	2	2	0.591	0.591
+VP, eServer Business Line Management and Poughkeepsie Senior Location Executive	TG STAFF	TG STAFF	0.989	0.989
+Vice President, IBM Real Estate Operations	CHIEF FINANCIAL OFFICER	2	0.764	0.095
+SG Business Transformation	SG&A	SG&A	0.639	0.639
+Employee Satisfaction Manager, IBM Global Services	STRATEGIC OUTSOURCING	2	0.914	0.057
+Program Manager On Demand Learning	HUMAN RESOURCES	HUMAN RESOURCES	0.919	0.919
+VP, Global Talent	HUMAN RESOURCES	HUMAN RESOURCES	0.344	0.344
+z/OS Java development	SG&A	SG&A	0.920	0.920
+ESM Architect	WW SALES	PUBLIC SECTOR	0.754	0.068
+Associate IT Architect, Software Developer	17	0	0.632	0.200
+Country Procurement Manager	0	2	0.607	0.021
+EMEA Learning Development/ESC WW Repository Team Leader	NONE	NONE	0.897	0.897
+Director Expense/Resource Planning,Global S&D	SOFTWARE SALES	HUMAN RESOURCES	0.642	0.329
+PHYP Error Analysis, backup for Disk Manager GUI, Logical Partitioning GUI, Journal GUI	SG&A	TG STAFF	0.990	0.002
+300MM Lithography / Metrology  Manager - N1	TG STAFF	TG STAFF	0.999	0.999
+IGS Certified Process Design Consultant - Business Transformation Enablement - supporting ebHS	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.779	0.779
+Senior Project Manager (Assigned out -  GlobalValue: Program Manager Fiat Auto)	IS	PUBLIC SECTOR	0.361	0.006
+Web Sales Representative	NONE	REAL ESTATE	0.528	0.294
+Adv Software Eng	SOFTWARE GROUP	SOFTWARE GROUP	0.386	0.386
+Chief Engineering Mgr Procurement Engineering eServer Div	PROCUREMENT	PROCUREMENT	0.992	0.992
+Event Manager, Industry Solutions Lab (ISL) Distribution Sector	SOFTWARE SALES	WW SALES	0.427	0.013
+Manager, Disaster Recovery Transitions/Steady State	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+RSS/Celestica SYSTEM BRIDGE SUPPORT	SYS GROUP MFG	PUBLIC SECTOR	0.977	0.001
+On Demand Learning Collaboration Specialist	HUMAN RESOURCES	HUMAN RESOURCES	0.933	0.933
+Almaden Linux user studies	RESEARCH	SG&A	0.857	0.070
+Organization & Change Strategy Consultant	2	PUBLIC SECTOR	0.900	0.000
+Manager, Delivery Process Management Services	PUBLIC SECTOR	SYS GROUP MFG	0.481	0.012
+Manager of Employee Relations	2	2	0.993	0.993
+Program Manager - Foundry Products	TG STAFF	TG STAFF	0.696	0.696
+Program Dir, Customer Innovation Team, Emerging Technologies	WW SALES	PC DIVISION	0.609	0.243
+Marketing Manager - Small and Medium Business, IBM Global Services	STRATEGIC OUTSOURCING	SOFTWARE SALES	0.442	0.059
+Accepted Principal ESMT	NONE	PUBLIC SECTOR	0.313	0.047
+Engagement Manager - Software Services for Websphere	WW SALES	WW SALES	0.462	0.462
+Director, North America Customer Fulfillment -hdw/sw and IBM Canada - CSO	SG&A	SYS GROUP MFG	0.864	0.000
+Consultant	2	PUBLIC SECTOR	0.340	0.281
+Public Sector Attorney	REAL ESTATE	SEC F&S OPS	0.455	0.016
+Director, WebSphere Portal	SOFTWARE GROUP	SOFTWARE GROUP	0.858	0.858
+Sr Human Resource Partner	TG STAFF	TG STAFF	0.414	0.414
+Director, IBM Global Account - Business Operations	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.601	0.601
+Japan Techline:  Manager, pSeries and TotalStorage	2	TG STAFF	0.882	0.000
+BCS/BTO Global Finance	SALES & DISTRIBUTION	SALES & DISTRIBUTION	0.789	0.789
+eESM NA Steady State Manager	PUBLIC SECTOR	PUBLIC SECTOR	0.999	0.999
+Contracts & Negotiations, Business Offering Developer, Business Partners Central Region EMEA	GS	PUBLIC SECTOR	1.000	0.000
+Network System Mgt and Monitoring, Special Projects, Linux	RESEARCH	PUBLIC SECTOR	0.928	0.000
+Director, Organization Leadership Consulting	HUMAN RESOURCES	HUMAN RESOURCES	1.000	1.000
+ITS Distribution Sector Sr Sales Specialist	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.977	0.977
+On Demand Business Transformation	HUMAN RESOURCES	SG&A	0.288	0.209
+IBM jStart Program -- Engagement Leader	WW SALES	WW SALES	0.953	0.953
+Foundry Services & Solutions, Program Manager	TG STAFF	STRATEGIC OUTSOURCING	0.210	0.139
+Systems Storage User Assistance	SG&A	SG&A	0.998	0.998
+Director, WW BI Solutions Strategy and Architecture	WW SALES	WW SALES	0.918	0.918
+Assistant to M Guerinot - Delivery Mgmn't Exec & M Rogan - Territory Dir & SLL - ROCH	REAL ESTATE	REAL ESTATE	0.991	0.991
+West SOBI-Metrics Project Exec	2	STRATEGIC OUTSOURCING	0.532	0.006
+VP Communications Sector EMEA	2	2	0.979	0.979
+Director, Offerings Portfolio & Ecosystem Initiatives	SOFTWARE SALES	PUBLIC SECTOR	0.990	0.003
+Senior Manager	2	2	0.938	0.938
+Tivoli Framework Development & L3	WW SALES	WW SALES	0.983	0.983
+IBM MANAGER	SOFTWARE GROUP	SOFTWARE GROUP	0.970	0.970
+Director, Integrated Mar	2	SYS GROUP MFG	0.275	0.097
+GM, Global ISV Solution Sales	SOFTWARE SALES	SOFTWARE SALES	0.759	0.759
+Industrial Hygienist	HUMAN RESOURCES	HUMAN RESOURCES	0.984	0.984
+SR EDUCATION SPECIALIST	SOFTWARE GROUP	SOFTWARE GROUP	0.990	0.990
+Americas Business Transformation - Data Ownership & Operations, Americas SPOC	REAL ESTATE	HUMAN RESOURCES	0.474	0.011
+Sr Manager - WW S/C Business Operations	TG STAFF	SOFTWARE GROUP	0.573	0.055
+Professional Development Manager - Global Services Inside Sales, ibmcom Americas	REAL ESTATE	REAL ESTATE	1.000	1.000
+Project Manager eServer Hardware Systems Management	SG&A	SG&A	0.467	0.467
+xSP Business Development Executive	IS	RESEARCH	0.492	0.001
+Customer Operations Manager - Contracts & Pricing	SYS GROUP MFG	PUBLIC SECTOR	0.524	0.408
+Client Representative	REAL ESTATE	2	0.287	0.151
+Business Process Consultant	2	2	0.965	0.965
+WebSphere Technical Sales - Software IT Specialist	REAL ESTATE	IS	0.535	0.392
+Service Delivery - Midrange SSO Manager	2	2	0.987	0.987
+Manager, Integrated Sourcing Solutions - Technical Services	PROCUREMENT	PUBLIC SECTOR	0.549	0.343
+Project Manager - ebIS Portals, Content and  e-Commerce	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+IGS/NS Network Management	PUBLIC SECTOR	PUBLIC SECTOR	0.899	0.899
+IBM Global Svcs-ebusiness project/transition manager	PUBLIC SECTOR	PUBLIC SECTOR	0.998	0.998
+DSW Disbursements Team Lead	NONE	WW SALES	0.302	0.006
+Technical Resolution Manager: DASD crit sits/complaints	SG&A	NONE	0.841	0.004
+Client Unit Executive - Retail Paris	2	2	0.990	0.990
+Program Manager DRH France	2	2	0.680	0.680
+ROSA CBO Programme Manager	NONE	WW SALES	0.614	0.113
+VP Lotus Marketing and Partners	SOFTWARE GROUP	SOFTWARE GROUP	0.915	0.915
+System Service Representative	NONE	2	0.456	0.010
+IT Education Services Alliances	STRATEGIC OUTSOURCING	TA	0.565	0.202
+CISC Server Support	PUBLIC SECTOR	SYS GROUP MFG	0.885	0.021
+WW Large Enterprise Sector Sales	SOFTWARE SALES	STRATEGIC OUTSOURCING	0.469	0.020
+Leader IGS Alternate Channels                                                      Business Partner Sales	GS	2	0.988	0.000
+IT Specialist	2	0	0.234	0.171
+WW Complaint Mgt Reporting Measurements	SYS GROUP MFG	HUMAN RESOURCES	0.647	0.002
+IBM Software Group Integrated Marketing Communications	WW SALES	WW SALES	0.871	0.871
+Global Value - Open Market N/E	IS	STRATEGIC OUTSOURCING	0.390	0.159
+IGS Nordic Quality and Customer Satisfaction	2	NONE	0.956	0.042
+Systems Lab Manager	RESEARCH	SG&A	0.293	0.004
+Information Planning and Sales Execution	REAL ESTATE	PUBLIC SECTOR	0.383	0.353
+Linux Business Development Manager Enterprise Server Group	TG STAFF	NONE	0.804	0.010
+DBA manager - Michelin account	PUBLIC SECTOR	PUBLIC SECTOR	0.730	0.730
+EMEA CLC Program Management - ITS Wintel domain, EMEA Depot Operations	STRATEGIC OUTSOURCING	2	0.565	0.429
+SENIOR CONSULTING I/T SPECIALIST-MANAGER	2	2	1.000	1.000
+Advisory IT Specialist, Strategist	MS	2	0.669	0.052
+Business Development Man	2	2	0.764	0.764
+Financial Systems Analyst Co-op Student	SMB FINANCE	HUMAN RESOURCES	0.666	0.097
+Pricing Manager, South Region	IS	IS	0.993	0.993
+IT Architect - WebSphere Practice Leader	2	17	0.853	0.000
+AMS Sales Support Finance Sector - EMEA	2	IS	0.940	0.025
+pSeries Technical Advocate	2	NONE	0.972	0.004
+Duty Manager Team Lead Poughkeepsie and Rochester	PUBLIC SECTOR	TG STAFF	0.858	0.095
+Foundry Technical Enablement	TG STAFF	TG STAFF	0.950	0.950
+Senior Program Manager	2	2	0.647	0.647
+Strategy Consultant	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.585	0.121
+Client Exec Groupe Galeries Lafayette	2	2	0.965	0.965
+PMCOE, WW PM Deployment  Manager	STRATEGIC OUTSOURCING	WW SALES	0.388	0.156
+Test Manager - SAP Ledger Project	HUMAN RESOURCES	PUBLIC SECTOR	0.417	0.181
+Functional Coordinator, ISO: Product Development Organization	TG STAFF	SG&A	0.963	0.000
+GRP BP	PUBLIC SECTOR	2	0.151	0.028
+Program Management	0	0	0.901	0.901
+Enterprise Server Manager	REAL ESTATE	REAL ESTATE	0.825	0.825
+Operations Support Manager EAS, S&D HQ	REAL ESTATE	REAL ESTATE	0.960	0.960
+iSeries Access for Windows development	SG&A	SG&A	0.999	0.999
+Staff Software Engineer	0	0	0.721	0.721
+Rational Brand Market Manager	WW SALES	WW SALES	0.877	0.877
+Art & Media Director	17	PC DIVISION	0.230	0.038
+Shop Floor Systems Lead	PUBLIC SECTOR	SG&A	0.156	0.018
+eReview Development, SWG RTP UI and WebSphere Portal Patent Review Board Chair	WW SALES	WW SALES	1.000	1.000
+Technical Resources Programs Mgr Sales & Distribution	SOFTWARE SALES	SOFTWARE SALES	0.665	0.665
+Manager ISC SW Config Dev / Support	SYS GROUP MFG	PUBLIC SECTOR	0.531	0.305
+Director, PvC Product & Solutions Management	FINANCE	FINANCE	0.905	0.905
+Director, Technical Solutions Mgmt	PUBLIC SECTOR	FINANCE	0.566	0.052
+WebSphere MQ for z/OS Development	HX	WW SALES	0.796	0.180
+West Resolution Owners Manager	2	2	1.000	1.000
+I/T Specialist VM/VSE	NONE	PUBLIC SECTOR	0.370	0.013
+Senior IT Specialist	PUBLIC SECTOR	2	0.317	0.245
+Technical Sales Specialist-eServer,zSeries-390 Software-Techline,Americas	REAL ESTATE	REAL ESTATE	1.000	1.000
+IGS - AMS Sales Support	IS	PUBLIC SECTOR	0.522	0.412
+Web Accessibility Architect	WW SALES	2	0.354	0.000
+Business Controls Program Manager	IS	PUBLIC SECTOR	0.607	0.000
+SO/SD Production Manager	2	2	0.525	0.525
+Area Counsel - IBM SWG / Tivoli Systems	WW SALES	WW SALES	0.995	0.995
+Sr Mgr, ISV & Developer Relations, Technology Management	REAL ESTATE	REAL ESTATE	0.999	0.999
+Global Well-Being Services Manager	HUMAN RESOURCES	PUBLIC SECTOR	0.757	0.009
+Delivery Management Executive and Managing Principal, Distribution Sector - ITS /IBM Global Services	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	1.000	1.000
+IS&LS Architecture	PUBLIC SECTOR	HUMAN RESOURCES	0.176	0.045
+VP Systems Sales LA	REAL ESTATE	REAL ESTATE	0.431	0.431
+Associate Project Manager	0	0	0.825	0.825
+DIR OF HUMAN RESOURCES, GCG	2	2	0.813	0.813
+Web developer/DBA	PUBLIC SECTOR	0	0.911	0.003
+VP HR Americas S&D	REAL ESTATE	REAL ESTATE	0.979	0.979
+Senior I/T Architect, On Demand Strategy, Enterprise Architecture, and Business Systems Management	PUBLIC SECTOR	HUMAN RESOURCES	0.905	0.077
+Project Manager & AIX Specialist	TA	NONE	0.981	0.000
+CRM Solution Sales Healthcare, Public Sector ISU	REAL ESTATE	SOFTWARE SALES	0.513	0.461
+I/T Specialist	0	PUBLIC SECTOR	0.272	0.171
+SOFTWARE ENGINEER	SOFTWARE SALES	2	0.539	0.426
+Specialized Solutions - Domino Administration, Sametime Support, Hands & Eyes, Asset Management Support	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+IT Services Manager, ibmcom Content Authoring Services & Support	SOFTWARE SALES	SOFTWARE SALES	0.973	0.973
+Director, Contracts & Negotiations	STRATEGIC OUTSOURCING	PUBLIC SECTOR	0.968	0.009
+CR BP for CSI team,  BP/ISV	2	SYS GROUP MFG	0.364	0.161
+Services & Solution Leader - Chicago	REAL ESTATE	64	0.342	0.186
+Facilities Architect/Strategic Planner	CHIEF FINANCIAL OFFICER	2	0.843	0.000
+ADVISORY SOFTWARE ENGINEER	SOFTWARE GROUP	SOFTWARE GROUP	0.503	0.503
+Vice President, Communications; IBM Business Consulting Services	SALES & DISTRIBUTION	SALES & DISTRIBUTION	0.753	0.753
+SMB Delivery Initiatives - Americas	PUBLIC SECTOR	REAL ESTATE	0.726	0.152
+Professional Development Manager & Business Area Manger  - IBM Global Services	2	PUBLIC SECTOR	0.996	0.000
+Database administrator	SG&A	PUBLIC SECTOR	0.491	0.030
+Territory Manager	WW SALES	REAL ESTATE	0.401	0.002
+EMEA TD assignee out - see Colin Hayter/France	2	2	0.996	0.996
+Director, MHV Packaging &Test, EF Senior Location Exec	TG STAFF	TG STAFF	0.527	0.527
+SENIOR SALES SPECIALIST	2	2	0.837	0.837
+BCS Capacity Management - CRM Supply Analyst	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+MARKETING REP - TRAINEE	2	2	0.980	0.980
+IT ARCHITECT	NONE	IS	0.953	0.001
+Manager of Client Success, ISSW	WW SALES	2	0.989	0.000
+SMM Systems Managment and Tools Team Lead; Intel Component Architect	PUBLIC SECTOR	PUBLIC SECTOR	0.744	0.744
+Business Development Manager SWG Techsales and Services Nordics	2	NONE	1.000	0.000
+Senior Manager Nanoscale Science  and Technology and IBM Fellow	RESEARCH	RESEARCH	0.845	0.845
+Service Processor Microcode	SG&A	SG&A	0.766	0.766
+IT Network Support	PUBLIC SECTOR	PUBLIC SECTOR	0.930	0.930
+HR Manager Austin Site	SG&A	NONE	0.944	0.000
+Websphere Technology Institute - Staff Software Engineer (WebSphere XD Visualization)	WW SALES	WW SALES	1.000	1.000
+Engagement Manager and FDCE Agoura Hills, CA	TG STAFF	NONE	0.908	0.007
+Interactive Marketing Program Manager, AC	RESEARCH	REAL ESTATE	0.548	0.000
+Sr Marketing Manager Strategy and Planning	SOFTWARE SALES	SOFTWARE SALES	0.306	0.306
+Software Support	STRATEGIC OUTSOURCING	WW SALES	0.894	0.001
+FSS architect, EMEA Payment leader, Distinguished Engineer	2	NONE	0.988	0.000
+Manager, IBM MN Community Relations	MARKETING	TG STAFF	0.787	0.016
+SSG Customer Support Engineer	SG&A	WW SALES	0.884	0.014
+Global Business Development Manager - Industry Solutions and Strategy	WW SALES	PUBLIC SECTOR	0.969	0.005
+Program Manager, AP Transition Management & PE Development	2	PUBLIC SECTOR	0.909	0.001
+Vice President, Marketing & Strategy Global S&D	SOFTWARE SALES	STRATEGIC OUTSOURCING	0.994	0.002
+Regional Counsel	REAL ESTATE	STRATEGIC OUTSOURCING	0.507	0.444
+Advisory Client Representative	0	0	0.981	0.981
+Manager, Integrated Storage Services	PUBLIC SECTOR	SG&A	0.857	0.003
+Competitive Strategies & e-business on demand	GS	2	0.943	0.000
+DB2 UDB ID Infrastructure Team Lead	PUBLIC SECTOR	PUBLIC SECTOR	0.695	0.695
+Managing Director of Accounting Operation	2	NONE	0.731	0.003
+Senior Client Representative	0	2	0.967	0.006
+Program Director, DB2 IM Marketing Management	WW SALES	WW SALES	0.978	0.978
+General Manager	2	2	0.620	0.620
+Backup Environment Support	PUBLIC SECTOR	SYS GROUP MFG	0.524	0.098
+Director of e-Business Hosting, Nordic	2	2	0.873	0.873
+Senior Vice President, Communications	HUMAN RESOURCES	HUMAN RESOURCES	0.996	0.996
+Help Centre Ops Desk	STRATEGIC OUTSOURCING	6	0.147	0.060
+Curriculum Architect: Project Management Internal Training	HUMAN RESOURCES	PUBLIC SECTOR	0.977	0.000
+Server monitoring: Tivoli Exchange, NetIQ, EPP	PUBLIC SECTOR	WW SALES	0.763	0.212
+HR Director - LOTUS	WW SALES	REAL ESTATE	0.456	0.052
+ASIC Applications Engineering	TG STAFF	TG STAFF	1.000	1.000
+Technology Group Marketing Strategy	TG STAFF	TG STAFF	0.976	0.976
+MVS Competency DSL Champion (America's)	PUBLIC SECTOR	REAL ESTATE	0.886	0.108
+Advisory I/T Specialist	2	2	0.421	0.421
+Process Development Manager	STRATEGIC OUTSOURCING	2	0.493	0.006
+Lotus Workplace Design Manager	SOFTWARE GROUP	SOFTWARE GROUP	0.998	0.998
+Voice Technology	FN	RESEARCH	0.303	0.006
+Global Client Manager	NONE	REAL ESTATE	0.562	0.185
+IBM Distinguished Engineer, Business Transformation Outsourcing (BTO)	SALES & DISTRIBUTION	HUMAN RESOURCES	0.672	0.308
+Client Executive	REAL ESTATE	2	0.562	0.293
+MANAGING CONSULTANT - MANAGER	2	0	0.713	0.149
+Application Programmer	0	0	0.982	0.982
+Tivoli Business Development	WW SALES	WW SALES	0.982	0.982
+Managing Consultant, Mobile and Wireless practice, IBM Innovation Centre :: Toronto	17	HUMAN RESOURCES	0.373	0.000
+Software Engineer - Internet	WW SALES	SG&A	0.994	0.001
+Project Executive - e-Business Hosting	STRATEGIC OUTSOURCING	PUBLIC SECTOR	0.786	0.214
+Institute for Electronic Government	SOFTWARE SALES	TG STAFF	0.301	0.014
+Project Executive	2	2	0.499	0.499
+Linux ATS Manager	REAL ESTATE	NONE	0.226	0.009
+BLM Business Operations	TG STAFF	PUBLIC SECTOR	0.279	0.161
+Mgr Procurement Engineering - Interconnects	PROCUREMENT	PROCUREMENT	0.999	0.999
+VP, Business Controls, Global S&D	SOFTWARE SALES	SOFTWARE SALES	0.916	0.916
+BDE secteur FSS / Business Development	2	NONE	0.681	0.063
+SO & ITS Executive, IBM Belgium/Luxembourg	NONE	NONE	0.978	0.978
+Global Sales Executive -- Passport Advantage	WW SALES	REAL ESTATE	0.899	0.001
+Team Lead, Metrics & Operations, WW Web CSAT & Effectiveness	SOFTWARE SALES	STRATEGIC OUTSOURCING	0.915	0.007
+Curriculum Development, Software Engineering (Lotus_	SOFTWARE GROUP	SOFTWARE GROUP	1.000	1.000
+Senior Contracts & Negotiations Specialist	STRATEGIC OUTSOURCING	PUBLIC SECTOR	0.996	0.000
+Senior Marketing Manager, On Demand Business	MARKETING	MARKETING	0.951	0.951
+Manager, IBM Account Lotus Notes DB	PUBLIC SECTOR	PUBLIC SECTOR	0.952	0.952
+BCS Korea General Manager	2	2	0.980	0.980
+TERRITORY EXECUTIVE,SMB,TAIWAN	2	2	1.000	1.000
+HR Partner, Marketing and Strategy, Systems Group	TG STAFF	TG STAFF	0.998	0.998
+SENIOR SALES SPECIALIST	6	2	0.837	0.000
+Banking Industry Consulting	PUBLIC SECTOR	REAL ESTATE	0.764	0.032
+Account Focal Point	2	STRATEGIC OUTSOURCING	0.195	0.123
+e-business Analyst, Foundry e-business Enablement Process Owner	TG STAFF	TG STAFF	0.418	0.418
+Program Director - Faculty Awards,  Corporate University Relations	HUMAN RESOURCES	HUMAN RESOURCES	0.998	0.998
+Program Manager, Server Services - South	PUBLIC SECTOR	PUBLIC SECTOR	0.987	0.987
+Global Industry Analyst -- Banking and Financial Markets	SOFTWARE SALES	SOFTWARE SALES	0.970	0.970
+VP,SALES & OPERATION	6	STRATEGIC OUTSOURCING	0.263	0.042
+IT Specialist, Data Architect	PUBLIC SECTOR	PUBLIC SECTOR	0.359	0.359
+Director - Internal & Executive Communications, Software Group	WW SALES	SG&A	0.555	0.437
+Vice President, Human Resources, Technology and Manufacturing	HUMAN RESOURCES	TG STAFF	1.000	0.000
+ibmcom Global Brand Leader PCD/IGF	SOFTWARE SALES	NONE	0.390	0.339
+Global Consultant Profession Leader; Manager - Professions Support	STRATEGIC OUTSOURCING	NONE	0.531	0.006
+Mgr-Storage-Disk,SAN/NAS,DFSMS- Advanced Technical Support (ATS)-Americas	REAL ESTATE	REAL ESTATE	0.999	0.999
+SMB Software Sales Manager (TX/LA)	REAL ESTATE	REAL ESTATE	0.898	0.898
+Media Architect,(Graphic design,digital media design, Interactive GUIs, 2D & 3D animation)	17	TG STAFF	0.731	0.002
+ADVISORY SOFTWARE ENGINEER	SOFTWARE GROUP	SOFTWARE GROUP	0.503	0.503
+Project Executive - Project Management, Cendant Service Delivery	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+Chief Financial Officer	2	HUMAN RESOURCES	0.646	0.302
+Partner	2	2	0.496	0.496
+Manager, Tivoli Business Service Management Market Management	WW SALES	WW SALES	1.000	1.000
+Project Manager	2	PUBLIC SECTOR	0.230	0.225
+CHQ HR PARTNER FINANCE, ACCOUNTING & AUDIT	HUMAN RESOURCES	HUMAN RESOURCES	0.905	0.905
+Application Development	PUBLIC SECTOR	0	0.852	0.040
+Program Director, Notes & Domino Release Team	SOFTWARE GROUP	WW SALES	0.713	0.024
+ISC Technical Resources Program Manager	PROCUREMENT	SYS GROUP MFG	0.522	0.015
+IBM Healthcare & Life Sciences Solutions Development Sr Project Manager PMP	PUBLIC SECTOR	PUBLIC SECTOR	0.943	0.943
+Senior IT Specialist	HX	2	0.317	0.000
+Japan Techline: Advisory ITS, Tivoli S/W (Secondary: Lotus, WebSphere)	WW SALES	WW SALES	0.977	0.977
+FS - Banking, Tech Strategy	PUBLIC SECTOR	SG&A	0.266	0.180
+Real Estate & Site Operations Project Manager	NONE	2	0.523	0.018
+38VA Test Technical Lead	SG&A	0	0.889	0.027
+Manager of SMB & ibmcom sales centre , Belgium	NONE	NONE	0.650	0.650
+IBM Distinguished Engineer: Tape Subsystem Architecture, Master Inventor	SG&A	SG&A	1.000	1.000
+CONNECT:Direct Data transmission	PUBLIC SECTOR	PUBLIC SECTOR	0.496	0.496
+Technical Consultant, Websphere Business Partner Tech Support	WW SALES	PUBLIC SECTOR	0.537	0.357
+Program Director-WW Passport Advantage Marketing and Communications	WW SALES	SOFTWARE SALES	0.992	0.003
+Operations ManagerWal-Mart Stores, Inc	SOFTWARE SALES	2	0.818	0.003
+Administrator Analyst	WW SALES	STRATEGIC OUTSOURCING	0.936	0.000
+US Quickship Supply Planner	SYS GROUP MFG	SYS GROUP MFG	0.995	0.995
+ADVISORY IT SPECIALIST	PUBLIC SECTOR	PUBLIC SECTOR	0.983	0.983
+S&TG Technology Director Financial Services	TG STAFF	TG STAFF	0.799	0.799
+IBM Distinguished Engineer, Chief Architect for Autonomic Computing	WW SALES	WW SALES	0.497	0.497
+Internal Communications	WW SALES	2	0.921	0.002
+consultant	NONE	2	0.480	0.016
+Program Manager Global Travel Agency Contracts	PROCUREMENT	STRATEGIC OUTSOURCING	0.952	0.001
+Development Programmer Manager	SOFTWARE GROUP	WW SALES	0.578	0.001
+Customer Satisfaction & Quality Manager	NONE	NONE	0.897	0.897
+Product Manager PCD Products	2	PC DIVISION	0.772	0.004
+Communications High Priestess, IBM Learning	HUMAN RESOURCES	HUMAN RESOURCES	0.578	0.578
+Chief Technology Officer IBM VC Relations & Dir Research VC Relations EBO	RESEARCH	RESEARCH	0.982	0.982
+Vice President, Industrial Sector Eastern Region	REAL ESTATE	REAL ESTATE	0.982	0.982
+Logistics Analyst	STRATEGIC OUTSOURCING	0	0.345	0.008
+Project Mgr WW CMR Process	SYS GROUP MFG	TG STAFF	0.362	0.349
+Software IT Architect Verizon Team	REAL ESTATE	REAL ESTATE	0.721	0.721
+Organisational Development Manager Account & Service management ISD Global Service	NONE	NONE	0.964	0.964
+I/T Network Architect	NONE	PUBLIC SECTOR	0.933	0.001
+IT Specialist	2	0	0.234	0.171
+Program Manager, On Demand Workplace	HUMAN RESOURCES	HUMAN RESOURCES	0.792	0.792
+NWS SO Engagement	2	PUBLIC SECTOR	0.842	0.024
+Contract Manager, Telstr	2	PUBLIC SECTOR	0.521	0.393
+Market Management, Storage	WW SALES	TA	0.594	0.048
+Vice President of Sales, Distribution Sector, Central Region	REAL ESTATE	REAL ESTATE	1.000	1.000
+HUMAN RESOURCES - MANAGER	2	2	0.997	0.997
+Business Development Executive, IBM - Nokia Enterprise Solutions Alliance	NONE	REAL ESTATE	0.973	0.000
+Client Representative	NONE	2	0.287	0.284
+SMB1 TEAM LEAD	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.890	0.890
+Assistant to Greg Schrubbe, Dir, ITES & Scott Powell, Dir, SMB Managed Services	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.948	0.948
+Media Relations, IBM Software Group	WW SALES	WW SALES	0.999	0.999
+Account Assistent	2	STRATEGIC OUTSOURCING	0.295	0.182
+Staff Application Programmer	0	0	0.999	0.999
+Manager, iSeries Software Support	TG STAFF	SG&A	0.456	0.064
+Global Customer Reference Program, Financial Services Sector Marketing	SOFTWARE SALES	SOFTWARE SALES	0.926	0.926
+300mm tool install/ASTC line support	TG STAFF	PUBLIC SECTOR	0.978	0.013
+Manager of Business Transformation	SG&A	SG&A	0.441	0.441
+WW Sarbanes 404 Project Mgr	HUMAN RESOURCES	PUBLIC SECTOR	0.472	0.097
+Release Manager, WebSphere Host Access Transformation Services	WW SALES	WW SALES	0.992	0.992
+US East Region Consulting IT/S Content Management Sales	REAL ESTATE	REAL ESTATE	0.987	0.987
+Program Manager, WW SWG IT Security and Controls	WW SALES	WW SALES	0.959	0.959
+BTO Spending Analyst	PUBLIC SECTOR	PUBLIC SECTOR	0.985	0.985
+Assistant to  Jim Caldwell, Director Electronic Commerce Development	6	TG STAFF	0.692	0.003
+EAD Practice Executive - West	PUBLIC SECTOR	PUBLIC SECTOR	0.990	0.990
+Software Developer	6	WW SALES	0.239	0.235
+STAFF ENGINEER	2	PUBLIC SECTOR	0.404	0.173
+Client Unit Director	REAL ESTATE	REAL ESTATE	0.460	0.460
+Director, WW Business Intelligence Sales, IBM Systems and Technology Group	TG STAFF	WW SALES	0.528	0.058
+IT Specialist, Technology Consultant for ISVs	2	PUBLIC SECTOR	0.493	0.045
+Advisory Project Manager	0	0	0.622	0.622
+Vice President, Analyst & Business Affairs, Global BCS	SALES & DISTRIBUTION	SALES & DISTRIBUTION	0.723	0.723
+Associate Partner, Competency Leader for Organizational Change Strategy/Distribution	PUBLIC SECTOR	PUBLIC SECTOR	0.819	0.819
+MVS Storage Management	SO	SG&A	0.487	0.002
+Release Manager, z/OS C/C++, OS/390 C/C++	6	WW SALES	1.000	0.000
+GSS Business Analyst	PUBLIC SECTOR	PUBLIC SECTOR	0.458	0.458
+Mgr, IPD Business Transformation & Project Mgmt Deployment	TG STAFF	SG&A	0.925	0.000
+IBM Siebel Global Alliance	SOFTWARE SALES	SOFTWARE SALES	0.883	0.883
+Program Mgr,RDS Business Operations	STRATEGIC OUTSOURCING	SYS GROUP MFG	0.257	0.002
+Data Management Channels Bus Dev - PNW & Intermountain Region	REAL ESTATE	REAL ESTATE	0.884	0.884
+Technology Evaluation and Corporate Events	HUMAN RESOURCES	HUMAN RESOURCES	0.987	0.987
+EMEA BT BP Tools Initiatives Leader	2	2	0.510	0.510
+ADV I/T PROFESSIONAL	2	2	0.998	0.998
+SrClient Solutions Executive	PUBLIC SECTOR	PUBLIC SECTOR	0.984	0.984
+Dept B43E Software Specialist :  TEXT PAGE AT ARCH (8453416092)	TG STAFF	WW SALES	0.726	0.003
+SSR Support	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.859	0.859
+eServer Manager	REAL ESTATE	REAL ESTATE	0.960	0.960
+Director SO Service Delivery, Small & Medium Business, IBM Global Services	PUBLIC SECTOR	2	0.953	0.007
+Application Programmer	0	0	0.982	0.982
+Director, Corporate Communications	HUMAN RESOURCES	HUMAN RESOURCES	0.996	0.996
+Director and Senior Project Executive	STRATEGIC OUTSOURCING	PUBLIC SECTOR	0.383	0.042
+Territory Partner Manager for Northeast Ohio	REAL ESTATE	REAL ESTATE	0.766	0.766
+Senior Advisor	HUMAN RESOURCES	TG STAFF	0.234	0.031
+Manager SMB Integrated Solutions	WW SALES	2	0.775	0.003
+Client Representative- Xerox, Columbia House	REAL ESTATE	REAL ESTATE	0.666	0.666
+IT Specialist	PUBLIC SECTOR	0	0.234	0.128
+IT Specialist	0	0	0.234	0.234
+Manager,iSeries SW Integration Test	SG&A	SG&A	0.993	0.993
+Manager, RIE/Strip Process	TG STAFF	SG&A	0.303	0.197
+IGS SO, Business Transformation Leader, West Region	2	2	0.684	0.684
+ISICC :  SAP on iSeries	SW	TG STAFF	0.699	0.000
+Project Manager	PUBLIC SECTOR	PUBLIC SECTOR	0.230	0.230
+Software Engineer	WW SALES	0	0.481	0.063
+IT Specialist	PUBLIC SECTOR	0	0.234	0.128
+CLIENT UNIT MANAGER	HUMAN RESOURCES	REAL ESTATE	0.970	0.000
+I/T Specialist Sys Admin	PUBLIC SECTOR	PUBLIC SECTOR	0.622	0.622
+Project WF	PUBLIC SECTOR	PUBLIC SECTOR	0.210	0.210
+BPIM Engineering	RESEARCH	WW SALES	0.351	0.003
+BCS Financial Management / Business Intelligence Global Alliances and Technology Director	PUBLIC SECTOR	REAL ESTATE	0.901	0.008
+Mgr, DB2 Information Integrator Development	WW SALES	WW SALES	0.998	0.998
+Advanced Education Specialist	STRATEGIC OUTSOURCING	HUMAN RESOURCES	0.417	0.000
+Manager HCI Design	SG&A	SG&A	0.417	0.417
+IBM Learning, High Performance Selling, Learning Consultant	HUMAN RESOURCES	STRATEGIC OUTSOURCING	0.978	0.007
+F&P ITS	2	STRATEGIC OUTSOURCING	0.309	0.214
+Senior consultant, Domino Web applications and Project management	2	PUBLIC SECTOR	0.988	0.000
+Manager, Information Development OMEGAMON Performance and Availability	WW SALES	WW SALES	0.904	0.904
+SENIOR I/T SPECIALIST: SYSTEMS	2	2	0.999	0.999
+Manager of Tivoli Systems, South Region	IS	IS	0.972	0.972
+Nordic IGS Distributed Channel Manager & ITS SMB Sales Manager	2	2	0.998	0.998
+IBM Global Services/Network Services - Integrated Infrastructure & Utility Services Competency Lead	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.567	0.433
+IGS Learning - Certified Executive Project Manager	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.693	0.693
+IT Architect	17	2	0.269	0.053
+Human Resources EMEA BCS	NONE	2	0.525	0.384
+SALES OPERATIONS SPECIALIST	2	2	0.808	0.808
+IBM MANAGER	SOFTWARE GROUP	SOFTWARE GROUP	0.970	0.970
+SENIOR PROGRAMMER MANAGER	SOFTWARE GROUP	SOFTWARE GROUP	0.991	0.991
+VP Finance, Technology,  IBM Systems & Technology Group	TG STAFF	TG STAFF	0.938	0.938
+NPAC Administration	STRATEGIC OUTSOURCING	2	0.528	0.374
+Professional Development Manager	REAL ESTATE	17	0.372	0.000
+Solution Designer	2	2	0.975	0.975
+HR SWG/ACT FOCAL POINT	WW SALES	WW SALES	0.808	0.808
+Packaging Applications Wirebond	TG STAFF	TG STAFF	0.762	0.762
+Solution Sales Specialist & Alliance Manager	2	2	0.762	0.762
+IGS AMS Development Data Base Support & Team lead  for the SDF account	PUBLIC SECTOR	PUBLIC SECTOR	0.957	0.957
+GSIS Lead Management; Shirley Schuessler, Report to Sales Mgr T/L 753-1773,      L/N Shortname, SCHUESSL	REAL ESTATE	REAL ESTATE	0.970	0.970
+Voice/Data Integration Architect - Cisco CCNP	PUBLIC SECTOR	PUBLIC SECTOR	0.572	0.572
+DB2 Development	WW SALES	WW SALES	0.952	0.952
+HR Executive - Commercial Alliances	STRATEGIC OUTSOURCING	WW SALES	0.381	0.085
+IMC Specialist	MS	MS	0.946	0.946
+DIRECTOR OF GCG BUSINESS OPERA	PUBLIC SECTOR	PUBLIC SECTOR	0.980	0.980
+Director, Finance I/T	HUMAN RESOURCES	HUMAN RESOURCES	0.898	0.898
+Manager Planning and Business Controls, IBM Global Account	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.802	0.802
+CTO, Rational & VP, Design, Construction, and Test Tools Development	WW SALES	WW SALES	0.971	0.971
+UPS Managing Director	REAL ESTATE	REAL ESTATE	0.496	0.496
+STAFF SOFTWARE ENGINEER	PUBLIC SECTOR	2	0.552	0.049
+Manager - Talent  Delivery	HUMAN RESOURCES	HUMAN RESOURCES	0.835	0.835
+Director of Strategy, Tivoli, IBM Software Group	WW SALES	WW SALES	1.000	1.000
+STAFF COMMUNICATIONS PROFESSIO	4	4	0.988	0.988
+1st Level Packaging/Module Substrate Design / Circuit Design	SG&A	TG STAFF	0.999	0.001
+Manager, Information Planning & Sales Execution	REAL ESTATE	REAL ESTATE	0.550	0.550
+WebSphere System Management FVT	WW SALES	WW SALES	0.981	0.981
+HR - Management Development, New Manager, Diveristy/Multicultural, Collaborative Teaming Global Programs	HUMAN RESOURCES	HUMAN RESOURCES	0.761	0.761
+Management Development Facilitator	0	HUMAN RESOURCES	0.980	0.000
+Learning & Knowledge - C	2	PUBLIC SECTOR	0.460	0.000
+BCS Managing Consultant	PUBLIC SECTOR	11	0.940	0.017
+Senior Program Manager	PUBLIC SECTOR	2	0.647	0.032
+Executive I/T Architect  e-business Solutions TechSales Sup - Technical Expert Council West Member	2	2	0.739	0.739
+SALES SPECIALIST (SC) (LOTUS)	REAL ESTATE	2	0.477	0.217
+z/OS systems programmer	NONE	SG&A	0.901	0.002
+Governmental Programs Executive SSA	HUMAN RESOURCES	HUMAN RESOURCES	0.954	0.954
+Websphere MQ Scenario Test	HX	PUBLIC SECTOR	0.661	0.141
+Service Delivery Manager	2	2	0.801	0.801
+Public sector e-business on demand sales and consulting	REAL ESTATE	2	0.926	0.000
+Level 3 services, LWP Development Key Grip	SOFTWARE GROUP	SG&A	0.746	0.000
+AMS IT Specialist	IS	IS	0.972	0.972
+Senior Consultant - Organization Change Strategy	PUBLIC SECTOR	PUBLIC SECTOR	0.998	0.998
+IGS EAI Service Area Leader	PUBLIC SECTOR	PUBLIC SECTOR	0.678	0.678
+Systems Operation Specia	2	0	0.910	0.013
+Lotus Workplace Technical Evangelist	SOFTWARE GROUP	SOFTWARE GROUP	0.871	0.871
+IT Specialist, B2B & Supply Chain Management	IS	PUBLIC SECTOR	0.534	0.000
+Manager, Curriculum Development	SOFTWARE GROUP	SOFTWARE GROUP	0.903	0.903
+Software Engineer	SG&A	0	0.481	0.123
+STAFF SOFTWARE ENGINEER	SOFTWARE SALES	2	0.552	0.249
+Principal - Network and Connectivity Services (NCS)	STRATEGIC OUTSOURCING	FN	0.514	0.010
+AP BCS KM & Methods Lead	2	SALES & DISTRIBUTION	0.502	0.092
+Linux Information Development	SG&A	SG&A	0.644	0.644
+iSeries System Chief Engineering Manager, STSM	SG&A	SG&A	0.981	0.981
+Talent Partner, SWG, Redeployment Program	WW SALES	WW SALES	0.830	0.830
+Executive Secretary	TG STAFF	2	0.641	0.000
+Life Sciences - SMB Central Region	REAL ESTATE	REAL ESTATE	0.958	0.958
+Program Director-PCD Marketing Strategy & Market Research	PC DIVISION	SOFTWARE SALES	0.903	0.066
+Printing Systems/Product Solution Test Lead	FINANCE	FINANCE	0.998	0.998
+Software Sales Specialist - AD	REAL ESTATE	REAL ESTATE	0.927	0.927
+Knowledge Management and Intellectual Capital	STRATEGIC OUTSOURCING	SOFTWARE GROUP	0.328	0.003
+Software Sales Representative, Lincoln National, Sallie Mae, Conseco	REAL ESTATE	WW SALES	0.931	0.055
+VP, Human Resources IGF	SMB FINANCE	SG&A	0.261	0.020
+Facilitator, Professional Coach	HUMAN RESOURCES	HUMAN RESOURCES	0.920	0.920
+Client Solutions Executive	SO	PUBLIC SECTOR	0.968	0.002
+IT Specialist, Network Infrastructure Management	PUBLIC SECTOR	FN	0.926	0.023
+Learning Leader Software Group	HUMAN RESOURCES	HUMAN RESOURCES	0.522	0.522
+Delivery Project Executi	2	2	0.975	0.975
+IGS Network Architect	PUBLIC SECTOR	PUBLIC SECTOR	0.954	0.954
+General Manager, Global Telecommunications Industry	SOFTWARE SALES	SOFTWARE SALES	0.959	0.959
+Procurement  Engineering- Power/Cooling and  Systems Engineering (P/Zseries)	PROCUREMENT	PROCUREMENT	0.612	0.612
+Make the Best Software Possible	SG&A	SG&A	0.314	0.314
+EXECUTIVE  CONSULTING/PROF SERVICES	2	2	0.999	0.999
+TWS L2 Support Team - EMEA	NONE	IS	0.568	0.003
+COMMUNICATIONS OFFICER	2	4	0.949	0.023
+BCS WW Professional Development	SALES & DISTRIBUTION	PUBLIC SECTOR	0.506	0.286
+Professional Development Manager - Xcel Energy Account - IBM Global Services	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+UI Systems Coordinator	6	SG&A	0.379	0.001
+Client Manager - Environmental/ Public Works - USDA	REAL ESTATE	NONE	0.539	0.135
+Mgr, Dublin Customer Support Centre	NONE	NONE	0.995	0.995
+Client Relationship Manager	2	NONE	0.781	0.062
+Territory Marketing Manager - Industries and Brands, Central Region	REAL ESTATE	REAL ESTATE	0.993	0.993
+DB2 UDB Install	PUBLIC SECTOR	PUBLIC SECTOR	0.853	0.853
+Executive IT Architect (Certified)	PUBLIC SECTOR	REAL ESTATE	0.714	0.042
+Director, zSeries Software	TG STAFF	TG STAFF	0.942	0.942
+Project Manager, Global Content Enablement and Execution - ibmcom	SOFTWARE SALES	SOFTWARE SALES	1.000	1.000
+IT Specialist	0	0	0.234	0.234
+Program Director - Integrated Identity Solutions	NONE	STRATEGIC OUTSOURCING	0.488	0.000
+Senior Program Manager, GSO	STRATEGIC OUTSOURCING	HUMAN RESOURCES	0.382	0.007
+Writer, Global Product Announcement Support	REAL ESTATE	SOFTWARE SALES	0.707	0.000
+Senior Project Executive, J&J	PUBLIC SECTOR	PUBLIC SECTOR	0.680	0.680
+IGA Infrastructure & Storage IT Architect (cert)	STRATEGIC OUTSOURCING	SI	0.458	0.004
+IGS Strategic Outsourcing Pricing	NONE	STRATEGIC OUTSOURCING	0.856	0.002
+Senior Software IT Specialist, DB2 Alphablox	WW SALES	REAL ESTATE	0.623	0.170
+BUE- SMB East- Georgia Industrial	REAL ESTATE	REAL ESTATE	0.973	0.973
+Partner & Vice President, Services and Alliances, BCS EMEA	2	2	0.987	0.987
+Director, Compensation, Product Units	HUMAN RESOURCES	HUMAN RESOURCES	0.956	0.956
+IDR EMEA PR/Analyst Communications	SW	2	0.920	0.003
+Manager, Technical Support, Latin America xSeries Server & PCD Helpcenter, Cdn Warranty Service Delivery	64	PC DIVISION	0.571	0.000
+AIBO-Space Planning RF Service Lead and SDC-West Focal Point	PUBLIC SECTOR	PUBLIC SECTOR	0.997	0.997
+WebSphere Application Server development - asynch beans	WW SALES	WW SALES	0.825	0.825
+Assoc Partner, T&T AIS delivery	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+GSD, Global Resourcing Process/Tools Lead	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.809	0.018
+Cost Optimization, IGS Latin America, Support Analyst	WW SALES	PUBLIC SECTOR	0.607	0.009
+Technology Solutions Manager Certified Project Manager	STRATEGIC OUTSOURCING	PUBLIC SECTOR	0.839	0.009
+ECP Client Technical Specialist	PUBLIC SECTOR	2	0.560	0.006
+Contract Management Exec	2	PUBLIC SECTOR	0.588	0.063
+Manufacturing Controller Microelectronics Division	TG STAFF	TG STAFF	0.931	0.931
+Security Access Services Transition Project Manager	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+CCR-M/A Area 11 East - Wal-Mart/Sprint/Payless	SYS GROUP MFG	PUBLIC SECTOR	0.879	0.002
+VP, Industry Solutions, Financial Services and Communications Sectors	WW SALES	SOFTWARE SALES	0.743	0.127
+Sales Director - e-business on demand	SOFTWARE SALES	REAL ESTATE	0.635	0.003
+Relationship Manager and Diversity Lead for TS Council	PROCUREMENT	HUMAN RESOURCES	0.944	0.028
+Team Lead	0	0	0.207	0.207
+DPE - TCRS, Diners, Reuters, Tim Hortons, Globe & Mail, RBC Insurance, MTO	FN	PUBLIC SECTOR	0.848	0.000
+Consultant	PUBLIC SECTOR	PUBLIC SECTOR	0.340	0.340
+Global Alliances Healthcare and Life Sciences	SOFTWARE SALES	SOFTWARE SALES	0.999	0.999
+Technology Manager ISV & Developer Relations	REAL ESTATE	REAL ESTATE	0.911	0.911
+Services/EDS  A/R Cust Fulfillment Mgr	SYS GROUP MFG	SYS GROUP MFG	0.743	0.743
+SOFTWARE ENGINEER	2	2	0.539	0.539
+Software Engineer	TG STAFF	0	0.481	0.049
+CVT Test Manager, Tivoli Networking Management Applications Development	WW SALES	WW SALES	1.000	1.000
+Worldwide Contract Development e-business Services	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.966	0.001
+Operations Support Manager	REAL ESTATE	REAL ESTATE	0.950	0.950
+Vice President Marketing and Strategy, IBM Global Financing	SMB FINANCE	SMB FINANCE	0.981	0.981
+Manager of skills development / Talent Management -EMEA Marketing Oper	2	2	0.883	0.883
+Webz development	WW SALES	SG&A	0.654	0.134
+VAD Marketing Executive - SupportNet	REAL ESTATE	2	0.798	0.041
+Program Manager - Search and Globalization	2	0	0.680	0.002
+ISC, Global Procurement Engineering -- RoHS Compliance Project Manager	PROCUREMENT	PROCUREMENT	0.999	0.999
+SAP WW Fulfillment Project	SYS GROUP MFG	SYS GROUP MFG	0.999	0.999
+Customer Fulfillment PCD/X-Series Process Manager	2	SYS GROUP MFG	0.983	0.006
+IT Architect System Integration Consulting	SOFTWARE SALES	PUBLIC SECTOR	0.996	0.000
+AIX System Administration for APEX	PUBLIC SECTOR	2	0.860	0.033
+Corporate Intranet Research Manager	HUMAN RESOURCES	HUMAN RESOURCES	0.989	0.989
+WebSphere OEM Support	WW SALES	WW SALES	0.983	0.983
+Enterprise Storage Solutions	SG&A	SG&A	0.386	0.386
+SMB Territory Manager,Midlands and East Coast	34	REAL ESTATE	0.914	0.000
+AUS Operations	17	PUBLIC SECTOR	0.201	0.015
+IT Specialist	0	0	0.234	0.234
+FAILURE ANALYSIS	PROCUREMENT	2	0.792	0.002
+Financial Program Manager, Enterprise on Demand Transformation	HUMAN RESOURCES	HUMAN RESOURCES	1.000	1.000
+Team Lead FTSS Project Group, ElecEngineer	FN	PUBLIC SECTOR	0.562	0.000
+Convergence: Tools & Methodology	TG STAFF	STRATEGIC OUTSOURCING	0.181	0.177
+IT - Architect	2	PUBLIC SECTOR	0.785	0.075
+Director, Contracts & Negotiations Group	SEC F&S OPS	PUBLIC SECTOR	0.901	0.000
+Software Engineering	SYS GROUP MFG	HX	0.205	0.000
+Manager of Sales Operations	2	2	0.907	0.907
+Human Resources	WW SALES	NONE	0.869	0.000
+Senior Software Engineer - Common  Architecture and Strategy	17	SG&A	0.958	0.000
+Program Manager, Global Employee IT Satisfaction	HUMAN RESOURCES	HUMAN RESOURCES	0.638	0.638
+IT Consultant	2	2	0.958	0.958
+Learning Consultant/High Performance Coach	HUMAN RESOURCES	HUMAN RESOURCES	0.507	0.507
+Program Manager, Customer Satisfaction Data Mgmt - America's Group	REAL ESTATE	WW SALES	0.834	0.006
+Market Intelligence	REAL ESTATE	SOFTWARE SALES	0.957	0.005
+EMEA  BCS  Business Control BTO	IS	2	0.896	0.000
+Technical Sales Manager - EMEA South Region	IS	2	0.756	0.238
+IT-Specialist / System Developer	NONE	PUBLIC SECTOR	0.962	0.008
+Technology Mgr - Dassault Systemes and SAS Institute	REAL ESTATE	REAL ESTATE	0.997	0.997
+Territory Services et Solutions Leader	2	17	0.222	0.096
+Client Unit Executive	2	2	0.759	0.759
+Staff Software Engineer (Lotus Domino)	NONE	SOFTWARE GROUP	0.997	0.000
+Manager Business Transformation	NONE	RESEARCH	0.434	0.011
+Advisory Software Engineer, Information Solutions on demand	SG&A	WW SALES	0.826	0.165
+DESIGN RESEARCHER, STSM	RESEARCH	SG&A	0.161	0.043
+Business Process Consultant	SYS GROUP MFG	2	0.965	0.001
+Compiler (gcc) and tool chain developer	SG&A	WW SALES	0.755	0.057
+DUV Photo operator	TG STAFF	TG STAFF	0.515	0.515
+TEAM LEADER IGF PERU	SEC F&S OPS	SMB FINANCE	0.598	0.070
+Production & Infrastructure Manager	2	WW SALES	0.643	0.191
+zSeries Solutions, Western Region	REAL ESTATE	REAL ESTATE	0.602	0.602
+Specialized Solutions - BPS Notes Delivery	PUBLIC SECTOR	PUBLIC SECTOR	0.999	0.999
+Executive I/T Architect	2	IS	0.474	0.002
+IT Specialist	2	0	0.234	0.171
+Manager for IGS Public Sector Strategy	PUBLIC SECTOR	PUBLIC SECTOR	0.717	0.717
+COMP, Secondary Research  Americas MI	REAL ESTATE	REAL ESTATE	0.517	0.517
+project executive	SO	2	0.973	0.002
+Technology Manager, ISV & Developer Relations--SWG	REAL ESTATE	REAL ESTATE	0.997	0.997
+SCM Deployment	PUBLIC SECTOR	WW SALES	0.233	0.106
+General Manager, IBM Business Consulting Services - Nordic	NONE	NONE	0.864	0.864
+Project Manager	NONE	PUBLIC SECTOR	0.230	0.151
+Embedded Speech Solutions Test	FINANCE	FINANCE	1.000	1.000
+Employee Communications	2	2	0.947	0.947
+Software Sales Representative - Public Sector	NONE	NONE	0.895	0.895
+Territory Manager	NONE	REAL ESTATE	0.401	0.190
+QA & RM Vienna	NONE	CHIEF FINANCIAL OFFICER	0.143	0.030
+Assistant to Jim Stallings, VP Intellectual Property & Standards	SG&A	SG&A	0.834	0.834
+Analyst Relations- Linux & Grid & On Demand	TG STAFF	SG&A	0.993	0.001
+SAN Central Support Team Leader	SG&A	WW SALES	0.240	0.122
+Start-Up Operations - Healthcare & Life Sciences	0	PUBLIC SECTOR	0.797	0.120
+BUE, SWG Field Enablement	WW SALES	WW SALES	0.999	0.999
+Associate Partner	HUMAN RESOURCES	2	0.496	0.000
+Learning Delivery	2	HUMAN RESOURCES	0.636	0.000
+Competitive Analyst - Storage Software	SG&A	TG STAFF	0.716	0.014
+IBM Procurement, CWF Sourcing Council	PROCUREMENT	PROCUREMENT	1.000	1.000
+CLIENT MANAGER	2	2	0.823	0.823
+PDM - AMS Integrated Delivery, EMEA West	2	2	0.992	0.992
+iSeries - i5, AIX & Linux Curriculum Owner IT Education Services IBM Belgium - Luxemburg	NONE	NONE	0.862	0.862
+Practice Leader	2	17	0.653	0.016
+Managing Director Royal Philips Electronics	NONE	REAL ESTATE	0.884	0.002
+Director OF Marketing, A	2	2	0.866	0.866
+AIX System Administrator	PUBLIC SECTOR	0	0.373	0.225
+ASIC Test Development	TG STAFF	TG STAFF	0.669	0.669
+Development Operations Manager	HX	WW SALES	0.390	0.004
+Vice President, Solutions & Services, SMB	SOFTWARE SALES	PUBLIC SECTOR	0.386	0.039
+ibmcom North Region (Canada), National Team Leader for Cross Selling & Clothing On Demand (Ventaso) Lead	64	SYS GROUP MFG	0.951	0.002
+Manager of Transition and Project Management	PUBLIC SECTOR	PUBLIC SECTOR	0.969	0.969
+Operational Control Manager, Sales Execution & Support - West Region	2	2	0.995	0.995
+Enterprise IT Architect	PUBLIC SECTOR	HUMAN RESOURCES	0.766	0.019
+Integrated Order Status (IOS) Program Manager	SYS GROUP MFG	SYS GROUP MFG	0.981	0.981
+Director, zSeries Hardware Development, Program Management	SG&A	SG&A	0.655	0.655
+General Territory Sales Leader (GTSL) - North Coast SMB	REAL ESTATE	REAL ESTATE	0.991	0.991
+Director, IGF Market Management and Financial Products	SMB FINANCE	SMB FINANCE	0.923	0.923
+Vice President Finance & Operations, Sales & Distribution	SOFTWARE SALES	SOFTWARE SALES	0.977	0.977
+IO Firmware Manager	SG&A	2	0.342	0.287
+Supply Chain Operations manager	SYS GROUP MFG	PUBLIC SECTOR	0.413	0.064
+VP, WW BCS Project Financing	SEC F&S OPS	SMB FINANCE	0.326	0.010
+IT Specialist	2	0	0.234	0.171
+FINANCIAL ANALYST	2	2	0.991	0.991
+Director, Compensation - Global S&D	HUMAN RESOURCES	HUMAN RESOURCES	0.999	0.999
+Systems Mgmt Integr Prof	PUBLIC SECTOR	SG&A	0.649	0.277
+advisory IT specialist	PUBLIC SECTOR	0	0.927	0.001
+Project Executive, Delivery Provider Management	SO	PUBLIC SECTOR	0.614	0.175
+Managing Consultant	PUBLIC SECTOR	PUBLIC SECTOR	0.390	0.390
+Senior Consultant	PUBLIC SECTOR	2	0.403	0.298
+ADVISORY PROJECT MANAGER	2	SMB FINANCE	0.497	0.171
+Senior I/T Specialist - Manager	2	0	0.656	0.337
+Architect, Hi Performance On Demand Solutions	WW SALES	PUBLIC SECTOR	0.999	0.000
+ASEAN Systems and Process Analyst	0	2	0.993	0.000
+IT Specialist	0	0	0.234	0.234
+Advisory Project Manager	0	0	0.622	0.622
+Front-End-Of-Line Manufacturing Engineering Project Manager	TG STAFF	SYS GROUP MFG	0.679	0.311
+TBA	SOFTWARE GROUP	PUBLIC SECTOR	0.079	0.022
+Location Manager/Snr Development Manager for SVT in Dublin Software Lab	NONE	NONE	0.843	0.843
+Technical Sales Manager, Federal, Rational Software	REAL ESTATE	REAL ESTATE	0.919	0.919
+Manager, Relational Database Services, SDC South	PUBLIC SECTOR	WW SALES	0.886	0.062
+ASSOCIATE PROJECT MANAGER	80	0	0.551	0.100
+STAFF SOFTWARE ENGINEER	SOFTWARE SALES	2	0.552	0.249
+systems measurements programmer	PUBLIC SECTOR	HUMAN RESOURCES	0.331	0.231
+PUBLIC RELATIONS MANAGER	9	2	0.999	0.000
+ESD/Latchup & RF CMOS Modeling Manager (Technology Development Design Enablement Group)	TG STAFF	TG STAFF	1.000	1.000
+MGR, ES West Business Operations	PUBLIC SECTOR	2	0.875	0.039
+Global Brand Leader - IGS, ibmcom	SOFTWARE SALES	SOFTWARE SALES	0.986	0.986
+Servers & Storage	REAL ESTATE	MS	0.480	0.024
+Mgr, PartnerWorld Public ISV Programs	DEVELOPER RELATIONS	SOFTWARE SALES	0.913	0.019
+System Service Rep - Team Lead	STRATEGIC OUTSOURCING	2	0.789	0.008
+Client Relations Manager	PUBLIC SECTOR	NONE	0.532	0.000
+Distinguished Engineer, Lotus Domino Lead Architect	SOFTWARE GROUP	SOFTWARE GROUP	0.993	0.993
+Senior Consultant	0	2	0.403	0.051
+MARKET INTELLIGENCE SPECIALIST	2	2	0.996	0.996
+Associate I/T Architect	PUBLIC SECTOR	0	0.932	0.008
+ASIC & SOC Verification Tools & Methods	TG STAFF	TG STAFF	0.988	0.988
+General Manager, SMB and Channels, IGS Americas	PUBLIC SECTOR	REAL ESTATE	0.764	0.004
+Software Sales Representative	REAL ESTATE	REAL ESTATE	0.426	0.426
+Southeast Sales Manager - Development Tools Speciality	REAL ESTATE	REAL ESTATE	0.839	0.839
+Business Controls	PUBLIC SECTOR	PUBLIC SECTOR	0.858	0.858
+Facilities Engineering and Environmental Services Manager	RESEARCH	RESEARCH	0.958	0.958
+Business Line Executive, WW Storage Networking & Sales - IBM Systems Group	SG&A	SG&A	0.832	0.832
+Client Services Manager, Merrill Lynch Account Team	REAL ESTATE	REAL ESTATE	0.996	0.996
+HR-Employee Relations	STRATEGIC OUTSOURCING	2	0.799	0.001
+Global HCM Alliances Executive	PUBLIC SECTOR	SALES & DISTRIBUTION	0.732	0.010
+IGS GAMS Business Area Mgr--IGA	PUBLIC SECTOR	IS	0.682	0.315
+Senior Client Representa	2	2	0.958	0.958
+Screendesign, IBM Interactive Branding & Design Service	GS	GS	0.496	0.496
+Solution Manager	PUBLIC SECTOR	2	0.725	0.028
+AP DB2 Udb Advanced Supp	2	WW SALES	0.388	0.002
+Managing Consultant	2	PUBLIC SECTOR	0.390	0.356
+IBM San Jose Communications	TG STAFF	SG&A	0.490	0.016
+Project Manager	PUBLIC SECTOR	PUBLIC SECTOR	0.230	0.230
+Senior Employee Communic	2	2	0.996	0.996
+XML Pattern / XQuery Builders	WW SALES	WW SALES	0.940	0.940
+Territory Partner Manager	REAL ESTATE	REAL ESTATE	0.660	0.660
+Application Programmer	0	0	0.982	0.982
+Senior IT Specialist, ODSSD Quality Assurance	PUBLIC SECTOR	NONE	0.458	0.060
+Bus Integration Sales Specialist, WW BI Team	WW SALES	WW SALES	0.990	0.990
+JTC - Current Release Test	0	SG&A	0.528	0.015
+Employee Communication, w3 Editor & Information Broker	NONE	2	0.582	0.107
+General Manager- Global IBM/Siebel Alliance	SOFTWARE SALES	SOFTWARE SALES	0.717	0.717
+Global Delivery Business Office	PUBLIC SECTOR	PUBLIC SECTOR	0.590	0.590
+Collections Coordinator	SYS GROUP MFG	SOFTWARE SALES	0.622	0.000
+Vice President, Marketing	SOFTWARE SALES	STRATEGIC OUTSOURCING	0.227	0.006
+SW IT Architect - Software, Tivoli - WW Sales Enablement, ROI, Automation, Sales Tools	WW SALES	WW SALES	1.000	1.000
+Systems Engineering, GSD Reference Architecture	PUBLIC SECTOR	PUBLIC SECTOR	0.997	0.997
+Consultant (Advanced)	0	0	0.995	0.995
+Business Development Mgr - DataManagement Services - Nordics	2	REAL ESTATE	0.492	0.007
+Project Manager	IS	PUBLIC SECTOR	0.230	0.105
+A/NZ Talent Manager	2	2	0.975	0.975
+Data Management, SWITS	REAL ESTATE	WW SALES	0.872	0.016
+Application Programmer	0	0	0.982	0.982
+Territory Solutions and Services Manager	REAL ESTATE	REAL ESTATE	0.584	0.584
+IT Specialist-Software, WebSphere-Foundation-Advanced Technical Support (ATS), Americas	REAL ESTATE	REAL ESTATE	1.000	1.000
+CAREER TECH CUST SUPPT PROF	SOFTWARE GROUP	SOFTWARE GROUP	0.997	0.997
+AMS ( non storage ) Snr IT Sp( Tester )	IS	PUBLIC SECTOR	0.899	0.013
+Development , QMF	WW SALES	SG&A	0.181	0.180
+CONSULTANT (ADVANCED)	0	0	0.640	0.640
+PROJECT MANAGER	0	0	0.491	0.491
+Manager Analyst Relations, Data Mgmt, SWG	WW SALES	WW SALES	0.998	0.998
+IT Project Manager	HUMAN RESOURCES	NONE	0.449	0.002
+Senior Negotiations Executive	PUBLIC SECTOR	PUBLIC SECTOR	0.979	0.979
+Director, Compensation, BCS	HUMAN RESOURCES	HUMAN RESOURCES	0.948	0.948
+EA to Mark Loughridge, SVP & CFO	HUMAN RESOURCES	2	0.253	0.059
+ITS Delivery Tools	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.541	0.541
+Technical Solution Architect - American Express	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+Vice President, Systems and Software Products, Integrated Supply Chain	SYS GROUP MFG	SYS GROUP MFG	1.000	1.000
+Senior Program Manager, Sales Support Programs	HUMAN RESOURCES	REAL ESTATE	0.506	0.244
+Program Manager, Global Sales Operations	STRATEGIC OUTSOURCING	SOFTWARE SALES	0.967	0.021
+Consultant	11	PUBLIC SECTOR	0.340	0.055
+SALES EXECUTIVE / Technical Support Services, Latin America	PUBLIC SECTOR	REAL ESTATE	0.697	0.071
+Hardware Development	TG STAFF	SG&A	0.455	0.162
+Manager - Enterprise Monitoring Solutions Lab	PUBLIC SECTOR	WW SALES	0.864	0.017
+BUE SMB & Lotus Channel Sales	REAL ESTATE	REAL ESTATE	0.956	0.956
+ADV APPLICATION PROGRAMMER	SG&A	WW SALES	0.927	0.000
+Software Engineer - WebSphere Administrative Console Development	WW SALES	WW SALES	0.998	0.998
+IMD Internal Account Manager	TG STAFF	IS	0.427	0.171
+Director HR Australia/ne	2	SOFTWARE SALES	0.260	0.115
+Business Support Leader - Western Region	REAL ESTATE	REAL ESTATE	0.948	0.948
+SENIOR I/T SPECIALIST	6	2	0.974	0.002
+Director of Strategic Outsourcing	4	STRATEGIC OUTSOURCING	0.523	0.000
+ADVISORY SOFTWARE ENGINEER	2	SOFTWARE GROUP	0.503	0.493
+DB2 Tools for z/OS and OS/390 QA	WW SALES	WW SALES	1.000	1.000
+Developer	0	0	0.625	0.625
+na	SG&A	TG STAFF	0.168	0.004
+Sr Engagement Manager	SYS GROUP MFG	PUBLIC SECTOR	0.429	0.000
+Relationship Executive Research & Development Russia	EL	RESEARCH	0.534	0.000
+Senior Consulting IT Architect / Government Industry - California	REAL ESTATE	PUBLIC SECTOR	0.478	0.070
+Advisory I/T Specialist : Technical Sales Sup	2	2	0.951	0.951
+Materials Logistics Staff	SYS GROUP MFG	SG&A	0.551	0.032
+Software Sales Representative	REAL ESTATE	REAL ESTATE	0.426	0.426
+IT Specialist	PUBLIC SECTOR	0	0.234	0.128
+On Demand Business Certification Program Manager	SOFTWARE SALES	SG&A	0.703	0.167
+Vice President and Chief Information Officer	HUMAN RESOURCES	HUMAN RESOURCES	0.803	0.803
+Infoprint Manager Product Marketing	FINANCE	FINANCE	0.700	0.700
+Software Engineer, LTC-Change team	0	SG&A	0.490	0.001
+Linux Technology Center - OpenHPI Team Lead	SG&A	SG&A	0.992	0.992
+Principal, IBM Global Services	WW SALES	STRATEGIC OUTSOURCING	0.994	0.000
+STSM, Procurement Engineering-OEM ASIC and Memory Design, Qualification, Electrical Modeling (ASX,spice)	PROCUREMENT	TG STAFF	1.000	0.000
+Business Unit Executive, Worldwide Chemical and Petroleum Software Sales	WW SALES	REAL ESTATE	0.858	0.037
+Direct Accounts - State of NC	SYS GROUP MFG	PUBLIC SECTOR	0.580	0.118
+Solution Designer	2	2	0.975	0.975
+MD Learning Consultant/Facilitator for IGS - Americas	HUMAN RESOURCES	HUMAN RESOURCES	0.986	0.986
+Staff Application Programmer	0	0	0.999	0.999
+Client I/T Architect	REAL ESTATE	2	0.888	0.028
+AOTS SOW	0	TA	0.093	0.010
+Manager - Internal Educa	2	SG&A	0.222	0.155
+Technical Account Manager-WS Bus Dev	WW SALES	2	0.695	0.081
+Manager, QuickShip Strategy and Operations, Americas	SYS GROUP MFG	SYS GROUP MFG	0.915	0.915
+AMS Delivery Leader-Italy North	IS	IS	0.973	0.973
+Business Development & Client Relationship Management	0	REAL ESTATE	0.856	0.002
+Market Manager, Emerging Business	RESEARCH	RESEARCH	0.566	0.566
+Tivoli SLA Development + L3 Support	WW SALES	WW SALES	0.999	0.999
+IBM Management Development Facilitator	HUMAN RESOURCES	HUMAN RESOURCES	1.000	1.000
+GM, Pervasive/Wireless e-Business	SOFTWARE SALES	17	0.352	0.007
+Software Engineer	0	0	0.481	0.481
+Manager Circuit Development 2	EL	TG STAFF	0.517	0.190
+BDE - Communication Sector	IS	SOFTWARE SALES	0.390	0.104
+PCD Global Account Manager - Suez EDF	2	2	0.474	0.474
+Operations Support Manager & Management Team Lead	SG&A	SYS GROUP MFG	0.387	0.001
+Manager, Advanced Yield Integration and Technologies	TG STAFF	RESEARCH	0.610	0.016
+Global and Americas BCS M&E Industry Leader	PUBLIC SECTOR	SALES & DISTRIBUTION	0.560	0.013
+Program Manager, SWG Web Transformation	WW SALES	WW SALES	0.937	0.937
+Global Strategy Executive, IBM Healthcare and Life Sciences	SOFTWARE SALES	SOFTWARE SALES	1.000	1.000
+e-bHS Sales Director (acting), Industrial Sector	STRATEGIC OUTSOURCING	REAL ESTATE	0.769	0.004
+I/T Architect, eCommerce development	PUBLIC SECTOR	WW SALES	0.851	0.009
+EAS Consultant	2	PUBLIC SECTOR	0.280	0.148
+Advisory Project Manager	0	0	0.622	0.622
+Senior Sales Specialist	2	2	0.721	0.721
+SOFTWARE ENGINEER	2	2	0.539	0.539
+Manager, Business Process Transformation SDF Worldwide Strategy and Architecture	SYS GROUP MFG	SYS GROUP MFG	0.919	0.919
+IBM Assistant Controller	HUMAN RESOURCES	2	0.574	0.031
+OGSA Development	SG&A	WW SALES	0.549	0.364
+Certified Technical Sales Specialist - eServer iSeries - Western Region	REAL ESTATE	REAL ESTATE	1.000	1.000
+Workforce Research - Industrial/Organizational Psychology	HUMAN RESOURCES	HUMAN RESOURCES	0.998	0.998
+GM, eServer xSeries   IBM Systems and Technology Group	TG STAFF	SG&A	0.672	0.328
+Knowledge Officer	0	HUMAN RESOURCES	0.214	0.000
+Technical Sales Marketing - eServer, zSeries - WebSphere Application Server - Advanced Technical Support	REAL ESTATE	REAL ESTATE	0.891	0.891
+SSR - Systems Services Rep - Tucson - IBM Account	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.950	0.950
+ADVISORY CLIENT REPRESENTATIVE	2	2	0.996	0.996
+Develop custom analog and mixed-signal IC products for internal and OEM customers	TG STAFF	TG STAFF	0.801	0.801
+Vice President, US Federal Software Sales	REAL ESTATE	REAL ESTATE	1.000	1.000
+Semi-Custom SoC Development	TG STAFF	TG STAFF	0.400	0.400
+Certified IT Specialist (Lotus)	REAL ESTATE	NONE	0.513	0.029
+Manager, WAS BVT	WW SALES	6	0.644	0.029
+Global Client BCS Principal ABN AMRO	NONE	2	0.766	0.210
+Legal matters regarding Human Resources matters	HUMAN RESOURCES	2	0.962	0.003
+Manager, Worldwide SDF Business Analysis, I	SYS GROUP MFG	2	0.979	0.000
+Vice President, Compensation	HUMAN RESOURCES	HUMAN RESOURCES	0.999	0.999
+SR EDUCATION SPECIALIST	SOFTWARE GROUP	SOFTWARE GROUP	0.990	0.990
+Mgr, SWG Expense Support & Tivoli Business Ops Support	WW SALES	WW SALES	0.990	0.990
+Vice President, Learning	HUMAN RESOURCES	HUMAN RESOURCES	0.593	0.593
+Manager AMS IGA Projects North I	GS	0	0.382	0.002
+ITS Desktop Services Delivery	TA	STRATEGIC OUTSOURCING	0.888	0.016
+Director, Strategy & Offering Management - E&TS	TG STAFF	2	0.979	0.000
+PLM Aerospace Center of Excellence Manager	REAL ESTATE	IS	0.612	0.112
+General Manager, Distribution Sector, IBM Global Services	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.467	0.017
+Systems Management Delivery Consultant	PUBLIC SECTOR	PUBLIC SECTOR	0.907	0.907
+IMS Development and Service Tools	WW SALES	WW SALES	0.781	0.781
+Principal	2	2	0.479	0.479
+eServer LPAR Test	SG&A	SG&A	0.961	0.961
+ISC, Americas Business Transformation, PCD and xSeries Products	SYS GROUP MFG	SYS GROUP MFG	0.988	0.988
+Client Manager - Bank of America, Corporate/Investment Bank	REAL ESTATE	REAL ESTATE	1.000	1.000
+ADVISORY I/T ARCHITECT - MANAGER	2	2	0.993	0.993
+CLUSTER UNIT EXECUTIVE,HK	HUMAN RESOURCES	2	0.952	0.042
+SENIOR CLIENT REPRESENTATIVE	HUMAN RESOURCES	2	0.712	0.136
+Business Intelligence and Opportunities Development	WW SALES	WW SALES	0.698	0.698
+STAFF SOFTWARE ENGINEER	RESEARCH	2	0.552	0.000
+Project Lead	0	2	0.368	0.096
+Manager of Technology Support Services IBM & ÖCS West	NONE	2	0.999	0.000
+PM Philips F&A Team	PUBLIC SECTOR	PUBLIC SECTOR	0.786	0.786
+Vice President and Controller CHQ	HUMAN RESOURCES	HUMAN RESOURCES	0.993	0.993
+Transition Executive for Candle Human Resources	WW SALES	PUBLIC SECTOR	0.367	0.000
+Delivery Program Manager	PUBLIC SECTOR	2	0.503	0.453
+Snr Program Manager	PUBLIC SECTOR	2	0.856	0.010
+Special Project	IS	SYS GROUP MFG	0.441	0.001
+MARKETING MANAGER	6	2	0.751	0.001
+Manager, ibmcom WW Web Route Execution	SOFTWARE SALES	SOFTWARE SALES	0.998	0.998
+Vice President, Marketing and Strategy, IBM Learning Solutions	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.995	0.995
+Program Director eServer Firmware Development	EL	SG&A	0.975	0.006
+Product Development Manager, Performance and Availability Monitoring on zSeries	WW SALES	TG STAFF	0.983	0.001
+Procurement Specialist	2	PROCUREMENT	0.601	0.135
+Project Manager/Process Architect	PUBLIC SECTOR	PUBLIC SECTOR	0.964	0.964
+FSS Sales rep	2	IS	0.548	0.066
+EXECUTIVE  CONSULTING/PROF SERVICES	2	2	0.999	0.999
+Advisory Sales Specialist	0	0	0.587	0.587
+Manager of CS for z/OS Support & Development	WW SALES	WW SALES	0.891	0.891
+Software Engineer	0	0	0.481	0.481
+Sr Coordinating Admin	0	0	0.972	0.972
+Technical Support	WW SALES	WW SALES	0.242	0.242
+Software Maintenance Account Manager - Partners	REAL ESTATE	2	0.960	0.001
+Team Lead-Learning Solutions Group (SAP)	PUBLIC SECTOR	PUBLIC SECTOR	0.830	0.830
+IT Specialist	11	0	0.234	0.001
+Technical Team Leader	0	2	0.407	0.106
+Advisory Sales Territory Representative	0	0	0.995	0.995
+IT Specialist	REAL ESTATE	0	0.234	0.010
+Sector ibmcom sales manager, France FSS & PUB	2	2	0.967	0.967
+Supply Chain Specialist-Cables / LFC Japan & China Inventory Control	PROCUREMENT	0	0.914	0.011
+HR & Educatie  coordinator	NONE	2	0.582	0.260
+Consulting IT Architect	2	WW SALES	0.871	0.029
+SDF e-business Strategy & Architecture	SYS GROUP MFG	SYS GROUP MFG	0.662	0.662
+Internal Communication Program Manager	2	STRATEGIC OUTSOURCING	0.816	0.082
+Business Development Exe	2	RESEARCH	0.382	0.074
+Content Management SSR	REAL ESTATE	WW SALES	0.272	0.020
+MRC TELE AGENT	RETAIL STORE SOLS DIV	RETAIL STORE SOLS DIV	0.798	0.798
+SALES SPECIALIST	80	2	0.489	0.003
+SOFTWARE ENGINEER	2	2	0.539	0.539
+Systems Engineer; GS Method Exponent	PUBLIC SECTOR	PUBLIC SECTOR	0.495	0.495
+AP BCS B/S Mgr	2	2	0.690	0.690
+Senior Sales Specialist TotalStorage; WaMu, Boeing	REAL ESTATE	REAL ESTATE	0.840	0.840
+CLIENT REPRESENTATIVE - TRAINEE	2	REAL ESTATE	0.495	0.468
+STAFF PROCUREMENT PROFESSIONAL	2	2	0.840	0.840
+Program Manager, Lotus and SWG Architecture Boards	SOFTWARE GROUP	SOFTWARE GROUP	0.919	0.919
+SOFTWARE ENGINEER	SOFTWARE SALES	2	0.539	0.426
+Senior Solution Delivery Manager   (Financial Services Sector)	17	2	0.252	0.000
+Performance & Compensation IBM Germany Development	EL	WW SALES	0.412	0.000
+Advisory Software Engineer - Websphere MQ for iSeries	STRATEGIC OUTSOURCING	0	0.533	0.000
+CICS Support	PUBLIC SECTOR	PUBLIC SECTOR	0.708	0.708
+Corporate Market Intelligence Communities and Communications	MARKETING	MARKETING	0.716	0.716
+VP Marketing, DCM EMEA	2	2	0.912	0.912
+MA Inventory Plan/Intel Service Parts Support	STRATEGIC OUTSOURCING	STRATEGIC OUTSOURCING	0.994	0.994
+DIRECTOR,IGS HONG KONG	80	2	0.700	0.016
+IT Analyst Relations	STRATEGIC OUTSOURCING	TG STAFF	0.952	0.002
+ASSOCIATE I/T ARCHITECT	2	0	0.967	0.024
+ADVISORY SOFTWARE ENGINEER	2	SOFTWARE GROUP	0.503	0.493
+IBM Global Services North SDC - Tivoli Database support	PUBLIC SECTOR	PUBLIC SECTOR	1.000	1.000
+IT Specialist /390 z/OS	NONE	2	0.278	0.026
+HUMAN RESOURCES PROFESSIONAL	2	2	1.000	1.000
+I&E Communications, WW Sales & Marketing and HR, SWG	WW SALES	WW SALES	0.892	0.892
+WorldJam Café Paris Descartes, 27 et 28 octobre 2004	2	2	0.998	0.998
+Manager, SO Business Man	2	2	0.669	0.669
+B&C Maintenance & m/f s/w audit	PUBLIC SECTOR	2	0.949	0.003
+WW ISO 9000 Program Mgr	HUMAN RESOURCES	SYS GROUP MFG	0.953	0.002
+wtheus@informixcom	WW SALES	WW SALES	0.984	0.984
+SOFTWARE ENGINEER	SOFTWARE SALES	2	0.539	0.426
+SOFTWARE ENGINEERING - MANAGER	SOFTWARE SALES	2	0.576	0.422
+IT Specialist - Software, WebSphere - Pervasive Computing - Advanced Technical Support (ATS), Americas	REAL ESTATE	REAL ESTATE	0.999	0.999
+STAFF SOFTWARE ENGINEER	SOFTWARE SALES	2	0.552	0.249
+Enterprise Software Asset Management	PUBLIC SECTOR	WW SALES	0.466	0.088
+ADVISORY SALES SPECIALIST	2	2	0.630	0.630
+DISTRIBUTION CHANNELS MANAGEME	80	2	0.359	0.030
+ADVISORY I/T SPECIALIST	2	2	0.506	0.506
+ADVISORY SALES SPECIALIST	2	2	0.630	0.630
+SALES SPECIALIST - TRAINEE	2	2	0.962	0.962
+Pre Sales SE for TSM	REAL ESTATE	REAL ESTATE	0.429	0.429
+WebSphere Customer Support Manager	WW SALES	WW SALES	0.953	0.953
+WW Storage Brand Manager	SMB FINANCE	NONE	0.344	0.127
+Managing Consultant - Life Sciences	PUBLIC SECTOR	PUBLIC SECTOR	0.960	0.960
+Manager, CI Project Promotion, Sales Reengineering	2	REAL ESTATE	0.496	0.059
+SOFTWARE ENGINEER	2	2	0.539	0.539
+CR ISV	2	2	0.372	0.372
+SENIOR CLIENT REP - MANAGER	2	REAL ESTATE	0.960	0.034
+TELESERVICES PROFESSIONAL	RETAIL STORE SOLS DIV	RETAIL STORE SOLS DIV	0.994	0.994
+HR Manager, Almaden Research Center	RESEARCH	RESEARCH	1.000	1.000
+Service Delivery Manager	2	2	0.801	0.801
+Senior Project Manager, IBM Learning Solutions  - ICP	PUBLIC SECTOR	STRATEGIC OUTSOURCING	0.657	0.050
+IBM ADES IDE Technical Solutions Architect	PUBLIC SECTOR	2	0.585	0.296
+WebSphere PoT Team Leader for Latin America, WebSphere Technical Sales	REAL ESTATE	REAL ESTATE	0.999	0.999
+I/T Specialist (advisor	2	0	0.688	0.015
+
+1092 examples in test set
+Cls SG&A: TP=25 FN=20 FP=40 TN=1007; Acc 0.945 P 0.385 R 0.556 F1 0.455
+Cls 2: TP=95 FN=88 FP=107 TN=802; Acc 0.821 P 0.470 R 0.519 F1 0.494
+Cls MS: TP=2 FN=1 FP=1 TN=1088; Acc 0.998 P 0.667 R 0.667 F1 0.667
+Cls PUBLIC SECTOR: TP=72 FN=77 FP=90 TN=853; Acc 0.847 P 0.444 R 0.483 F1 0.463
+Cls IS: TP=5 FN=15 FP=11 TN=1061; Acc 0.976 P 0.312 R 0.250 F1 0.278
+Cls WW SALES: TP=53 FN=36 FP=45 TN=958; Acc 0.926 P 0.541 R 0.596 F1 0.567
+Cls 0: TP=34 FN=19 FP=34 TN=1005; Acc 0.951 P 0.500 R 0.642 F1 0.562
+Cls HUMAN RESOURCES: TP=41 FN=22 FP=21 TN=1008; Acc 0.961 P 0.661 R 0.651 F1 0.656
+Cls SOFTWARE GROUP: TP=19 FN=5 FP=7 TN=1061; Acc 0.989 P 0.731 R 0.792 F1 0.760
+Cls SI: TP=0 FN=0 FP=1 TN=1091; Acc 0.999 P 0.000 R 1.000 F1 0.000
+Cls TG STAFF: TP=31 FN=25 FP=22 TN=1014; Acc 0.957 P 0.585 R 0.554 F1 0.569
+Cls STRATEGIC OUTSOURCING: TP=16 FN=31 FP=30 TN=1015; Acc 0.944 P 0.348 R 0.340 F1 0.344
+Cls 64: TP=0 FN=3 FP=1 TN=1088; Acc 0.996 P 0.000 R 0.000 F1 0.000
+Cls REAL ESTATE: TP=64 FN=36 FP=40 TN=952; Acc 0.930 P 0.615 R 0.640 F1 0.627
+Cls SEC F&S OPS: TP=0 FN=6 FP=1 TN=1085; Acc 0.994 P 0.000 R 0.000 F1 0.000
+Cls RESEARCH: TP=7 FN=8 FP=6 TN=1071; Acc 0.987 P 0.538 R 0.467 F1 0.500
+Cls MARKETING: TP=2 FN=1 FP=1 TN=1088; Acc 0.998 P 0.667 R 0.667 F1 0.667
+Cls SMB FINANCE: TP=4 FN=5 FP=3 TN=1080; Acc 0.993 P 0.571 R 0.444 F1 0.500
+Cls 6: TP=1 FN=9 FP=2 TN=1080; Acc 0.990 P 0.333 R 0.100 F1 0.154
+Cls 17: TP=0 FN=12 FP=5 TN=1075; Acc 0.984 P 0.000 R 0.000 F1 0.000
+Cls SOFTWARE SALES: TP=18 FN=25 FP=15 TN=1034; Acc 0.963 P 0.545 R 0.419 F1 0.474
+Cls SO: TP=0 FN=4 FP=0 TN=1088; Acc 0.996 P 1.000 R 0.000 F1 0.000
+Cls SALES & DISTRIBUTION: TP=3 FN=4 FP=5 TN=1080; Acc 0.992 P 0.375 R 0.429 F1 0.400
+Cls FINANCE: TP=4 FN=3 FP=1 TN=1084; Acc 0.996 P 0.800 R 0.571 F1 0.667
+Cls PC DIVISION: TP=0 FN=1 FP=4 TN=1087; Acc 0.995 P 0.000 R 0.000 F1 0.000
+Cls 11: TP=0 FN=3 FP=1 TN=1088; Acc 0.996 P 0.000 R 0.000 F1 0.000
+Cls NONE: TP=14 FN=40 FP=37 TN=1001; Acc 0.929 P 0.275 R 0.259 F1 0.267
+Cls SYS GROUP MFG: TP=12 FN=18 FP=17 TN=1045; Acc 0.968 P 0.414 R 0.400 F1 0.407
+Cls GS: TP=1 FN=4 FP=1 TN=1086; Acc 0.995 P 0.500 R 0.200 F1 0.286
+Cls TA: TP=0 FN=2 FP=3 TN=1087; Acc 0.995 P 0.000 R 0.000 F1 0.000
+Cls SW: TP=0 FN=3 FP=0 TN=1089; Acc 0.997 P 1.000 R 0.000 F1 0.000
+Cls CHIEF FINANCIAL OFFICER: TP=0 FN=2 FP=1 TN=1089; Acc 0.997 P 0.000 R 0.000 F1 0.000
+Cls PROCUREMENT: TP=5 FN=9 FP=1 TN=1077; Acc 0.991 P 0.833 R 0.357 F1 0.500
+Cls 34: TP=0 FN=1 FP=1 TN=1090; Acc 0.998 P 0.000 R 0.000 F1 0.000
+Cls 9: TP=0 FN=1 FP=0 TN=1091; Acc 0.999 P 1.000 R 0.000 F1 0.000
+Cls 80: TP=0 FN=4 FP=1 TN=1087; Acc 0.995 P 0.000 R 0.000 F1 0.000
+Cls DEVELOPER RELATIONS: TP=0 FN=1 FP=0 TN=1091; Acc 0.999 P 1.000 R 0.000 F1 0.000
+Cls FN: TP=0 FN=4 FP=2 TN=1086; Acc 0.995 P 0.000 R 0.000 F1 0.000
+Cls EL: TP=0 FN=6 FP=0 TN=1086; Acc 0.995 P 1.000 R 0.000 F1 0.000
+Cls HX: TP=1 FN=4 FP=1 TN=1086; Acc 0.995 P 0.500 R 0.200 F1 0.286
+Cls RETAIL STORE SOLS DIV: TP=2 FN=0 FP=0 TN=1090; Acc 1.000 P 1.000 R 1.000 F1 1.000
+Cls 4: TP=1 FN=2 FP=1 TN=1088; Acc 0.997 P 0.500 R 0.333 F1 0.400
+Accuracy/micro-averaged F1: 0.48718
+Macro-averaged F1: 0.30825

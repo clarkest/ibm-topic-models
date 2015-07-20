@@ -61,6 +61,12 @@ doc.topics.frame <- data.frame(doc.topics)
 #names(doc.topics.frame) <- paste("Topic", 1:n.topics, sep="")
 names(doc.topics.frame) <- topics.labels
 
+##################
+# Other Metadata #
+##################
+
+# works remotely
+
 
 ##################################
 #   Graph Formatting             #
