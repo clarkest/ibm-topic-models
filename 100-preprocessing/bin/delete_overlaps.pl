@@ -42,7 +42,7 @@ while (<IN>) {
         # output the id of any document being killed off -- this will
         # be necessary to making sure that the nongrams and ngram corpuses
         # have the same doc set
-        print STDERR "$fields[4]" . "\n"
+        print STDERR "$fields[18]" . "\n"
     }
     
 

@@ -32,7 +32,7 @@ while (<IN>) {
     ## ids are in the 17th column
     my @fields = split /\t/, $_;
     my $text = $fields[17];
-    my $this_id = $fields[4];
+    my $this_id = $fields[18];
     
     $text =~ s/\s+/ /g;
     
