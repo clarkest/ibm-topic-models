@@ -19,42 +19,18 @@ maxims <- 25
 ###################################
 
 values <- read.delim("place_docs_here/values-docs-ngrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-values.nongrams <- read.delim("place_docs_here/values-docs-nongrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
 
-values$id <- as.factor(values$id)
-values.nongrams$id <- as.factor(values.nongrams$id)
-non.to.n.overlaps <- sapply(values.nongrams$id, function(x) is.element(x, values$id))
-sum(!non.to.n.overlaps)
-values.nongrams[!non.to.n.overlaps, "text"]
-n.to.non.overlaps <- sapply(values$id, function(x) is.element(x, values.nongrams$id))
-sum(!n.to.non.overlaps)
-values[!n.to.non.overlaps, "text"]
-
-
-world.file <- "place_docs_here/world-docs-nongrams.tsv"
-world.file <- "place_docs_here/world-temp/processed_nongrams.txt"
-
-#values <- read.delim("place_docs_here/nongrams-values-managers-bigrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-#world.file <- "place_docs_here/nongrams-world-manager-bigrams.tsv"
-
-world.nongrams <- read.delim(world.file, 
-                    encoding="UTF-8", 
-                    colClasses=c("factor", "character", "character", "character", 
-                                 "character", "factor", "factor", "factor", 
-                                 "factor", "factor", "factor", "factor", 
-                                 "character", "factor", "factor", "character", 
-                                 "factor","character","factor", "character"), 
-                    sep="\t", 
-                    quote=""
+world.file <- "place_docs_here/world-docs-ngrams.tsv"
+world <- read.delim(world.file, 
+                             encoding="UTF-8", 
+                             colClasses=c("factor", "character", "character", "character", 
+                                          "character", "factor", "factor", "factor", 
+                                          "factor", "factor", "factor", "factor", 
+                                          "character", "character", "factor", "character", 
+                                          "factor","character","character", "factor", "character"), 
+                             sep="\t", 
+                             quote=""
 )
-world$commentid <- as.factor(world$commentid)
-world.nongrams$commentid <- as.factor(world.nongrams$commentid)
-non.to.n.overlaps <- sapply(world.nongrams$commentid, function(x) is.element(x, world$commentid))
-sum(!non.to.n.overlaps)
-world.nongrams[!non.to.n.overlaps, "text"]
-n.to.non.overlaps <- sapply(world$commentid, function(x) is.element(x, world.nongrams$commentid))
-sum(!n.to.non.overlaps)
-world[!n.to.non.overlaps, "text"]
 
 
 #removing these outright to not affect the 8-hr blocks
@@ -72,7 +48,9 @@ documents <-
                    continent = countrycode(values$Country, "country.name", "continent"),
                    parent = as.character(values$Parent),
                    forum = as.character(values$Forum),
-                   user = as.character(values$AuthorEmail)
+                   user = as.character(values$AuthorEmail),
+                   job = as.character(values$JobResp),
+                   office = as.character(values$Office)
   ),
   data.frame(id = as.character(world$commentid), text = as.character(world$text), 
              CreationDate = world$creation_date, 
@@ -83,7 +61,9 @@ documents <-
              continent = countrycode(world$country, "country.name", "continent"), 
              parent = as.character(world$parent),
              forum = as.character(world$forum),
-             user = as.character(world$author_email)
+             user = as.character(world$author_email),
+             job = as.character(world$jobresp),
+             office = as.character(world$office)
   )
   )
 
