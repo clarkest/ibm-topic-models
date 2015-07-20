@@ -1,4 +1,5 @@
 # attempting to ignore all document files, but not 100% sure I'm doing this right
 place_docs_here/*
 models_dir/*
-outpus/*
+outputs/*
+.DS_Store
