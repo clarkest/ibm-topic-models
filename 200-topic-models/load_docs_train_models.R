@@ -5,22 +5,23 @@ library(mallet)
 library(countrycode)
 
 n.topics <- 30
-wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-# wd <- "C:/Users/clarkest/Dropbox/IBM Local/ibm-code"
-setwd(wd)
 
+this.dir = "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
+setwd(this.dir)
 model.dir <- "models_dir"
 model.name <- "ngram_model"
+value_file<-"place_docs_here/values-docs-ngrams.tsv"
+world.file <- "place_docs_here/world-docs-ngrams.tsv"
 iters <- 800
 maxims <- 25
+model_ids <- c(1)
+
 
 ###################################
 #   Loading and processing data   #
 ###################################
 
-values <- read.delim("place_docs_here/values-docs-ngrams.tsv", encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
-
-world.file <- "place_docs_here/world-docs-ngrams.tsv"
+values <- read.delim(value_file, encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
 world <- read.delim(world.file, 
                              encoding="UTF-8", 
                              colClasses=c("factor", "character", "character", "character", 
@@ -90,17 +91,18 @@ documents$forum <- factor(documents$forum)
 ##   define a token). See ?mallet.import for details.
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
-                                  "en.txt", 
-                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]")
+                                  "200-topic-models/en.txt", 
+                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+                    )
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
 # persist the documents so that we don't need to go through these steps everytime.  
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
 save(documents, file=file.name)
 
-source('lda_visualize.R')
+source('200-topic-models/lda_visualize.R')
 # now, run 10 of the models and see how they compare
-for (i in 1:1) {
+for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
   new.topic.model$loadDocuments(mallet.instances)
