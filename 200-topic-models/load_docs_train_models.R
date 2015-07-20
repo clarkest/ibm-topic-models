@@ -40,7 +40,8 @@ world <- read.delim(world.file,
 
 #stack the values and world jams into a single document set
 documents <- 
-  rbind(data.frame(id = as.character(values$id), text = as.character(values$text), 
+rbind(
+  data.frame(id = as.character(values$id), text = as.character(values$text), 
                    CreationDate = values$CreationDate, 
                    CreationTime = values$CreationTime, jam="values",
                    Timestamp = strptime(paste(values$CreationDate, 
@@ -66,7 +67,7 @@ documents <-
              job = as.character(world$jobresp),
              office = as.character(world$office)
   )
-  )
+)
 
 # divide each day into ceiling(24/hours.per.window) windows 
 #   of hours.per.window hours
