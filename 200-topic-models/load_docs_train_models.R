@@ -32,6 +32,11 @@ world <- read.delim(world.file,
                              sep="\t", 
                              quote=""
 )
+# update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
+world$commentid <- paste(substring(world$commentid,2,20), substring(world$title, 1, 20), sep=".") 
+world$parent_comment_id <- paste(substring(world$parent_comment_id,2,20), substring(world$title, 1, 20), sep=".") 
+
+
 
 
 #removing these outright to not affect the 8-hr blocks
