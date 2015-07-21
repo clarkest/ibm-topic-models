@@ -1,9 +1,5 @@
 # this recipe assumes that plurals.csv and new_phrases.txt have been updated to include the complete set of singular-plural pairs and ngrams to be tokenized respectively.  
 
-# TODO -- this should be rewritten to:
-
-1) process the no--ngrams fully
-2) then run an adapted bin/process_10_grams.pl to replace words in place_docs_here/world-docs-nongrams.tsv
 
 python bin/comma_to_tab.py world-trans.csv > world-trans.tsv
 
@@ -11,7 +7,7 @@ python bin/comma_to_tab.py world-trans.csv > world-trans.tsv
 
 # stupid comments ids aren't unique -- need to add a unique id to them for this all to work
 
-perl -w bin/process_world_no_ngrams.pl ../place_docs_here/reloaded_world.tsv > ../place_docs_here/reloaded_world_ided.tsv
+perl -w bin/add_new_ids.pl ../place_docs_here/reloaded_world.tsv > ../place_docs_here/reloaded_world_ided.tsv
 
 # no ngrams version -- dedupe code now in the process file
 # need to run these first, because they generate the list of ids 
@@ -26,19 +22,21 @@ perl -w bin/write_overlaps.pl ../place_docs_here/world-temp/processed_nongrams.t
 perl -w bin/delete_overlaps.pl ../place_docs_here/world-temp/10gram_sequences_nongrams.txt ../place_docs_here/world-temp/processed_nongrams.txt 1> ../place_docs_here/world-docs-nongrams.tsv 2> ../place_docs_here/world-temp/ids_killed_by_10grams.txt
 
 
-
-
-# n-grammed and plural version -- dedupe code now in the process file
+# n-grammed and plural versions 
 
 perl -w bin/process.pl ../place_docs_here/values-cleaned.tsv > ../place_docs_here/values-docs-ngrams.tsv
 
-perl -w bin/process_world.pl ../place_docs_here/reloaded_world_ided.tsv > ../place_docs_here/world-temp/processed.txt
+perl -w bin/process_nongram_to_ngram.pl ../place_docs_here/world-docs-nongrams.tsv > ../place_docs_here/world-docs-ngrams.tsv
 
-perl -w bin/process_10_grams.pl ../place_docs_here/world-temp/10gram_sequences_nongrams.txt > ../place_docs_here/world-temp/10gram_sequences.txt
+######################
+# Deprecated approach 
+######################
 
-#replace the 10gram process with a script that uses the ids killed off in the non-ngrams
+#perl -w bin/process_world.pl ../place_docs_here/reloaded_world_ided.tsv > ../place_docs_here/world-temp/processed.txt
 
-perl -w bin/delete_overlap_ids.pl ../place_docs_here/world-temp/10gram_sequences.txt ../place_docs_here/world-temp/ids_killed_by_10grams.txt ../place_docs_here/world-temp/processed.txt 1> ../place_docs_here/world-docs-ngrams.tsv 2> ../place_docs_here/world-temp/would-have-been-killed.txt
+#perl -w bin/process_10_grams.pl ../place_docs_here/world-temp/10gram_sequences_nongrams.txt > ../place_docs_here/world-temp/10gram_sequences.txt
+
+#perl -w bin/delete_overlap_ids.pl ../place_docs_here/world-temp/10gram_sequences.txt ../place_docs_here/world-temp/ids_killed_by_10grams.txt ../place_docs_here/world-temp/processed.txt 1> ../place_docs_here/world-docs-ngrams.tsv 2> ../place_docs_here/world-temp/would-have-been-killed.txt
 
 
 
