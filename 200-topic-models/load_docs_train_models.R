@@ -6,15 +6,15 @@ library(countrycode)
 
 n.topics <- 30
 
-this.dir = "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
+this.dir = "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
 model.name <- "ngram_model"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
-world.file <- "place_docs_here/world-docs-ngrams.tsv"
+world.file <- "place_docs_here/world-docs-ngrams-a.tsv"
 iters <- 800
 maxims <- 25
-model_ids <- c(1)
+model_ids <- c(2)
 
 
 ###################################
@@ -23,14 +23,15 @@ model_ids <- c(1)
 
 values <- read.delim(value_file, encoding="UTF-8", colClasses=c("factor", "character", "character", "character", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "factor", "character", "factor", "factor", "factor", "factor", "factor", "factor", "character"), sep="\t", quote="")
 world <- read.delim(world.file, 
-                             encoding="UTF-8", 
-                             colClasses=c("factor", "character", "character", "character", 
-                                          "character", "factor", "factor", "factor", 
-                                          "factor", "factor", "factor", "factor", 
-                                          "character", "character", "factor", "character", 
-                                          "factor","character","character", "factor", "character"), 
-                             sep="\t", 
-                             quote=""
+                   encoding="UTF-8", 
+                   colClasses=c("factor", "character", "character", "character", 
+                                "character", "factor", "factor", "factor", 
+                                "factor", "factor", "factor", "factor", 
+                                "character", "character", "factor", "character", 
+                                "factor","character","character", "factor", "character"
+                                ), 
+                   sep="\t", 
+                   quote=""
 )
 # update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
 world$commentid <- paste(substring(world$commentid,2,20), substring(world$title, 1, 20), sep=".") 
@@ -99,7 +100,8 @@ mallet.instances <- mallet.import(documents$id,
                                   documents$text, 
                                   "200-topic-models/en.txt", 
                                   token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
-                    )
+)
+
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
 # persist the documents so that we don't need to go through these steps everytime.  
@@ -111,6 +113,7 @@ source('200-topic-models/lda_visualize.R')
 for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
+  new.topic.model$setNumThreads(10L)
   new.topic.model$loadDocuments(mallet.instances)
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)

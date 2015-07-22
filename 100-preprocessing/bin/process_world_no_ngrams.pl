@@ -1,4 +1,5 @@
 binmode STDOUT, ":utf8";
+binmode IN, ":utf8";
 
 my @drop_ids = ();
 open DROPS, "lists/new_ids_dropped.txt";

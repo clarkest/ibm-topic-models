@@ -1,4 +1,5 @@
 binmode STDOUT, ":utf8";
+binmode IN, ":utf8";
 #my %abbrev_replacements = ();
 my @source = ();
 my @target = ();

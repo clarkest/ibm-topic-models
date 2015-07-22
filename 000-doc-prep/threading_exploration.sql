@@ -30,7 +30,18 @@ insert into world_reloaded select * from temp_id_fix;
 update world_reloaded 
 	set parent_comment_id = concat(substr(parent_comment_id,2,20), substr(title,1,20))
 	where parent_comment_id in ("<ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffe043f7ee.3100b90a.WORLDJAM@d25was504.mkm.can.ibm.com>");		
-	
+# we need the new_ids for the deleted ones
+select wo.new_id
+	from world_orig wo
+	left join temp_id_fix tif
+	using (new_id)
+	where wo.commentid in ("<ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffe043f7ee.3100b90a.WORLDJAM@d25was504.mkm.can.ibm.com>")
+		and tif.new_id is null;
+		
+		
+
+
+select new_id from temp_id_fix;
 
 
 select count(distinct title), count(*) from world_reloaded;
@@ -124,3 +135,53 @@ select count(*) from ancestry where oldest<>"complete";
 select max(generation) from ancestry;
 
 
+
+select JobResp, count(*) as count from (select AuthorEmail, values_clean;
+
+select title, count(*) as number 
+	from (select JobResp as title 
+			from values_clean 
+			group by `AuthorEmail`
+		union all
+		select jobresp as title 
+			from world_reloaded
+			group by author_email
+		) as a 
+	group by title 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/data/metadata/combined_titles.tsv'
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+;
+
+select title, count(*) as number 
+	from (select JobResp as title 
+			from values_clean 
+			group by `AuthorEmail`
+		union all
+		select jobresp as title 
+			from world_reloaded
+			group by author_email
+		) as a 
+	group by title 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/data/metadata/combined_titles.tsv'
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+;
+
+select title, max(business_unit), count(*) as number 
+	from (select JobResp as title, "" as business_unit 
+			from values_clean 
+			group by `AuthorEmail`
+		union all
+		select jobresp as title, business_unit 
+			from world_reloaded
+			group by author_email
+		) as a 
+	group by title, business_unit 
+	order by number desc
+INTO OUTFILE '/Users/clarkbernier/Dropbox/IBM Local/data/metadata/combined_titles_bu.tsv'
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+;

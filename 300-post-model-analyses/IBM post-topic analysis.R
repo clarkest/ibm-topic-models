@@ -15,10 +15,12 @@ n.topics <- 30
 #   a folder "model_states" containing .gz of topic models and .Rdata documents object
 #   a folder "outputs" where this code sends the graph images
 
-wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
+# wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
+wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
 setwd(wd)
 
-stop.word.file <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/200-topic-models/en.txt"
+stop.word.file <- "200-topic-models/en.txt"
+
 model.name <- "ngram_model"
 
 
@@ -34,7 +36,7 @@ mallet.instances <- mallet.import(documents$id,
 ## Initialize from a previously trained state
 iters <- 800
 maxims <- 25
-model_num <- 1
+model_num <- 2
 model.label = paste(model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
 file.name <- paste(model.dir, paste0(model.label, ".gz"), sep="/")
 topic.model <- MalletLDA(num.topics=n.topics)
