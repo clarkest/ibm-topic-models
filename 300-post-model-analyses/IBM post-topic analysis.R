@@ -441,13 +441,15 @@ vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lam
   # get the word propensity list for each factor
 
   for (lvl in factor.lvls) { 
+    # we use normalizations so the rows sum to 1, and smoothing so nothing is exactly zero
     words.by.factor[[lvl]] <- mallet.subset.topic.words(topic.model, 
                                                         documents[,factor]==lvl & doc.subset, 
-                                                        normalized=T)
+                                                        normalized=T, smoothed=T)
     if(use.relevance) {
       word.relevence.by.factor[[lvl]] <- 
-        lambda * log(1+words.by.factor[[lvl]]) + 
-        (1-lambda) * log(1+words.by.factor[[lvl]] / ifelse(word.freq==0, 1, word.freq))
+        lambda * log(words.by.factor[[lvl]]) + 
+          (1-lambda) * log(words.by.factor[[lvl]] / ifelse(word.freq==0, 1, word.freq)
+        )
     }
   }
   
@@ -499,7 +501,7 @@ l1.distances("forum", documents, topic.model, documents$jam=="values")
 
 # Compare across managers/non-managers
 l1.distances("manager", documents, topic.model)
-l1.distances("manager", documents, topic.model, lambda=0.5, use.relevance=TRUE)
+l1.distances("manager", documents, topic.model, lambda=0.7, use.relevance=TRUE)
 
 # Compare across continents
 l1.distances("continent", documents, topic.model)
@@ -514,23 +516,32 @@ l1.distances("CreationDate", documents, topic.model, documents$jam=="values")
 #######################################
 
 topic.vocab.diff <- 
-  function(factor, docs, topic.model, topic.id, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
-    number.words <- 20
+  function(factor, docs, topic.model, topic.id, doc.subset=NULL, lambda=1.0, use.relevance=FALSE, number.words=10) {
     factor.pairs.differences <- vocab.diff.by.factor(factor, docs, topic.model, doc.subset, lambda, use.relevance)
     words <- mallet.word.freqs(topic.model)
     word.lists <- list()
+    
     for (comp.name in names(factor.pairs.differences)) {
-      word.lists[,comp.name] <- 0.5 * rowSums(abs(factor.pairs.differences[[comp.name]]))
+      factors <- strsplit(comp.name, split=":")
+      this.topic.words <- data.frame(words = words$words, 
+                                     diff = factor.pairs.differences[[comp.name]][topic.id,],
+                                     overall.freq = words$term.freq
+      )
+
+      factor.1.list <- head(this.topic.words[order(this.topic.words$diff, decreasing=TRUE),], number.words)
+      factor.2.list <- head(this.topic.words[order(this.topic.words$diff, decreasing=FALSE),], number.words)
+      word.lists[[comp.name]] <- rbind(cbind(factor=factors[[1]][1], factor.1.list), 
+                                       cbind(factor=factors[[1]][2], factor.2.list)
+                                  ) 
     }
-    comp.name = "Manager:Other"
-    this.topic.words <- data.frame(words = words$words, 
-                                   diff = factor.pairs.differences[[comp.name]][topic.id,],
-                                   overall.freq = words$term.freq
-                        )
-    head(this.topic.words[order(this.topic.words$diff, decreasing=TRUE),], number.words)
-    head(this.topic.words[order(this.topic.words$diff, decreasing=FALSE),], number.words)
-  }
-  
+    return(word.lists)
+}
+
+topic.vocab.diff("manager", documents, topic.model, 19, number.words=10)
+topic.vocab.diff("continent", documents, topic.model, 2, number.words=10)
+
+topic.vocab.diff("manager", documents, topic.model, 19, number.words=10, lambda=0.8, use.relevance=TRUE)
+topic.vocab.diff("continent", documents, topic.model, 2, number.words=10)
 
 
 
