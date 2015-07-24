@@ -428,19 +428,28 @@ ngram.documents[!n.to.non.overlaps, "text"]
 #                       see Sievert & Shirley (2014)
 # Return a list, by topic, of the l1 differences (absolute value) between each pair of factor levels
 vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
+  floor.percent.docs <- 0.05
+  floor.percent.words <- 0.05
+  
   # TODO -- would be great if this could handle multiple factors
   words <- mallet.word.freqs(topic.model)
   word.freq <- words$term.freq / sum(words$term.freq)
   if (is.null(doc.subset)) {
     doc.subset <- !is.na(docs$text)
   }
+  num.docs <- sum(doc.subset)
   factor.lvls <- levels(factor(docs[doc.subset, factor]))
   
   words.by.factor <- list()
   word.relevence.by.factor <- list()
   # get the word propensity list for each factor
-
+  
   for (lvl in factor.lvls) { 
+    factor.lvl.ndocs <- sum(documents[,factor]==lvl & doc.subset)
+    print(sprintf("%d / %d", factor.lvl.ndocs, num.docs))
+    if (factor.lvl.ndocs < floor.percent.docs * num.docs) {
+      print(sprintf("Warning: factor value %s for this subset has only %d documents.", lvl, factor.lvl.ndocs))
+    }
     # we use normalizations so the rows sum to 1, and smoothing so nothing is exactly zero
     words.by.factor[[lvl]] <- mallet.subset.topic.words(topic.model, 
                                                         documents[,factor]==lvl & doc.subset, 
