@@ -437,18 +437,18 @@ vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lam
   if (is.null(doc.subset)) {
     doc.subset <- !is.na(docs$text)
   }
-  num.docs <- sum(doc.subset)
+  num.docs <- sum(doc.subset, na.rm=TRUE)
   factor.lvls <- levels(factor(docs[doc.subset, factor]))
   
   words.by.factor <- list()
   word.relevence.by.factor <- list()
   # get the word propensity list for each factor
   
+  warnings <- list()
   for (lvl in factor.lvls) { 
-    factor.lvl.ndocs <- sum(documents[,factor]==lvl & doc.subset)
-    print(sprintf("%d / %d", factor.lvl.ndocs, num.docs))
+    factor.lvl.ndocs <- sum(documents[,factor]==lvl & doc.subset, na.rm=TRUE)
     if (factor.lvl.ndocs < floor.percent.docs * num.docs) {
-      print(sprintf("Warning: factor value %s for this subset has only %d documents.", lvl, factor.lvl.ndocs))
+      warnings <- c(warnings, (sprintf("Warning: %s/%s for this subset has only %d documents.", factor, lvl, factor.lvl.ndocs)))
     }
     # we use normalizations so the rows sum to 1, and smoothing so nothing is exactly zero
     words.by.factor[[lvl]] <- mallet.subset.topic.words(topic.model, 
@@ -481,6 +481,7 @@ vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lam
           #0.5 * rowSums(abs(words.by.factor[[lvl.1]] - words.by.factor[[lvl.2]]))  
       }
   }
+  for (warn in warnings) {print(warn)}
   return(factor.pairs.differences)
 }
 
@@ -547,7 +548,7 @@ topic.vocab.diff <-
 }
 
 topic.vocab.diff("manager", documents, topic.model, 19, number.words=10)
-topic.vocab.diff("continent", documents, topic.model, 2, number.words=10)
+topic.vocab.diff("continent", documents, topic.model, 19, number.words=10)
 
 topic.vocab.diff("manager", documents, topic.model, 19, number.words=10, lambda=0.8, use.relevance=TRUE)
 topic.vocab.diff("continent", documents, topic.model, 2, number.words=10)
