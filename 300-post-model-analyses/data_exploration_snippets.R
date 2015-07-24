@@ -67,3 +67,37 @@ documents[documents$id=="<ffd7497c22.9326a6f9.WORLDJAM@d25was503.mkm.can.ibm.com
 # -- we'll see how many of them made it into documents
 intro.doc.ids <- c("<ffd241578b.dbbee7d1.WORLDJAM@d25was504.mkm.can.ibm.com>","<ffd2439f11.4e66942c.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffd243b202.74e204d6.WORLDJAM@d25was504.mkm.can.ibm.com>","<ffd2442d0c.16b5a603.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffd2446a89.a7da6c88.WORLDJAM@d25was504.mkm.can.ibm.com>","<ffd244d99d.e4139e54.WORLDJAM@d25was504.mkm.can.ibm.com>","<ffd245750b.acfc14a9.WORLDJAM@d25was504.mkm.can.ibm.com>","<ffd245f3d6.cb367fe8.WORLDJAM@d25was504.mkm.can.ibm.com>")
 documents[documents$id %in% intro.doc.ids,]
+
+
+
+####################
+# do continents have different business functions?
+####################
+library(countrycode)
+library(stringr)
+library(dplyr)
+wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
+setwd(wd)
+world.file <- "place_docs_here/world-docs-ngrams-a.tsv"
+
+world <- read.delim(world.file, 
+                    encoding="UTF-8", 
+                    colClasses=c("factor", "character", "character", "character", 
+                                 "character", "factor", "factor", "factor", 
+                                 "factor", "factor", "factor", "factor", 
+                                 "character", "character", "factor", "character", 
+                                 "factor","character","character", "factor", "character"
+                    ), 
+                    sep="\t", 
+                    quote=""
+)
+world$continent <- countrycode(world$country, "country.name", "continent")
+world.users <- summarize(group_by(world, author_email), continent=max(continent), business_unit=max(business_unit), business_unit2=max(business_unit2))
+world.users$long.bu <- ifelse(str_length(world.users$business_unit) >= str_length(world.users$business_unit2), world.users$business_unit, world.users$business_unit2)
+
+continent.bu <- summarize(group_by(world.users, continent, long.bu), number=n())
+out.file <- "outputs/continent.business.units.csv"
+write.table(continent.bu, out.file, row.names=FALSE)
+
+# what is "02"?
+summarize(group_by(world.users[world.users$business_unit2=="02",], business_unit),number=n()) 

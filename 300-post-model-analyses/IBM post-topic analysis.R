@@ -422,50 +422,115 @@ ngram.documents[!n.to.non.overlaps, "text"]
 #   topic.model: the topic model to use
 #   (optional) doc.subset: if we want just a subset of the documents, this is the vector of 
 #                         TRUE/FALSE that mark which documents to include
+#   (optional) lambda: determines the relevance score used to calculate distance.  
+#                       =1 uses just the word prevalence
+#                       relevance(term w | topic t) = λ * p(w | t) + (1 - λ) * p(w | t)/p(w) 
+#                       see Sievert & Shirley (2014)
 # Return a list, by topic, of the l1 differences (absolute value) between each pair of factor levels
-vocab.diff.by.factor <- function(factors, docs, topic.model, doc.subset=NULL) {
-  # TODO, expand to do more than just the FIRST factor
-  factor <- factors[1]
+vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
+  # TODO -- would be great if this could handle multiple factors
+  words <- mallet.word.freqs(topic.model)
+  word.freq <- words$term.freq / sum(words$term.freq)
   if (is.null(doc.subset)) {
-    doc.subset = !is.na(docs$text)
+    doc.subset <- !is.na(docs$text)
   }
   factor.lvls <- levels(factor(docs[doc.subset, factor]))
   
   words.by.factor <- list()
+  word.relevence.by.factor <- list()
   # get the word propensity list for each factor
-  for (lvl in factor.lvls) {
+
+  for (lvl in factor.lvls) { 
     words.by.factor[[lvl]] <- mallet.subset.topic.words(topic.model, 
                                                         documents[,factor]==lvl & doc.subset, 
                                                         normalized=T)
+    if(use.relevance) {
+      word.relevence.by.factor[[lvl]] <- 
+        lambda * log(1+words.by.factor[[lvl]]) + 
+        (1-lambda) * log(1+words.by.factor[[lvl]] / ifelse(word.freq==0, 1, word.freq))
+    }
   }
   
-  factor.pairs.l1 <- as.data.frame(matrix(0, ncol = 0, nrow = 30))
+  #factor.pairs.l1 <- as.data.frame(matrix(0, ncol = 0, nrow = 30))
+  factor.pairs.differences <- list()
   factor.pairs <- combn(factor.lvls, 2)
   for (i in 1:ncol(factor.pairs)) {
       lvl.1 <- factor.pairs[1,i]
       lvl.2 <- factor.pairs[2,i]
       comparison.name = paste0(lvl.1,":",lvl.2)
-      factor.pairs.l1[,comparison.name] <- 0.5 * rowSums(abs(words.by.factor[[lvl.1]] - words.by.factor[[lvl.2]]))  
+      if(use.relevance) {
+        factor.pairs.differences[[comparison.name]] <- 
+          (word.relevence.by.factor[[lvl.1]] - word.relevence.by.factor[[lvl.2]])
+        #factor.pairs.l1[,comparison.name] <- 
+          #0.5 * rowSums(abs(word.relevence.by.factor[[lvl.1]] - word.relevence.by.factor[[lvl.2]]))  
+      } else {
+        factor.pairs.differences[[comparison.name]] <- 
+          (words.by.factor[[lvl.1]] - words.by.factor[[lvl.2]])
+        #factor.pairs.l1[,comparison.name] <- 
+          #0.5 * rowSums(abs(words.by.factor[[lvl.1]] - words.by.factor[[lvl.2]]))  
+      }
+  }
+  return(factor.pairs.differences)
+}
+
+l1.distances <- function(factor, docs, topic.model, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
+  factor.pairs.differences <- vocab.diff.by.factor(factor, docs, topic.model, doc.subset, lambda, use.relevance)
+  factor.pairs.l1 <- as.data.frame(matrix(0, ncol = 0, nrow = topic.model$numTopics))
+  for (comp.name in names(factor.pairs.differences)) {
+    factor.pairs.l1[,comp.name] <- 0.5 * rowSums(abs(factor.pairs.differences[[comp.name]]))
   }
   return(factor.pairs.l1)
 }
 
 # Compare World and Value Topics 
-vocab.diff.by.factor(c("jam"), documents, topic.model)
+l1.distances("jam", documents, topic.model)
+
 # people_make_time is the most similar, interesting because it is the one that seems to be the most prevalent
 #    across all documents
 
 # Compare across the fora, since we saw that prevalences can be very different
-vocab.diff.by.factor("forum", documents, topic.model)
+l1.distances("forum", documents, topic.model)
 
 # -- by world jam
 ## this DOESN'T work yet -- need to pass the full logic vector to the mallet function...
-vocab.diff.by.factor("forum", documents, topic.model, documents$jam=="world")
+l1.distances("forum", documents, topic.model, documents$jam=="world")
 # -- by values jam
-vocab.diff.by.factor("forum", documents, topic.model, documents$jam=="values")
+l1.distances("forum", documents, topic.model, documents$jam=="values")
 
 # Compare across managers/non-managers
-vocab.diff.by.factor("manager", documents, topic.model)
+l1.distances("manager", documents, topic.model)
+l1.distances("manager", documents, topic.model, lambda=0.5, use.relevance=TRUE)
+
+# Compare across continents
+l1.distances("continent", documents, topic.model)
+
+
+# Compare across time windows
+l1.distances("CreationDate", documents, topic.model, documents$jam=="world")
+l1.distances("CreationDate", documents, topic.model, documents$jam=="values")
+
+#######################################
+# compare vocabs of a topic by factor #
+#######################################
+
+topic.vocab.diff <- 
+  function(factor, docs, topic.model, topic.id, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
+    number.words <- 20
+    factor.pairs.differences <- vocab.diff.by.factor(factor, docs, topic.model, doc.subset, lambda, use.relevance)
+    words <- mallet.word.freqs(topic.model)
+    word.lists <- list()
+    for (comp.name in names(factor.pairs.differences)) {
+      word.lists[,comp.name] <- 0.5 * rowSums(abs(factor.pairs.differences[[comp.name]]))
+    }
+    comp.name = "Manager:Other"
+    this.topic.words <- data.frame(words = words$words, 
+                                   diff = factor.pairs.differences[[comp.name]][topic.id,],
+                                   overall.freq = words$term.freq
+                        )
+    head(this.topic.words[order(this.topic.words$diff, decreasing=TRUE),], number.words)
+    head(this.topic.words[order(this.topic.words$diff, decreasing=FALSE),], number.words)
+  }
+  
 
 
 
