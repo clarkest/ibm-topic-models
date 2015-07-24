@@ -424,7 +424,7 @@ ngram.documents[!n.to.non.overlaps, "text"]
 #                         TRUE/FALSE that mark which documents to include
 #   (optional) lambda: determines the relevance score used to calculate distance.  
 #                       =1 uses just the word prevalence
-#                       relevance(term w | topic t) = λ * p(w | t) + (1 - λ) * p(w | t)/p(w) 
+#                       relevance(term w | topic t) = λ * log(p(w | t)) + (1 - λ) * log(p(w | t)/p(w)) 
 #                       see Sievert & Shirley (2014)
 # Return a list, by topic, of the l1 differences (absolute value) between each pair of factor levels
 vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
@@ -433,6 +433,8 @@ vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lam
   
   # TODO -- would be great if this could handle multiple factors
   words <- mallet.word.freqs(topic.model)
+  # turns out the counts in this function are buggy, they include zeros -- sum directly from the topics counts
+  words$term.freq <- colSums(mallet.topic.words(topic.model, normalized=F), na.rm=TRUE)
   word.freq <- words$term.freq / sum(words$term.freq)
   if (is.null(doc.subset)) {
     doc.subset <- !is.na(docs$text)
@@ -529,6 +531,7 @@ topic.vocab.diff <-
   function(factor, docs, topic.model, topic.id, doc.subset=NULL, lambda=1.0, use.relevance=FALSE, number.words=10) {
     factor.pairs.differences <- vocab.diff.by.factor(factor, docs, topic.model, doc.subset, lambda, use.relevance)
     words <- mallet.word.freqs(topic.model)
+    words$term.freq <- colSums(mallet.topic.words(topic.model, normalized=F), na.rm=TRUE)
     word.lists <- list()
     
     for (comp.name in names(factor.pairs.differences)) {
