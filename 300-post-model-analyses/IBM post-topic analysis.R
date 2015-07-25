@@ -1,5 +1,3 @@
-##install.packages("countrycode")
-
 library(ggplot2)
 library(countrycode)
 library(Hmisc) ## this has to go first because it contains conflicts with "summarize" from dplyr
@@ -38,7 +36,7 @@ iters <- 800
 maxims <- 25
 model_num <- 2
 model.label = paste(model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
-file.name <- paste(model.dir, paste0(model.label, ".gz"), sep="/")
+file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
 topic.model <- MalletLDA(num.topics=n.topics)
 topic.model$loadDocuments(mallet.instances)
 topic.model$initializeFromState(.jnew("java.io.File", file.name))
@@ -332,38 +330,106 @@ while (sum(documents$common.ancestor=='null') > 0) {
 #    adapted from David Mimno's jsLDA 
 #    (https://github.com/mimno/jsLDA/blob/master/jslda.html)
 ########################
-correlationMinTokens = 4
-correlationMinProportion = 0.1
-
-num.docs = nrow(doc.topics)
-unnormal.doc.topics <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
-doc.len <- rowSums(unnormal.doc.topics)
-
-# topic occurence binary matrix
-topic.occur <- doc.topics > correlationMinProportion
-
-# grab the number of tokens per document
-#Count the number of docs with this topic
-num.topic.tokens <- doc.topics * doc.len
-topic.counts <- colSums(doc.topics > correlationMinProportion & num.topic.tokens >= correlationMinTokens)
-
-# iterate through each pair of topics and add to the cooccurence count
-co.occur.count <- matrix(0, n.topics, n.topics)
-corr.matrix <- matrix(0, n.topics, n.topics)
-for (topic.i in 1 : (n.topics-1)) {
-  for (topic.j in (topic.i+1) : n.topics) {
-    co.occurs <- sum(topic.occur[,topic.i] & topic.occur[,topic.j])
-    co.occur.count[topic.i, topic.j] <- co.occurs
-    corr.matrix[topic.i, topic.j] <- log(num.docs * co.occurs / (topic.counts[topic.i] * topic.counts[topic.j]))
+topic.co.occur <- function(topic.model.1,
+                           correlationMinTokens = 4, 
+                           correlationMinProportion = 0.1,
+                           topic.model.2 = NULL) {
+  n.topics <- topic.model.1$getNumTopics()
+  doc.topics.1 <- mallet.doc.topics(topic.model.1, smoothed=T, normalized=T)
+  doc.topics.2 <- NULL
+  num.docs = nrow(doc.topics.1)
+  unnormal.doc.topics <- mallet.doc.topics(topic.model.1, smoothed=F, normalized=F)
+  doc.len.1 <- rowSums(unnormal.doc.topics)
+  
+  if (is.null(topic.model.2)) {
+    print("initializing comparison model to first model")
+    topic.model.2 <- topic.model.1
+    doc.topics.2 <- doc.topics.1
+    doc.len.2 <- doc.len.1
+  } else {
+    # make sure the number of docs of the two are the same. 
+    # trusting the caller than same length means they are the same documents
+    doc.topics.2 <- mallet.doc.topics(topic.model.2, smoothed=T, normalized=T) 
+    if (num.docs != nrow(doc.topics.2) | n.topics != topic.model.2$getNumTopics()) {
+      stop(sprintf("Model 1 has %d docs and % topics. Model 2 has %d and %d. Not sure how I can compare these.",
+                   num.docs, n.topics,
+                   nrow(doc.topics.2), topic.model.2$getNumTopics()
+          )
+      )
+    }
+    unnormal.doc.topics <- mallet.doc.topics(topic.model.2, smoothed=F, normalized=F)
+    doc.len.2 <- rowSums(unnormal.doc.topics)
   }
-}
-topic.counts
-co.occur.count
-corr.matrix
-max(corr.matrix)
+  
+  # topic occurence binary matrix
+  topic.occur.1 <- doc.topics.1 > correlationMinProportion
+  topic.occur.2 <- doc.topics.2 > correlationMinProportion
+  
+  # grab the number of tokens per document
+  #Count the number of docs with this topic
+  num.topic.tokens.1 <- doc.topics.1 * doc.len.1
+  topic.counts.1 <- colSums(doc.topics.1 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens)
 
-cm <- data.frame(corr.matrix)
-heatmap(corr.matrix, Rowv=NA, Colv="Rowv", symm=TRUE)
+  num.topic.tokens.2 <- doc.topics.2 * doc.len.2
+  topic.counts.2 <- colSums(doc.topics.2 > correlationMinProportion & num.topic.tokens.2 >= correlationMinTokens)
+  
+  # iterate through each pair of topics and add to the cooccurence count
+  co.occur.count <- matrix(0, n.topics, n.topics)
+  corr.matrix <- matrix(0, n.topics, n.topics)
+  for (topic.i in 1 : (n.topics)) {
+    for (topic.j in  1 : (n.topics)) {
+      co.occurs <- sum(topic.occur.1[,topic.i] & topic.occur.2[,topic.j])
+      co.occur.count[topic.i, topic.j] <- co.occurs
+      corr.matrix[topic.i, topic.j] <- log(num.docs * co.occurs / (topic.counts.1[topic.i] * topic.counts.2[topic.j]))
+    }
+  }
+  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix))
+}
+
+ret.1 <- topic.co.occur(topic.model)
+#topic.counts
+ret$co.occur.count
+ret$corr.matrix
+
+corr.heatmap <- function(corr.matrix, min=-1, max=1) {
+  y <- melt(corr.matrix)
+  # replace values outside of [-1,1] with extremes
+  y$new.val <- y$value
+  if (!is.null(min)) y[y$new.val < min, "new.val"] <- min 
+  if (!is.null(max))  y[y$new.val > max, "new.val"] <- max 
+
+  p <- ggplot(y, aes(y=Var1, x=Var2)) + 
+    geom_tile(aes(fill=new.val)) + 
+    scale_fill_gradient2(low = "red", mid = "white",
+                         high = "blue", midpoint = 0, limits=c(min,max)) + 
+    xlab("") + ylab("")
+  
+  return(p)
+}
+corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
+
+###################################
+# compare the two ngram models    #
+###################################
+
+## Initialize from a previously trained state
+iters <- 800
+maxims <- 25
+model_num <- 1
+model.label = paste(model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
+file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
+topic.model.2 <- MalletLDA(num.topics=n.topics)
+topic.model.2$loadDocuments(mallet.instances)
+topic.model.2$initializeFromState(.jnew("java.io.File", file.name))
+
+ret.2 <- topic.co.occur(topic.model, topic.model.2=topic.model.2)
+corr.heatmap(ret.2$corr.matrix, min=-4, max=4)
+
+ret.3 <- topic.co.occur(topic.model.2, topic.model.2=topic.model.2)
+corr.heatmap(ret.3$corr.matrix, min=-3, max=3)
+####################################
+# Load an nongram model and compare to ngram
+####################################
 
 
 
