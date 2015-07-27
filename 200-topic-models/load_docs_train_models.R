@@ -13,8 +13,8 @@ model.name <- "ngram_model"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
 world.file <- "place_docs_here/world-docs-ngrams-a.tsv"
 iters <- 800
-maxims <- 25
-model_ids <- c(2)
+maxims <- 50
+model_ids <- c(1)
 
 
 ###################################
@@ -36,8 +36,6 @@ world <- read.delim(world.file,
 # update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
 world$commentid <- paste(substring(world$commentid,2,20), substring(world$title, 1, 20), sep=".") 
 world$parent_comment_id <- paste(substring(world$parent_comment_id,2,20), substring(world$title, 1, 20), sep=".") 
-
-
 
 
 #removing these outright to not affect the 8-hr blocks
@@ -118,6 +116,7 @@ for (i in model_ids) {
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)
   new.topic.model$maximize(maxims)
-  model.label = paste(model.name, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
+  model.label = paste(model.name, n.topics, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
   create.ldavis(new.topic.model, model.dir, model.label)
 }
+

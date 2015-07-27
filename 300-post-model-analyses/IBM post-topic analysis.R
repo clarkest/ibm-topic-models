@@ -17,30 +17,36 @@ n.topics <- 30
 wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
 setwd(wd)
 
-stop.word.file <- "200-topic-models/en.txt"
+load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics) {
+  stop.word.file <- "200-topic-models/en.txt"
+
+  # load the persisted documents -- these are needed before we can load a model from state
+  file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
+  # this shoudl create an object called "documents"
+  load(file.name)
+  mallet.instances <- mallet.import(documents$id, 
+                                    documents$text, 
+                                    stop.word.file, 
+                                    token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+                      )
+  
+  ## Initialize from a previously trained state
+  model.label = paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
+  file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
+  topic.model <- MalletLDA(num.topics=n.topics)
+  topic.model$loadDocuments(mallet.instances)
+  topic.model$initializeFromState(.jnew("java.io.File", file.name))
+  return(topic.model)
+}
 
 model.name <- "ngram_model"
-
-
-# load the persisted documents -- these are needed before we can load a model from state
+iters <- 800
+maxims <- 25
+model.num <- 2
+topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
 file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
 # this shoudl create an object called "documents"
 load(file.name)
-mallet.instances <- mallet.import(documents$id, 
-                                  documents$text, 
-                                  stop.word.file, 
-                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]")
-
-## Initialize from a previously trained state
-iters <- 800
-maxims <- 25
-model_num <- 2
-model.label = paste(model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
-file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
-topic.model <- MalletLDA(num.topics=n.topics)
-topic.model$loadDocuments(mallet.instances)
-topic.model$initializeFromState(.jnew("java.io.File", file.name))
-
 
 ## Get the probability of topics in documents and the probability of words in topics.
 ## By default, these functions return raw word counts. Here we want probabilities, 
@@ -128,21 +134,30 @@ plot_topic_shares <- function(df,
                               output.dir="output/default/", 
                               topic.num,
                               topic.num.label=NULL,
-                              ylim=NULL) {
+                              ylim=NULL,
+                              threshold.for.count=NULL) {
   aggregate.set <- c("DateWindow", "jam", by.vars)
   topic.name <-  colnames(df)[topic.num]
-  avg.topic.rate <- aggregate(df[topic.num], by=df[,aggregate.set], mean) 
+  if (is.null(threshold.for.count)) {
+    topic.rate <- aggregate(df[topic.num], by=df[,aggregate.set], mean) 
+  
+  } else {
+    topic.rate <- aggregate(df[topic.num], 
+                            by=df[,aggregate.set], 
+                            function(x) sum(ifelse(x>threshold.for.count,1,0))
+                  )
+  }
   if (is.null(topic.num.label)) topic.num.label <- topic.num
   
   if (length(by.vars) > 1) {
-    avg.topic.rate$by.var <- do.call(paste, avg.topic.rate[,by.vars])
+    topic.rate$by.var <- do.call(paste, topic.rate[,by.vars])
   } else {
-    avg.topic.rate$by.var <- avg.topic.rate[,by.vars]
+    topic.rate$by.var <- topic.rate[,by.vars]
   }
   #colnames(avg.topic.rate)[colnames(avg.topic.rate) == topic.name] <- 'topic.data'
   
   plt <- qplot(as.integer(DateWindow), get(topic.name), 
-               data = avg.topic.rate, geom = "line", color=by.var, 
+               data = topic.rate, geom = "line", color=by.var, 
                ylab = topic.name) + geom_point() + coord_cartesian(ylim=ylim)
   plt.title <- paste(sprintf("%02s",topic.num.label),"-",topic.name)
   ggsave(paste(output.dir, plt.title, ".png", sep=""),
@@ -158,7 +173,8 @@ plot.all.topic.shares <- function(df, docs, col.keeps,
                                   by.vars, 
                                   output.dir="outputs/default/",
                                   topic.num.labels=NULL,
-                                  ylim=c(0,0.2)) {
+                                  ylim=c(0,0.2),
+                                  threshold.for.count=NULL) {
   doc.topics.data <- cbind(df, docs[col.keeps])
   # we want the DateWindows with enough data for these by variables
   temp.posts.by.window <- get.posts.by.window(docs, by.vars)
@@ -166,9 +182,9 @@ plot.all.topic.shares <- function(df, docs, col.keeps,
   
   for (topic in 1:ncol(df)) {
     if (is.null(topic.num.labels)) {
-      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, ylim=ylim)
+      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, ylim=ylim, threshold.for.count=threshold.for.count)
     } else {
-      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, topic.num.labels[topic], ylim=ylim)
+      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, topic.num.labels[topic], ylim=ylim, threshold.for.count=threshold.for.count)
     }
   }
 }
@@ -191,24 +207,19 @@ plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, "outputs/
 
 
 ###############################################################
-#  3. Topics Shares Over Time, Docs over a Topic threshold    #
+#  3. Topics Doc Counts Over Time, by threshold    #
 ###############################################################
 
 ######
 # 3.a. histograms of topic prevalance over documents, with a threshold prevalence
 ######
 
-# TODO: changed doc.topics.data to doc.topics.frame -- confirm that this is okay
-threshold <- 0.03
-for (topic.num in 1:1) {
-  topic.name <-  colnames(doc.topics.frame)[topic.num]
-  #png(paste("outputs/prev_histos/",topic.num,"-",topic.name,".png", sep=""))
-  #histogram(doc.topics.data[,topic.num])
-  thresh.doc.by.topic <- doc.topics.frame[doc.topics.frame[topic.num] > threshold,]
-  plt <- qplot(thresh.doc.by.topic[,topic.num], binwidth=0.01, xlab = topic.name)
-  plt <- ggplot(data.frame(a=thresh.doc.by.topic[,topic.num]), aes(x=a)) + xlab(topic.name) + geom_density()
-  ggsave(paste("outputs/threshold_prev_histos/",topic.num,"-",topic.name,".png", sep=""), plt+thm)
-}
+threshold <- 0.2
+col.keeps <- c("manager", "continent", "jam", "DateWindow")
+by.vars <- c("manager", "jam")
+plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, sprintf("outputs/threshold_%1.0f/", 100*threshold), ylim=NULL, threshold.for.count=threshold)
+
+
 
 ############
 #  3.b. plots limited to threshold
@@ -250,62 +261,45 @@ mallet.top.words(topic.model, topic.words[20,], 20)
 # histo of document lengths
 #############
 
-words.per.doc <- sapply(gregexpr("[A-z]\\W+", documents$text), length) + 1L
-documents$words <- words.per.doc
+unnormal.doc.topics <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
+doc.len <- rowSums(unnormal.doc.topics)
+documents$words <- doc.len
 
-plt <- qplot(words.per.doc, binwidth=5, xlab = "number of words")
+plt <- qplot(documents$words, binwidth=5, xlab = "number of words")
 ggsave("outputs/words_per_doc.png", plt+thm)
+# --and logged to show that it's approx log-normal
+qplot(log(documents$words), binwidth=0.1, xlab = "log(number of words)")
+
 
 # by jam
 ggplot(documents, aes(x=words, color=jam)) + geom_density()
-# --and logged to show that it's approx log-normal
-qplot(log(words.per.doc), binwidth=0.1, xlab = "log(number of words)")
+ggplot(documents, aes(x=log(words), color=jam)) + geom_density()
 
-# poking around some of the shorter docs
-documents[words.per.doc < 10,'text']
-documents[documents$text==" demonstrate personal responsibility Exactly ...thank you ", ]
-  # see if its parent offers any clues
-documents[documents$id=="<ffdc6a81b3.f2081933.WORLDJAM@d25was503.mkm.can.ibm.com>", ]
-  # or its siblings
-documents[documents$parent=="<ffdc6a81b3.f2081933.WORLDJAM@d25was503.mkm.can.ibm.com>", ]
-# it still looks weird....
+# by manager
+ggplot(documents, aes(x=words, color=manager)) + geom_density()
+ggplot(documents, aes(x=log(words), color=manager)) + geom_density()
+
+# by manager-jam
+ggplot(documents, aes(x=words, color=paste(jam,manager,sep="-"))) + geom_density()
+plt <- ggplot(documents, aes(x=log(words), color=paste(jam,manager,sep="-"))) + 
+          geom_density()
+ggsave("outputs/relative_doc_lengths.png", plt+thm)
 
 ################################
 # histo of docs per user
 ################################
 
-plt <- qplot(words.per.doc, binwidth=5, xlab = "number of words")
-ggsave("outputs/words_per_doc.png", plt+thm)
+docs.per.user <- summarize(group_by(documents, jam, manager, user), docs=n(), words=sum(words))
+ggplot(docs.per.user, aes(x=ifelse(docs>20,20,docs), color=paste(jam,manager,sep="-"))) + geom_histogram(postion="dodge", binwidth=1)
+ggplot(docs.per.user, aes(x=log(words), color=paste(jam,manager,sep="-"))) + geom_density()
+
+summarize(group_by(docs.per.user, jam, manager), mean(words), sd(words), mean(docs), sd(docs))
+
 
 #################
 #   THREADING   #
 #################
 
-# first check out some docs with no responses
-head(documents[documents$parent=='null',])
-
-# are there repeat ids?!?!?
-repeat.ids <- documents %>% group_by(id) %>% summarise(count=n())  
-repeat.ids <- repeat.ids[repeat.ids$count>1,]
-documents[documents$id %in% repeat.ids$id,]
-# they all have different text, so are actually distinct.  The 1x2 has the same parent, 
-#   and there are two 1x4 within the 1x8 that have the same parents as one another
-documents[documents$parent %in% repeat.ids$id,]
-# there are only three children of these 10 repeats.  One of them is in the wrong forum?  Will probably need to 
-#    delete that one.  Figuring out which of the parents to tie the others to will require looking at the text?
-
-# text of their parents
-documents[documents$id =="<ffd664eb8f.2d00a6be.WORLDJAM@d25was503.mkm.can.ibm.com>",]
-documents[documents$id =="<ffe03a1a56.8914988a.WORLDJAM@d25was504.mkm.can.ibm.com>",]
-  #and it's parent, too
-  documents[documents$id =="<ffd7497c22.9326a6f9.WORLDJAM@d25was503.mkm.can.ibm.com>",]
-documents[documents$id =="<ffe038da61.62f53160.WORLDJAM@d25was504.mkm.can.ibm.com>",]
-
-
-# weird -- some of the repeats have children that are in DIFFERENT fora. how ofter is this the case?
-forum.matching <- inner_join(documents[,c("forum","id")], documents[,c("forum","parent")], by=c("id"="parent"))
-forum.matching[forum.matching$forum.x != forum.matching$forum.y,]
-#   it looks like it is just the two identified above
 
 # we have multi-level nesting, but would like to group all docs that appeared in the same thread together
 # I'm going to call the orginating doc of such a thread the "common.ancestor." the originating doc will 
@@ -413,25 +407,75 @@ corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
 ###################################
 
 ## Initialize from a previously trained state
+model.name <- "ngram_model"
 iters <- 800
 maxims <- 25
-model_num <- 1
-model.label = paste(model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
-file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
-topic.model.2 <- MalletLDA(num.topics=n.topics)
-topic.model.2$loadDocuments(mallet.instances)
-topic.model.2$initializeFromState(.jnew("java.io.File", file.name))
+model.num <- 1
+topic.model.2 <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
 
-ret.2 <- topic.co.occur(topic.model, topic.model.2=topic.model.2)
+ret.1 <- topic.co.occur(topic.model, topic.model.2=topic.model)
+
+ret.2 <- topic.co.occur(topic.model.2, topic.model.2=topic.model.2)
 corr.heatmap(ret.2$corr.matrix, min=-4, max=4)
 
-ret.3 <- topic.co.occur(topic.model.2, topic.model.2=topic.model.2)
-corr.heatmap(ret.3$corr.matrix, min=-3, max=3)
+# we'd like to know what the self-similarity within each model looks like
+mean(diag(ret.1$corr.matrix))
+mean(diag(ret.2$corr.matrix))
+
+sum(ret.compare$corr.matrix > 2)
+
+# for a given similarity matrix, each topic from each of the two models will have a topic in the
+# other model that it is closest to,  In an n X n comparison, there will be 2n such closest. Let's grab those 2n similarity metrics and see how they compare
+
+corr.matrix <- ret.1$corr.matrix
+best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
+mean(best.match.dist)
+sd(best.match.dist)
+min(best.match.dist)
+
+corr.matrix <- ret.2$corr.matrix
+best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
+mean(best.match.dist)
+sd(best.match.dist)
+min(best.match.dist)
+
+ret.compare <- topic.co.occur(topic.model, topic.model.2=topic.model.2)
+#corr.heatmap(ret.compare$corr.matrix, min=-3, max=3)
+corr.matrix <- ret.compare$corr.matrix
+best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
+mean(best.match.dist)
+sd(best.match.dist)
+min(best.match.dist)
+
+###########################
+# Compare how often each pair of docs co-occurs 
+###########################
+
+
+# TODO ASK DAVID
+# if we take the correlation of each topic with its highest neighbor, 
+# then we can compare the overall doc classification 
+
+
+
+
 ####################################
 # Load an nongram model and compare to ngram
 ####################################
 
+model.name <- "nongram_model"
+iters <- 800
+maxims <- 25
+model.num <- 1
+topic.model.non <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
 
+
+ret.compare <- topic.co.occur(topic.model, topic.model.2=topic.model.non)
+corr.matrix <- ret.compare$corr.matrix
+best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
+mean(best.match.dist)
+sd(best.match.dist)
+min(best.match.dist)
 
 #############
 # can we use topic co-occurence as a way of seeing how different two models are 
