@@ -14,7 +14,7 @@ n.topics <- 30
 #   a folder "outputs" where this code sends the graph images
 
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
+wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 
 load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics) {
@@ -31,7 +31,7 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
                       )
   
   ## Initialize from a previously trained state
-  model.label = paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
+  model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
   file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
   topic.model <- MalletLDA(num.topics=n.topics)
   topic.model$loadDocuments(mallet.instances)
@@ -41,12 +41,16 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
 
 model.name <- "ngram_model"
 iters <- 800
-maxims <- 25
-model.num <- 2
-topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
+maxims <- 100
+model.num <- 1
+topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics)
+model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
 file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
 # this shoudl create an object called "documents"
 load(file.name)
+# make sure the outpus directory for this model exists
+output.dir <- file.path(wd, "outputs", model.label) 
+dir.create(output.dir, showWarnings = FALSE)
 
 ## Get the probability of topics in documents and the probability of words in topics.
 ## By default, these functions return raw word counts. Here we want probabilities, 
@@ -120,11 +124,11 @@ posts.by.window <- get.posts.by.window(documents, by.vars)
 #output both the raw and the normalized plots
 plt=qplot(as.integer(DateWindow), x.x, data = posts.by.window, 
           geom = "line", color=by.var) + geom_point() 
-ggsave("outputs/raw_posts_by_time.png", plt + thm)
+ggsave(file.path(output.dir, "raw_posts_by_time.png"), plt + thm)
 
 plt=qplot(as.integer(DateWindow), post.rate, data = posts.by.window, 
           geom = "line", color=by.var) + geom_point()
-ggsave("outputs/indexed_posts_by_time.png", plt+thm)
+ggsave(file.path(output.dir, "indexed_posts_by_time.png"), plt+thm)
 
 ##################################
 # Topic Share Plotting Function  #
@@ -136,6 +140,7 @@ plot_topic_shares <- function(df,
                               topic.num.label=NULL,
                               ylim=NULL,
                               threshold.for.count=NULL) {
+  dir.create(output.dir, showWarnings = FALSE)
   aggregate.set <- c("DateWindow", "jam", by.vars)
   topic.name <-  colnames(df)[topic.num]
   if (is.null(threshold.for.count)) {
@@ -159,8 +164,8 @@ plot_topic_shares <- function(df,
   plt <- qplot(as.integer(DateWindow), get(topic.name), 
                data = topic.rate, geom = "line", color=by.var, 
                ylab = topic.name) + geom_point() + coord_cartesian(ylim=ylim)
-  plt.title <- paste(sprintf("%02s",topic.num.label),"-",topic.name)
-  ggsave(paste(output.dir, plt.title, ".png", sep=""),
+  plt.title <- paste(sprintf("%02d",topic.num.label),"-",topic.name)
+  ggsave(file.path(output.dir, paste(plt.title, ".png", sep="")),
          plt+thm+ggtitle(plt.title)
   )
 }
@@ -194,12 +199,12 @@ plot.all.topic.shares <- function(df, docs, col.keeps,
 col.keeps <- c("forum", "continent", "jam", "manager", "DateWindow")
 by.vars <- c("jam", "forum")
 plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, 
-                      "outputs/forum_prev/", ylim=c(0,0.35))
+                      file.path(output.dir, "forum_prev/"), ylim=c(0,0.35))
 
 # managers and jam
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
-plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, "outputs/prev/")
+plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, file.path(output.dir, "manager_prev/"))
 
 
 #diagnostic tool for seeing a particular topic's raw numbers
@@ -214,15 +219,15 @@ plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, "outputs/
 # 3.a. histograms of topic prevalance over documents, with a threshold prevalence
 ######
 
-threshold <- 0.2
+threshold <- 0.1
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
-plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, sprintf("outputs/threshold_%1.0f/", 100*threshold), ylim=NULL, threshold.for.count=threshold)
+plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, sprintf(file.path(output.dir, "threshold_%1.0f/"), 100*threshold), ylim=NULL, threshold.for.count=threshold)
 
 
 
 ############
-#  3.b. plots limited to threshold
+#  3.b. plot only prevalvence over a threshold
 ############
 
 threshold <- 0.05
@@ -232,10 +237,10 @@ by.vars <- c("manager", "jam")
 #doc.topics.data <- cbind(doc.topics.frame, documents[col.keeps])
 #doc.topics.data <- doc.topics.data[doc.topics.data$DateWindow %in% unique(posts.by.window$DateWindow),]
 
-output.dir <- "outputs/topic_prev_threshold/"
+this.output.dir <- file.path(output.dir, "topic_prev_threshold/")
 for (topic in 1:n.topics) {
   thresh.doc.by.topic <- doc.topics.data[doc.topics.data[topic] > threshold,]
-  plot_topic_shares(thresh.doc.by.topic, by.vars, output.dir, topic, ylim=c(0,0.3))
+  plot_topic_shares(thresh.doc.by.topic, by.vars, this.output.dir, topic, ylim=c(0,0.3))
 }
 
 
@@ -251,7 +256,7 @@ focal.topics.index <- focal.topics + 1
 # create a data frame with just the focal topics, with prevalence rebalanced to be proportion of focal topics
 focal.doc.topics <- doc.topics.frame[,focal.topics.index] / rowSums(doc.topics.frame[,focal.topics.index])
 plot.all.topic.shares(focal.doc.topics, documents, col.keeps, by.vars, 
-                      posts.by.window, "outputs/focal_prev/", focal.topics, ylim=c(0,0.3))
+                      posts.by.window, file.path(output.dir, "focal_prev/"), focal.topics, ylim=c(0,0.3))
 
 
 mallet.top.words(topic.model, topic.words[20,], 20)
@@ -266,7 +271,7 @@ doc.len <- rowSums(unnormal.doc.topics)
 documents$words <- doc.len
 
 plt <- qplot(documents$words, binwidth=5, xlab = "number of words")
-ggsave("outputs/words_per_doc.png", plt+thm)
+ggsave(file.path(output.dir, "words_per_doc.png"), plt+thm)
 # --and logged to show that it's approx log-normal
 qplot(log(documents$words), binwidth=0.1, xlab = "log(number of words)")
 
@@ -283,7 +288,7 @@ ggplot(documents, aes(x=log(words), color=manager)) + geom_density()
 ggplot(documents, aes(x=words, color=paste(jam,manager,sep="-"))) + geom_density()
 plt <- ggplot(documents, aes(x=log(words), color=paste(jam,manager,sep="-"))) + 
           geom_density()
-ggsave("outputs/relative_doc_lengths.png", plt+thm)
+ggsave(file.path(output.dir, "relative_doc_lengths.png"), plt+thm)
 
 ################################
 # histo of docs per user
