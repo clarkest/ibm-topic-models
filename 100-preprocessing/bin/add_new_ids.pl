@@ -1,4 +1,5 @@
 binmode STDOUT, ":utf8";
+binmode IN, ":utf8";
 
 my $first_row = <>;
 print $first_row . "\tnew_id\n";

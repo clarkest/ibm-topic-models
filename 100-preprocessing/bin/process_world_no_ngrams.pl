@@ -1,22 +1,17 @@
 binmode STDOUT, ":utf8";
-#my %abbrev_replacements = ();
-my @source = ();
-my @target = ();
+binmode IN, ":utf8";
 
-#my %phrase_replacements = ();
-open REPS, "lists/phrases.txt";
-while (<REPS>) {
+my @drop_ids = ();
+open DROPS, "lists/new_ids_dropped.txt";
+while (<DROPS>) {
     chomp;
-    # my $source = $_;
+    
     my $destination = $_;
     $destination =~ s/ /_/g;
 
-    #$phrase_replacements{$source} = $destination;
-    push (@source, $_);
-    push (@target, $destination);
-    #print "$source to $destination\n";
+    push (@drop_ids, $_);
 }
-close REPS;
+close DROPS;
 
 my @jobtitles = ();
 
@@ -25,7 +20,7 @@ while (<MANAGERS>) {
     chomp;
     push @jobtitles, $_;
 }
-close REPS;
+close MANAGERS;
 
 my $first_row = <>;
 chomp $first_row;
@@ -63,100 +58,101 @@ sub l1_diff {
 }
 
 while (<>) {
+    my $drop=0;
     chomp;
     my @fields = split /\t/, $_;
-
-    my $job_resp = $fields[11];
-    my $role = "Other";
-    foreach my $title (@jobtitles) {
-    	if ($job_resp =~ /\Q$title\E/i) {
-    	    $role = "Manager";
-    	    last;
-    	}
-    }
-    push @fields, $role;
-
-    my $date_time = $fields[6];
-    if ($date_time =~ /(\d+\/\d+\/\d+) (.*)/) {
-	   $fields[6] = $1;
-	   push @fields, $2;
+    foreach my $id (@drop_ids) {
+        if ($id eq $fields[18]) {
+            $drop=1;
+            print STDERR "dropping " . $id . "\n";
+            last;
+        }
     }
 
-    my $title = $fields[12];
-    my $text = $fields[17];
+    if ($drop==0) {
+        my $job_resp = $fields[11];
+        my $role = "Other";
+        foreach my $title (@jobtitles) {
+        	if ($job_resp =~ /\Q$title\E/i) {
+        	    $role = "Manager";
+        	    last;
+        	}
+        }
+        push @fields, $role;
 
-    # drop HTML
-    $text =~ s/<[^>]+>//g;
-    
-    # drop URLs
-    $text =~ s/http\S+//g;
+        my $date_time = $fields[6];
+        if ($date_time =~ /(\d+\/\d+\/\d+) (.*)/) {
+    	   $fields[6] = $1;
+    	   push @fields, $2;
+        }
 
-    # drop arrows
-    $text =~ s/->//g;  
-    $title =~ s/->//g;  
+        my $title = $fields[12];
+        my $text = $fields[17];
 
-    # for good measure, just kill off any remaining > or <
-    $text =~ s/[>,<]//g;  
-    $title =~ s/[>,<]//g;  
-
-    # boilerplate
-    $text =~ s/\QNote: Comment formatted to fit web page.\E//;
-    $text =~ s/Note: Reply formatted to fit web page.//;
-
-    # get rid of repeated white space in both, as it throws off matches
-    $text =~ s/\h+/ /g;
-    $title =~ s/\h+/ /g;
-
-    # remove titles
-    $text =~ s/^\Q$title\E//;
-
-    # replace " with '
-    $text =~ s/"/'/g;
-    $title =~ s/"/'/g;
-
-    # broken UTF-8
-    $text =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
-    $text =~ s/[\xe2]\W+/ /g;
-
-    $title =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
-    $title =~ s/[\xe2]\W+/ /g;
-
-    # check for duplicates -- BEFORE doing the text replacement.  
-    ## this keeps the dupes reduction consistent between ngram and nongram
-    ## implementations
-    my %current_words = ();
-    my @tokens = split /\s+/, $text;
-    foreach my $token (@tokens) {
-       $current_words{$token}++;
-    }
-
-    my $is_duplicate = 0;
-    if (defined $sender_cache{ $fields[0] }) {
-    foreach my $previous_message (@{$sender_cache{ $fields[0] }}) {
-        if (l1_diff(\%current_words, $previous_message) < 3) {
-        $is_duplicate = 1;
+        # drop HTML
+        $text =~ s/<[^>]+>//g;
         
-        #my $previous_text = substr(join(" ", sort keys(%{$previous_message})), 0, 45);
-        #my $current_text = substr(join(" ", sort keys(%current_words)), 0, 45);
-        #print "$previous_text\t$current_text\n";
-        }
-    }
-    }
+        # drop URLs
+        $text =~ s/http\S+//g;
 
-    if (! $is_duplicate) { 
-        #foreach my $source (keys %replacements) {
-        for my $i (0..$#source) {
-           #my $target = $replacements{$source};
-           #$text =~ s/\Q$source\E/$target/gi;
-           #$title =~ s/\Q$source\E/$target/gi;
-           $text =~ s/\b$source[$i]\b/$target[$i]/gi;
-           $title =~ s/\b$source[$i]\b/$target[$i]/gi;
+        # drop arrows
+        $text =~ s/->//g;  
+        $title =~ s/->//g;  
+
+        # for good measure, just kill off any remaining > or <
+        $text =~ s/[>,<]//g;  
+        $title =~ s/[>,<]//g;  
+
+        # boilerplate
+        $text =~ s/\QNote: Comment formatted to fit web page.\E//;
+        $text =~ s/Note: Reply formatted to fit web page.//;
+
+        # get rid of repeated white space in both, as it throws off matches
+        $text =~ s/\h+/ /g;
+        $title =~ s/\h+/ /g;
+
+        # remove titles
+        $text =~ s/^\Q$title\E//;
+
+        # replace " with '
+        $text =~ s/"/'/g;
+        $title =~ s/"/'/g;
+
+        # broken UTF-8
+        $text =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
+        $text =~ s/[\xe2]\W+/ /g;
+
+        $title =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
+        $title =~ s/[\xe2]\W+/ /g;
+
+        # check for duplicates -- BEFORE doing the text replacement.  
+        ## this keeps the dupes reduction consistent between ngram and nongram
+        ## implementations
+        my %current_words = ();
+        my @tokens = split /\s+/, $text;
+        foreach my $token (@tokens) {
+           $current_words{$token}++;
         }
 
-        $fields[17] = $text;
-        $fields[12] = $title;
-        print join("\t", @fields) . "\n"; 
+        my $is_duplicate = 0;
+        if (defined $sender_cache{ $fields[0] }) {
+        foreach my $previous_message (@{$sender_cache{ $fields[0] }}) {
+            if (l1_diff(\%current_words, $previous_message) < 3) {
+            $is_duplicate = 1;
+            
+            #my $previous_text = substr(join(" ", sort keys(%{$previous_message})), 0, 45);
+            #my $current_text = substr(join(" ", sort keys(%current_words)), 0, 45);
+            #print "$previous_text\t$current_text\n";
+            }
+        }
+        }
+
+        if (! $is_duplicate) { 
+            $fields[17] = $text;
+            $fields[12] = $title;
+            print join("\t", @fields) . "\n"; 
+        }
+        
+        push @{$sender_cache{ $fields[0] }}, \%current_words;
     }
-    
-    push @{$sender_cache{ $fields[0] }}, \%current_words;
 }
