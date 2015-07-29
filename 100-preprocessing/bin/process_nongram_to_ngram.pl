@@ -1,5 +1,5 @@
 binmode STDOUT, ":utf8";
-binmode IN, ":utf8";
+#binmode IN, ":utf8";
 #my %abbrev_replacements = ();
 my @source = ();
 my @target = ();
@@ -55,9 +55,11 @@ while (<>) {
     my $title = $fields[12];
 
     for my $i (0..$#source) {
-       $text =~ s/\b$source[$i]\b/$target[$i]/gi;
+       $text =~ s/\Q$source[$i]\E/$target[$i]/gi;
        $title =~ s/\b$source[$i]\b/$target[$i]/gi;
     }
+    $fields[17] = $text;
+    $fields[12] = $title;
     print join("\t", @fields) . "\n";
     #printf("%d\t%s\n", $fields[0], $text);
 }
