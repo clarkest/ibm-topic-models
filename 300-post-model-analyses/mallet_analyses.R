@@ -30,6 +30,33 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
   return(topic.model)
 }
 
+load.model.for.analysis <- function(n.topics, model.name, iters, maxims, model.num) {
+  
+  topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics)
+  model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
+  file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
+  
+  # this should create an object called "documents"
+  load(file.name)
+  
+  ## Get the probability of topics in documents and the probability of words in topics.
+  ## By default, these functions return raw word counts. Here we want probabilities, 
+  ##  so we normalize, and add "smoothing" so that nothing has exactly 0 probability.
+  doc.topics <- mallet.doc.topics(topic.model, smoothed=T, normalized=T)
+  topic.words <- mallet.topic.words(topic.model, smoothed=T, normalized=T)
+  
+  ## Get short labels that can be used as part of filename
+  topics.labels <- gsub("\\W", "_", mallet.topic.labels(topic.model, topic.words, 3))
+  #topics.long.labels <- mallet.topic.labels(topic.model, topic.words, num.top.words=50)
+  
+  doc.topics.frame <- data.frame(doc.topics)
+  #names(doc.topics.frame) <- paste("Topic", 1:n.topics, sep="")
+  names(doc.topics.frame) <- topics.labels
+  
+  return (list(topic.model=topic.model, documents=documents, doc.topics=doc.topics, doc.topics.frame=doc.topics.frame, model.label=model.label))
+}
+
+
 get.posts.by.window <- function(documents, by.vars) { 
   aggregate.set = c("DateWindow", by.vars)
   
@@ -265,6 +292,7 @@ vocab.diff.by.factor <- function(factor, docs, topic.model, doc.subset=NULL, lam
   for (warn in warnings) {print(warn)}
   return(factor.pairs.differences)
 }
+
 
 l1.distances <- function(factor, docs, topic.model, doc.subset=NULL, lambda=1.0, use.relevance=FALSE) {
   factor.pairs.differences <- vocab.diff.by.factor(factor, docs, topic.model, doc.subset, lambda, use.relevance)

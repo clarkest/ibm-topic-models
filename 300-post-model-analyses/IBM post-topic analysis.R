@@ -1,45 +1,24 @@
 source("300-post-model-analyses/mallet_analyses.R")
 
 n.topics <- 30
-# assumes a working directory with 
-#   a folder "model_states" containing .gz of topic models and .Rdata documents object
-#   a folder "outputs" where this code sends the graph images
-
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
-
 model.name <- "ngram_model"
 iters <- 800
-maxims <- 25
-model.num <- 1
-topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics)
-model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
-file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
-# this shoudl create an object called "documents"
-load(file.name)
+maxims <- 50
+model.num <- 4
+
+list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+topic.model <- list$topic.model
+documents <- list$documents
+doc.topics <- list$doc.topics
+doc.topics.frame <- list$doc.topics.frame
+model.label <- list$model.label
+
 # make sure the outpus directory for this model exists
-output.dir <- file.path(wd, "outputs", model.label) 
+output.dir <- file.path("outputs", model.label) 
 dir.create(output.dir, showWarnings = FALSE)
-
-## Get the probability of topics in documents and the probability of words in topics.
-## By default, these functions return raw word counts. Here we want probabilities, 
-##  so we normalize, and add "smoothing" so that nothing has exactly 0 probability.
-doc.topics <- mallet.doc.topics(topic.model, smoothed=T, normalized=T)
-topic.words <- mallet.topic.words(topic.model, smoothed=T, normalized=T)
-topic.words.0 <- mallet.topic.words(topic.model, smoothed=F, normalized=T)
-
-## What are the top words in topic 7?
-##  Notice that R indexes from 1, so this will be the topic that mallet called topic 6.
-#mallet.top.words(topic.model, topic.words[7,])
-
-## Get short labels that can be used as part of filename
-topics.labels <- gsub("\\W", "_", mallet.topic.labels(topic.model, topic.words, 3))
-topics.long.labels <- mallet.topic.labels(topic.model, topic.words, num.top.words=50)
-
-doc.topics.frame <- data.frame(doc.topics)
-#names(doc.topics.frame) <- paste("Topic", 1:n.topics, sep="")
-names(doc.topics.frame) <- topics.labels
 
 ##################################
 #   Graph Formatting             #
@@ -89,7 +68,6 @@ plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars,
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
 plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, file.path(output.dir, "manager_prev/"))
-
 
 #diagnostic tool for seeing a particular topic's raw numbers
 #View(avg.topic.rate <- aggregate(doc.topics.data[2], by=doc.topics.data[,aggregate.set], mean))
@@ -183,157 +161,11 @@ ggplot(docs.per.user, aes(x=log(words), color=paste(jam,manager,sep="-"))) + geo
 summarize(group_by(docs.per.user, jam, manager), mean(words), sd(words), mean(docs), sd(docs))
 
 
-#################
-#   THREADING   #
-#################
 
-
-# we have multi-level nesting, but would like to group all docs that appeared in the same thread together
-# I'm going to call the orginating doc of such a thread the "common.ancestor." the originating doc will 
-# have a common.ancestor equal to its own id
-
-# step 1: all parent='null' set to the comment id
-documents$common.ancestor <- ifelse(documents$parent=='null', documents$id, 'null')
-View(documents[,c("id","parent","common.ancestor")])
-
-# step 2: iterate through each nested layer: set the common.ansestor equal to the common ancestor of the parent 
-#         of each comment.  this will populate the next level down in the trees during each pass
-sum(documents$common.ancestor=='null')
-while (sum(documents$common.ancestor=='null') > 0) {
-  documents$parent.ancestor <- left_join(documents[,c("id","parent")], documents[,c("id","common.ancestor")], by=c("parent"="id"))
-  documents$common.ancestor <- ifelse(documents$common.ancestor=='null', )
-}
-
-
-
-
-ret.1 <- topic.co.occur(topic.model)
-#topic.counts
-ret$co.occur.count
-ret$corr.matrix
-
-corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
-
-###################################
-# compare the two ngram models    #
-###################################
-
-## Initialize from a previously trained state
-model.name <- "ngram_model"
-iters <- 800
-maxims <- 25
-model.num <- 2
-topic.model.2 <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
-
-ret.1 <- topic.co.occur(topic.model, topic.model.2=topic.model)
-
-ret.2 <- topic.co.occur(topic.model.2, topic.model.2=topic.model.2)
-corr.heatmap(ret.2$corr.matrix, min=-4, max=4)
-
-# we'd like to know what the self-similarity within each model looks like
-mean(diag(ret.1$corr.matrix))
-mean(diag(ret.2$corr.matrix))
-
-sum(ret.compare$corr.matrix > 2)
-
-# for a given similarity matrix, each topic from each of the two models will have a topic in the
-# other model that it is closest to,  In an n X n comparison, there will be 2n such closest. Let's grab those 2n similarity metrics and see how they compare
-
-corr.matrix <- ret.1$corr.matrix
-best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
-mean(best.match.dist)
-sd(best.match.dist)
-min(best.match.dist)
-
-corr.matrix <- ret.2$corr.matrix
-best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
-mean(best.match.dist)
-sd(best.match.dist)
-min(best.match.dist)
-
-ret.compare <- topic.co.occur(topic.model, topic.model.2=topic.model.2)
-#corr.heatmap(ret.compare$corr.matrix, min=-3, max=3)
-corr.matrix <- ret.compare$corr.matrix
-best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
-mean(best.match.dist)
-sd(best.match.dist)
-min(best.match.dist)
-
-###########################
-# Compare how often each pair of docs co-occurs 
-###########################
-
-
-# TODO ASK DAVID
-# if we take the correlation of each topic with its highest neighbor, 
-# then we can compare the overall doc classification 
-
-
-
-
-####################################
-# Load an nongram model and compare to ngram
-####################################
-
-model.name <- "nongram_model"
-iters <- 800
-maxims <- 25
-model.num <- 1
-topic.model.non <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics) 
-
-
-ret.compare <- topic.co.occur(topic.model, topic.model.2=topic.model.non)
-corr.matrix <- ret.compare$corr.matrix
-best.match.dist <- cbind(apply(corr.matrix, 1, max), apply(corr.matrix, 2, max))
-mean(best.match.dist)
-sd(best.match.dist)
-min(best.match.dist)
-
-#############
-# can we use topic co-occurence as a way of seeing how different two models are 
-# in terms of classifying docs?
-#############
-
-# Create a second, no-ngram topic model
-
-ngram.documents <- documents
-nongram.model.name <- "nongram_model"
-
-# load the persisted documents -- these are needed before we can load a model from state
-nongram.file.name <- paste0(paste("models_dir", nongram.model.name, sep="/"), "-docs.Rdata")
-# this shoudl create an object called "documents"
-load(nongram.file.name)
-nongram.documents <- documents
-nongram.mallet.instances <- mallet.import(nongrams.documents$id, 
-                                  nongrams.documents$text, 
-                                  stop.word.file, 
-                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]")
-
-## Initialize from a previously trained state
-iters <- 800
-maxims <- 20
-model_num <- 6
-model.label = paste(nongram.model.name, iters, maxims, formatC(model_num, width=2, flag="0"), sep="-")
-file.name <- paste(model.dir, paste0(model.label, ".gz"), sep="/")
-nongram.topic.model <- MalletLDA(num.topics=n.topics)
-nongram.topic.model$loadDocuments(nongram.mallet.instances)
-nongram.topic.model$initializeFromState(.jnew("java.io.File", file.name))
-
-# the documents don't line up exactly, so we need to map the two sets together
-non.to.n.overlaps <- sapply(nongram.documents$id, function(x) is.element(x, ngram.documents$id))
-sum(non.to.n.overlaps)
-nongram.documents[!non.to.n.overlaps, "text"]
-n.to.non.overlaps <- sapply(ngram.documents$id, function(x) is.element(x, nongram.documents$id))
-sum(n.to.non.overlaps)
-ngram.documents[!n.to.non.overlaps, "text"]
 
 ########################
-# pull out interesting topics by forum/topic ?
+# distances between subgroups within each topic
 ########################
-
-
-
-
 
 # Compare World and Value Topics 
 l1.distances("jam", documents, topic.model)
