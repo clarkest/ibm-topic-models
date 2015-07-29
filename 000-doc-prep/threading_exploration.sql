@@ -135,9 +135,37 @@ SELECT COUNT(*) FROM ancestry WHERE oldest<>"complete";
 SELECT MAX(generation) FROM ancestry;
 
 
+# we need to get updated titles for hte new ids to map properly
+# first, dump the full set of old titles:
+SELECT DISTINCT title FROM ancestry WHERE id LIKE "%WORLDJAM%" 
+INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/old_titles.tsv"
+FIELDS TERMINATED BY '\t'
+ENCLOSED BY ''
+LINES TERMINATED BY '\n';
 
-SELECT JobResp, COUNT(*) AS COUNT FROM (SELECT AuthorEmail, values_clean;
+ALTER TABLE ancestry DROP COLUMN new_id;
+ALTER TABLE ancestry ADD COLUMN new_id VARCHAR(60);
+UPDATE ancestry 
+	SET new_id =  IF(id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(id,2,20), SUBSTRING(title, 1, 20)), id); 
 
+SELECT new_id FROM ancestry WHERE id LIKE "%ALUESJAM%" LIMIT 10;
+
+
+
+
+
+SELECT 'id','title','parent_id','ancestry','generation'
+UNION ALL
+SELECT new_id,title,parent_id,ancestry,generation FROM ancestry 
+INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/thread_ancestry.csv"
+FIELDS TERMINATED BY '\t'
+ENCLOSED BY ''
+LINES TERMINATED BY '\n';
+
+
+#####################################
+# Titles
+#####################################
 SELECT title, COUNT(*) AS number 
 	FROM (SELECT JobResp AS title 
 			FROM values_clean 
