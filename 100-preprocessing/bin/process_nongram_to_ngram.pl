@@ -46,7 +46,7 @@ while (<REPS>) {
 }
 close REPS;
 
-
+my $doc=0;
 while (<>) {
     chomp;
     
@@ -62,4 +62,7 @@ while (<>) {
     $fields[12] = $title;
     print join("\t", @fields) . "\n";
     #printf("%d\t%s\n", $fields[0], $text);
+    #periodically throw a counter to stderr so that the user doesn't get worried
+    $doc++;
+    if ($doc % 1000 == 0) { print STDERR "$doc\n"; }
 }
