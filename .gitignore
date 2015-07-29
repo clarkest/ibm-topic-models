@@ -3,3 +3,4 @@ place_docs_here/*
 models_dir/*
 outputs/*
 .DS_Store
+.Rhistory
