@@ -4,10 +4,10 @@ n.topics <- 30
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
-model.name <- "ngram_model"
+model.name <- "windows"
 iters <- 800
 maxims <- 50
-model.num <- 4
+model.num <- 1
 
 list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
 topic.model <- list$topic.model
@@ -20,6 +20,9 @@ model.label <- list$model.label
 #   THREADING   #
 #################
 
+# load the ancestry information
+ancestry <- read.delim("place_docs_here/thread_ancestry.csv", encoding="UTF-8", sep="\t", quote='', stringsAsFactors=FALSE)
+doc.temp <- merge(documents, ancestry, by.x="id", by.y="id")
 
 # we have multi-level nesting, but would like to group all docs that appeared in the same thread together
 # I'm going to call the orginating doc of such a thread the "common.ancestor." the originating doc will 

@@ -9,7 +9,7 @@ n.topics <- 30
 this.dir = "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
-model.name <- "unix"
+model.name <- "windows"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
 world.file <- "place_docs_here/world-docs-ngrams.tsv"
 iters <- 800
@@ -34,8 +34,19 @@ world <- read.delim(world.file,
                    quote=""
 )
 # update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
-world$commentid <- paste(substring(world$commentid,2,20), substring(gsub("'","",world$title), 1, 20), sep=".") 
-world$parent_comment_id <- ifelse(world$parent_comment_id=='null','null',paste(substring(world$parent_comment_id,2,20), substring(gsub("'","",world$title), 1, 20), sep=".")) 
+# need to strip out the ? marks from titles to match the SQL ids
+titles <- gsub("\\?","",world$title)
+# then remove the non-ascii characters and append to the supposed-to-be-unique part 
+# of the comment id
+world$commentid <- paste(substring(world$commentid,2,20), 
+                         substring(iconv(titles, "UTF-8", "ASCII", sub=""), 1, 20), 
+                         sep="."
+                         ) 
+world$parent_comment_id <- ifelse(world$parent_comment_id=='null','null',
+                                  paste(substring(world$parent_comment_id,2,20), 
+                                        substring(iconv(titles, "UTF-8", "ASCII", sub=""), 1, 20), 
+                                        sep=".")
+                            ) 
 
 
 #removing these outright to not affect the 8-hr blocks

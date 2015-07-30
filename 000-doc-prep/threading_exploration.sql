@@ -1,5 +1,14 @@
 # load the world reloaded data from tsv using tsv import
+CREATE TABLE world_reloaded_2 SELECT * FROM world_reloaded LIMIT 0;
+LOAD DATA INFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/reloaded_world_ided.tsv" 
+INTO TABLE world_reloaded_2 
+FIELDS TERMINATED BY '\t' 
+ENCLOSED BY ''
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
 # load the post-prcessed world data to see which ended up being kept
+RENAME TABLE world_reloaded TO world_reload_old;
+RENAME TABLE world_reloaded_2 TO world_reloaded;
 
 SELECT commentid, title, TEXT, COUNT(*)
 	FROM world_reloaded  
@@ -7,18 +16,22 @@ SELECT commentid, title, TEXT, COUNT(*)
 	HAVING COUNT(*) >1;
 
 # move the offending rows into a new table
+DROP TABLE IF EXISTS temp_id_fix;
 CREATE TABLE temp_id_fix 
 	SELECT * FROM world_reloaded 
 	WHERE commentid IN  
 		("<ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffe043f7ee.3100b90a.WORLDJAM@d25was504.mkm.can.ibm.com>")
 ; 
 # then, update the jacked commentids to parse out by comment and text
-UPDATE temp_id_fix SET commentid = CONCAT(SUBSTR(commentid,2,20), SUBSTR(title,1,20)); 
+UPDATE temp_id_fix SET commentid = CONCAT(SUBSTR(commentid,2,19), ".", SUBSTR(title,1,20)); 
 
 # delete the off rows by hand
 # rule 1: keep only one of each unique title-id-text (16 -> 8 rows)
 # rule 2: it is obvious which text goes with each title, delete the off ones (8 -> 4 rows)
-
+# update the ids: 
+	#.Motivating Customer -> .Motivating customer_
+	#.Build a culture as d -> .build_a_culture as d
+	
 # remove the original 16 rows from the main table
 DELETE FROM world_reloaded WHERE commentid IN  
 		("<ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffe043f7ee.3100b90a.WORLDJAM@d25was504.mkm.can.ibm.com>");
@@ -28,7 +41,7 @@ INSERT INTO world_reloaded SELECT * FROM temp_id_fix;
 
 # update the parent ids that reference these comments
 UPDATE world_reloaded 
-	SET parent_comment_id = CONCAT(SUBSTR(parent_comment_id,2,20), SUBSTR(title,1,20))
+	SET parent_comment_id = CONCAT(SUBSTR(parent_comment_id,2,19), ".", SUBSTR(title,1,20))
 	WHERE parent_comment_id IN ("<ffd67d2eec.4af25522.WORLDJAM@d25was503.mkm.can.ibm.com>","<ffe043f7ee.3100b90a.WORLDJAM@d25was504.mkm.can.ibm.com>");		
 # we need the new_ids for the deleted ones
 SELECT wo.new_id
@@ -93,7 +106,10 @@ SELECT COUNT(DISTINCT parent_comment_id), SUM(`parent_comment_id` <> "null" AND 
 # let's get some thread summary statistics from the raw data
 DROP TABLE IF EXISTS combined_ids;
 CREATE TABLE combined_ids
-	SELECT commentid AS id, parent_comment_id AS parent_id, title AS title FROM world_reloaded
+	SELECT  CONCAT(SUBSTR(commentid,2,19), ".", SUBSTR(title,1,20)) AS id,
+		 CONCAT(SUBSTR(parent_comment_id,2,19), ".", SUBSTR(title,1,20)) AS parent_id, 
+		 title AS title 
+	FROM world_reloaded
 	UNION
 	SELECT id AS id, Parent AS parent_id, `Name` AS title FROM values_clean;
 
@@ -117,7 +133,8 @@ CREATE TABLE ancestry
 		IF(parent_id="null", "complete", parent_id) AS oldest,
 		1 AS generation
 	FROM combined_ids gen1 ;
-	
+
+ALTER TABLE ancestry MODIFY ancestry VARCHAR(4000);	
 ALTER TABLE ancestry ADD INDEX oldestidx (oldest);
 
 # run this until no rows are updated
@@ -134,24 +151,62 @@ SELECT COUNT(*) FROM ancestry WHERE oldest<>"complete";
 
 SELECT MAX(generation) FROM ancestry;
 
-
+SET CHARACTER SET 'utf8';
+SET collation_connection = 'utf8_general_ci';
 # we need to get updated titles for hte new ids to map properly
 # first, dump the full set of old titles:
-SELECT DISTINCT title FROM ancestry WHERE id LIKE "%WORLDJAM%" 
-INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/old_titles.tsv"
+SELECT DISTINCT(BINARY title) FROM ancestry WHERE id LIKE "%WORLDJAM%" 
+INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/old_titles_2.tsv"
 FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
 LINES TERMINATED BY '\n';
 
+
+# use perl script to ngram them
+# then reload
+DROP TABLE IF EXISTS title_ngram_maps;
+CREATE TABLE title_ngram_maps (old_title VARCHAR(200), ngram_title VARCHAR(200));
+
+LOAD DATA INFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/title_mappings.tsv" 
+INTO TABLE title_ngram_maps 
+FIELDS TERMINATED BY '\t' 
+ENCLOSED BY ''
+LINES TERMINATED BY '\n';
+
+ALTER TABLE ancestry DROP COLUMN ngram_title;
+ALTER TABLE ancestry ADD COLUMN ngram_title VARCHAR(200);
+ALTER TABLE ancestry MODIFY COLUMN title VARCHAR(200) BINARY;
+ALTER TABLE title_ngram_maps MODIFY COLUMN old_title VARCHAR(200) BINARY;
+
+UPDATE ancestry SET title = REPLACE(CONVERT(title USING ASCII), '?', '');
+UPDATE title_ngram_maps SET old_title = REPLACE(CONVERT(old_title USING ASCII), '?', '');
+UPDATE title_ngram_maps SET ngram_title = REPLACE(CONVERT(ngram_title USING ASCII), '?', '');
+
+CREATE INDEX old_t ON ancestry (title);
+CREATE INDEX old_t ON title_ngram_maps (old_title);
+CREATE INDEX id ON ancestry (id);
+
+UPDATE ancestry a, title_ngram_maps tnm 
+	SET a.ngram_title = tnm.ngram_title
+	WHERE a.id LIKE "%WORLDJAM%" AND  a.title = tnm.old_title;
+
 ALTER TABLE ancestry DROP COLUMN new_id;
 ALTER TABLE ancestry ADD COLUMN new_id VARCHAR(60);
 UPDATE ancestry 
-	SET new_id =  IF(id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(id,2,20), SUBSTRING(title, 1, 20)), id); 
+	SET new_id =  IF(id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(id,2,19), ".", SUBSTRING(ngram_title, 1, 20)), id); 
+	#set new_id =  if(id like "%WORLDJAM%", concat(substring(id,2,19), ".", substring(replace(REPLACE(ngram_title,"""",""),"'",""), 1, 20)), id); 
 
-SELECT new_id FROM ancestry WHERE id LIKE "%ALUESJAM%" LIMIT 10;
+"ffd77db0e0.9ad9b6a0.Invest in customer h"
+ [3] "ffd803723c.19c02bee.Invest in customer h" "ffda9d4fa3.58130dc..Invest in customer h"
+ [5] "ffe043f7ee.3100b90a.build_a_culture as d"
+# hand updates
+UPDATE ancestry SET id = "ffd67d2eec.4af25522.Motivating customer_" WHERE id="ffd67d2eec.4af25522.Motivating Customer ";
+UPDATE ancestry SET id = "ffd77db0e0.9ad9b6a0.Invest in customer h" WHERE id="<ffd77db0e0.9ad9b6a0.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE ancestry SET id = "ffd803723c.19c02bee.Invest in customer h" WHERE id="<ffd803723c.19c02bee.WORLDJAM@d25was504.mkm.can.ibm.com>";
+UPDATE ancestry SET id = "ffda9d4fa3.58130dc..Invest in customer h" WHERE id="<ffda9d4fa3.58130dc.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE ancestry SET id = "ffe043f7ee.3100b90a.build_a_culture as d" WHERE id="ffe043f7ee.3100b90a.Build a culture as d";
 
-
-
+# select new_id from ancestry where id LIKE "%ALUESJAM%" limit 10;
 
 
 SELECT 'id','title','parent_id','ancestry','generation'
@@ -162,7 +217,13 @@ FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
 LINES TERMINATED BY '\n';
 
-
+SELECT * FROM title_ngram_maps WHERE old_title IN (SELECT title FROM world_reloaded WHERE commentid LIKE "%ffd5fa9f61.2358e862%");
+SELECT id, title, ngram_title, 
+	REPLACE(CONVERT(title USING ASCII), '?', '') 
+	FROM ancestry WHERE id LIKE "%ffda9d4fa3.58130dc.%";
+SELECT * FROM title_ngram_maps WHERE old_title LIKE "%Motivating Cust%";
+SELECT * FROM title_ngram_maps WHERE BINARY old_title IN (SELECT BINARY title FROM ancestry WHERE id LIKE "%ffd67d2eec.4af25522%");
+SELECT id, title, ngram_title FROM ancestry WHERE title = BINARY "Motivating Customer References";
 #####################################
 # Titles
 #####################################
