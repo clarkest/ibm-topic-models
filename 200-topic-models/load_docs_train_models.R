@@ -100,6 +100,9 @@ mallet.instances <- mallet.import(documents$id,
                                   token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
 )
 
+## Save a mallet instance list for anchor calculation
+mallet.instances$save(.jnew("java/io/File", "saved.instances"))
+
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
 # persist the documents so that we don't need to go through these steps everytime.  
