@@ -55,7 +55,7 @@ while (<>) {
     my $title = $fields[12];
 
     for my $i (0..$#source) {
-       $text =~ s/\Q$source[$i]\E/$target[$i]/gi;
+       $text =~ s/\b$source[$i]\b/$target[$i]/gi;
        $title =~ s/\b$source[$i]\b/$target[$i]/gi;
     }
     $fields[17] = $text;

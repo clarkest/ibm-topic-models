@@ -1,5 +1,5 @@
 binmode STDOUT, ":utf8";
-#binmode IN, ":utf8";
+binmode STDIN, ":utf8";
 #my %abbrev_replacements = ();
 my @source = ();
 my @target = ();
@@ -52,6 +52,12 @@ while (<>) {
     
     my @fields = split /\t/, $_;
     my $title = $fields[0];
+    $title =~ s/->//g; 
+    $title =~ s/[>,<]//g;  
+    $title =~ s/\h+/ /g;
+    $title =~ s/"/'/g;
+    $title =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
+    $title =~ s/[\xe2]\W+/ /g;
 
     for my $i (0..$#source) {
        $title =~ s/\b$source[$i]\b/$target[$i]/gi;
