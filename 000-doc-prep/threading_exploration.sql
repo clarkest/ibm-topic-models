@@ -106,56 +106,24 @@ SELECT COUNT(DISTINCT parent_comment_id), SUM(`parent_comment_id` <> "null" AND 
 # let's get some thread summary statistics from the raw data
 DROP TABLE IF EXISTS combined_ids;
 CREATE TABLE combined_ids
-	SELECT  CONCAT(SUBSTR(commentid,2,19), ".", SUBSTR(title,1,20)) AS id,
-		 CONCAT(SUBSTR(parent_comment_id,2,19), ".", SUBSTR(title,1,20)) AS parent_id, 
+	SELECT   commentid AS id,
+		 parent_comment_id AS parent_id, 
 		 title AS title 
-	FROM world_reloaded
+	FROM `world_reloaded`
 	UNION
-	SELECT id AS id, Parent AS parent_id, `Name` AS title FROM values_clean;
+	SELECT id AS id, Parent AS parent_id, BINARY `Name` AS title FROM values_clean;
 
 ALTER TABLE combined_ids ADD INDEX commentidx (id);
 ALTER TABLE combined_ids ADD INDEX parentidx (parent_id);
 
 UPDATE combined_ids SET parent_id = "null" WHERE parent_id = "";
 
-SELECT id
-	FROM combined_ids  
-	GROUP BY id 
-	HAVING COUNT(*) >1;
-
-
-DROP TABLE IF EXISTS ancestry;
-CREATE TABLE ancestry
-	SELECT gen1.id AS id,
-		title, 
-		gen1.parent_id AS parent_id,
-		gen1.parent_id AS ancestry,
-		IF(parent_id="null", "complete", parent_id) AS oldest,
-		1 AS generation
-	FROM combined_ids gen1 ;
-
-ALTER TABLE ancestry MODIFY ancestry VARCHAR(4000);	
-ALTER TABLE ancestry ADD INDEX oldestidx (oldest);
-
-# run this until no rows are updated
-UPDATE ancestry a, combined_ids cid 
-	SET a.ancestry=IF(a.oldest="complete" OR cid.parent_id = "null", a.ancestry, CONCAT(a.ancestry,",",cid.parent_id)),
-		a.oldest=IF(a.oldest="complete" OR cid.parent_id = "null", "complete", cid.parent_id),
-		a.generation = a.generation+1
-	WHERE a.oldest = cid.id
-; 
-
-# the ones that are not "complete" had a generation where an ancestor id didn't exist in the data.  
-#    34 chains end this way
-SELECT COUNT(*) FROM ancestry WHERE oldest<>"complete";
-
-SELECT MAX(generation) FROM ancestry;
 
 SET CHARACTER SET 'utf8';
 SET collation_connection = 'utf8_general_ci';
 # we need to get updated titles for hte new ids to map properly
 # first, dump the full set of old titles:
-SELECT DISTINCT(BINARY title) FROM ancestry WHERE id LIKE "%WORLDJAM%" 
+SELECT DISTINCT(BINARY title) FROM combined_ids WHERE id LIKE "%WORLDJAM%" 
 INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/old_titles_2.tsv"
 FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
@@ -173,45 +141,77 @@ FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
 LINES TERMINATED BY '\n';
 
-ALTER TABLE ancestry DROP COLUMN ngram_title;
-ALTER TABLE ancestry ADD COLUMN ngram_title VARCHAR(200);
-ALTER TABLE ancestry MODIFY COLUMN title VARCHAR(200) BINARY;
+ALTER TABLE combined_ids DROP COLUMN ngram_title;
+ALTER TABLE combined_ids ADD COLUMN ngram_title VARCHAR(200);
+ALTER TABLE combined_ids MODIFY COLUMN title VARCHAR(200) BINARY;
 ALTER TABLE title_ngram_maps MODIFY COLUMN old_title VARCHAR(200) BINARY;
 
-UPDATE ancestry SET title = REPLACE(CONVERT(title USING ASCII), '?', '');
+UPDATE combined_ids SET title = REPLACE(CONVERT(title USING ASCII), '?', '');
 UPDATE title_ngram_maps SET old_title = REPLACE(CONVERT(old_title USING ASCII), '?', '');
 UPDATE title_ngram_maps SET ngram_title = REPLACE(CONVERT(ngram_title USING ASCII), '?', '');
 
-CREATE INDEX old_t ON ancestry (title);
+CREATE INDEX old_t ON combined_ids (title);
 CREATE INDEX old_t ON title_ngram_maps (old_title);
-CREATE INDEX id ON ancestry (id);
-
-UPDATE ancestry a, title_ngram_maps tnm 
-	SET a.ngram_title = tnm.ngram_title
-	WHERE a.id LIKE "%WORLDJAM%" AND  a.title = tnm.old_title;
-
-ALTER TABLE ancestry DROP COLUMN new_id;
-ALTER TABLE ancestry ADD COLUMN new_id VARCHAR(60);
-UPDATE ancestry 
-	SET new_id =  IF(id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(id,2,19), ".", SUBSTRING(ngram_title, 1, 20)), id); 
+CREATE INDEX id ON combined_ids (id);
+UPDATE combined_ids c, title_ngram_maps tnm 
+	SET c.ngram_title = tnm.ngram_title
+	WHERE c.id LIKE "%WORLDJAM%" AND  c.title = tnm.old_title;
+ALTER TABLE combined_ids DROP COLUMN new_id;
+ALTER TABLE combined_ids DROP COLUMN new_parent_id;
+ALTER TABLE combined_ids ADD COLUMN new_id VARCHAR(60);
+ALTER TABLE combined_ids ADD COLUMN new_parent_id VARCHAR(60);
+UPDATE combined_ids 
+	SET new_id =  IF(id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(id,2,19), ".", SUBSTRING(ngram_title, 1, 20)), id),
+	   new_parent_id =  IF(parent_id LIKE "%WORLDJAM%", CONCAT(SUBSTRING(parent_id,2,19), ".", SUBSTRING(ngram_title, 1, 20)), SUBSTRING_INDEX(parent_id," ",1));  
 	#set new_id =  if(id like "%WORLDJAM%", concat(substring(id,2,19), ".", substring(replace(REPLACE(ngram_title,"""",""),"'",""), 1, 20)), id); 
-
-"ffd77db0e0.9ad9b6a0.Invest in customer h"
- [3] "ffd803723c.19c02bee.Invest in customer h" "ffda9d4fa3.58130dc..Invest in customer h"
- [5] "ffe043f7ee.3100b90a.build_a_culture as d"
 # hand updates
-UPDATE ancestry SET id = "ffd67d2eec.4af25522.Motivating customer_" WHERE id="ffd67d2eec.4af25522.Motivating Customer ";
-UPDATE ancestry SET id = "ffd77db0e0.9ad9b6a0.Invest in customer h" WHERE id="<ffd77db0e0.9ad9b6a0.WORLDJAM@d25was503.mkm.can.ibm.com>";
-UPDATE ancestry SET id = "ffd803723c.19c02bee.Invest in customer h" WHERE id="<ffd803723c.19c02bee.WORLDJAM@d25was504.mkm.can.ibm.com>";
-UPDATE ancestry SET id = "ffda9d4fa3.58130dc..Invest in customer h" WHERE id="<ffda9d4fa3.58130dc.WORLDJAM@d25was503.mkm.can.ibm.com>";
-UPDATE ancestry SET id = "ffe043f7ee.3100b90a.build_a_culture as d" WHERE id="ffe043f7ee.3100b90a.Build a culture as d";
+UPDATE combined_ids SET new_id = "ffd67d2eec.4af25522.Motivating customer_" WHERE id="ffd67d2eec.4af25522.Motivating Customer ";
+UPDATE combined_ids SET new_id = "ffd77db0e0.9ad9b6a0.Invest in customer h" WHERE id="<ffd77db0e0.9ad9b6a0.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_id = "ffd803723c.19c02bee.Invest in customer h" WHERE id="<ffd803723c.19c02bee.WORLDJAM@d25was504.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_id = "ffda9d4fa3.58130dc..Invest in customer h" WHERE id="<ffda9d4fa3.58130dc.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_id = "ffe043f7ee.3100b90a.build_a_culture as d" WHERE id="ffe043f7ee.3100b90a.Build a culture as d";
 
-# select new_id from ancestry where id LIKE "%ALUESJAM%" limit 10;
+UPDATE combined_ids SET new_parent_id = "ffd67d2eec.4af25522.Motivating customer_" WHERE parent_id="ffd67d2eec.4af25522.Motivating Customer ";
+UPDATE combined_ids SET new_parent_id = "ffd77db0e0.9ad9b6a0.Invest in customer h" WHERE parent_id="<ffd77db0e0.9ad9b6a0.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_parent_id = "ffd803723c.19c02bee.Invest in customer h" WHERE parent_id="<ffd803723c.19c02bee.WORLDJAM@d25was504.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_parent_id = "ffda9d4fa3.58130dc..Invest in customer h" WHERE parent_id="<ffda9d4fa3.58130dc.WORLDJAM@d25was503.mkm.can.ibm.com>";
+UPDATE combined_ids SET new_parent_id = "ffe043f7ee.3100b90a.build_a_culture as d" WHERE parent_id="ffe043f7ee.3100b90a.Build a culture as d";
+
+SELECT * FROM combined_ids GROUP BY new_id HAVING COUNT(*)>1;
+SELECT * FROM combined_ids WHERE parent_id LIKE "%ffd67d2eec.4af25522%"
+
+
+DROP TABLE IF EXISTS ancestry;
+CREATE TABLE ancestry
+	SELECT gen1.new_id AS id,
+		title, 
+		gen1.new_parent_id AS parent_id,
+		gen1.new_parent_id AS ancestry,
+		IF(new_parent_id="null", "complete", new_parent_id) AS oldest,
+		1 AS generation
+	FROM combined_ids gen1 ;
+
+ALTER TABLE ancestry MODIFY ancestry VARCHAR(4000);	
+ALTER TABLE ancestry ADD INDEX oldestidx (oldest);
+
+# run this until no rows are updated
+UPDATE ancestry a, combined_ids cid 
+	SET a.ancestry=IF(a.oldest="complete" OR cid.new_parent_id = "null", a.ancestry, CONCAT(a.ancestry,",",cid.new_parent_id)),
+		a.oldest=IF(a.oldest="complete" OR cid.new_parent_id = "null", "complete", cid.new_parent_id),
+		a.generation = a.generation+1
+	WHERE a.oldest = cid.new_id
+; 
+
+# the ones that are not "complete" had a generation where an ancestor id didn't exist in the data.  
+#    34 chains end this way
+SELECT COUNT(*) FROM ancestry WHERE oldest<>"complete";
+
+SELECT MAX(generation) FROM ancestry;
 
 
 SELECT 'id','title','parent_id','ancestry','generation'
 UNION ALL
-SELECT new_id,title,parent_id,ancestry,generation FROM ancestry 
+SELECT id,title,parent_id,ancestry,generation FROM ancestry 
 INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_here/thread_ancestry.csv"
 FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
@@ -220,7 +220,7 @@ LINES TERMINATED BY '\n';
 SELECT * FROM title_ngram_maps WHERE old_title IN (SELECT title FROM world_reloaded WHERE commentid LIKE "%ffd5fa9f61.2358e862%");
 SELECT id, title, ngram_title, 
 	REPLACE(CONVERT(title USING ASCII), '?', '') 
-	FROM ancestry WHERE id LIKE "%ffda9d4fa3.58130dc.%";
+	FROM ancestry WHERE id LIKE "%ffe043f7ee.3100b90a%";
 SELECT * FROM title_ngram_maps WHERE old_title LIKE "%Motivating Cust%";
 SELECT * FROM title_ngram_maps WHERE BINARY old_title IN (SELECT BINARY title FROM ancestry WHERE id LIKE "%ffd67d2eec.4af25522%");
 SELECT id, title, ngram_title FROM ancestry WHERE title = BINARY "Motivating Customer References";
