@@ -9,9 +9,9 @@ n.topics <- 30
 this.dir = "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
-model.name <- "ngram_model"
+model.name <- "unix"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
-world.file <- "place_docs_here/world-docs-ngrams-a.tsv"
+world.file <- "place_docs_here/world-docs-ngrams.tsv"
 iters <- 800
 maxims <- 50
 model_ids <- c(1)
@@ -34,8 +34,8 @@ world <- read.delim(world.file,
                    quote=""
 )
 # update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
-world$commentid <- paste(substring(world$commentid,2,20), substring(world$title, 1, 20), sep=".") 
-world$parent_comment_id <- paste(substring(world$parent_comment_id,2,20), substring(world$title, 1, 20), sep=".") 
+world$commentid <- paste(substring(world$commentid,2,20), substring(gsub("'","",world$title), 1, 20), sep=".") 
+world$parent_comment_id <- ifelse(world$parent_comment_id=='null','null',paste(substring(world$parent_comment_id,2,20), substring(gsub("'","",world$title), 1, 20), sep=".")) 
 
 
 #removing these outright to not affect the 8-hr blocks
@@ -111,7 +111,7 @@ source('200-topic-models/lda_visualize.R')
 for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
-  new.topic.model$setNumThreads(10L)
+  new.topic.model$setNumThreads(5L)
   new.topic.model$loadDocuments(mallet.instances)
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)
