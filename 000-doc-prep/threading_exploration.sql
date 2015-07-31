@@ -208,7 +208,6 @@ SELECT COUNT(*) FROM ancestry WHERE oldest<>"complete";
 
 SELECT MAX(generation) FROM ancestry;
 
-
 SELECT 'id','title','parent_id','ancestry','generation'
 UNION ALL
 SELECT id,title,parent_id,ancestry,generation FROM ancestry 
@@ -216,6 +215,22 @@ INTO OUTFILE "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/place_docs_her
 FIELDS TERMINATED BY '\t'
 ENCLOSED BY ''
 LINES TERMINATED BY '\n';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 SELECT * FROM title_ngram_maps WHERE old_title IN (SELECT title FROM world_reloaded WHERE commentid LIKE "%ffd5fa9f61.2358e862%");
 SELECT id, title, ngram_title, 
