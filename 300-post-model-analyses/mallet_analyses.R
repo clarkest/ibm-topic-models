@@ -177,8 +177,8 @@ topic.co.occur <- function(topic.model.1,
   }
   
   # topic occurence binary matrix
-  topic.occur.1 <- doc.topics.1 > correlationMinProportion
-  topic.occur.2 <- doc.topics.2 > correlationMinProportion
+  topic.occur.1 <- doc.topics.1 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens
+  topic.occur.2 <- doc.topics.2 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens
   
   # grab the number of tokens per document
   #Count the number of docs with this topic
