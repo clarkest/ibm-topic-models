@@ -194,7 +194,6 @@ topic.co.occur <- function(topic.model.1,
   topic.occur.1 <- doc.topics.1 > correlationMinProportion &
                     num.topic.tokens.1 >= correlationMinTokens
   topic.counts.1 <- colSums(topic.occur.1)
-  print(topic.counts.1)
   num.topic.tokens.2 <- doc.topics.2 * doc.len.2
   topic.occur.2 <- doc.topics.2 > correlationMinProportion & 
                   num.topic.tokens.2 >= correlationMinTokens
