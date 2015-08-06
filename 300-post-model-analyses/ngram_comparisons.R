@@ -22,12 +22,6 @@ model.label <- list$model.label
 
 
 
-ret.1 <- topic.co.occur(topic.model)
-#topic.counts
-ret$co.occur.count
-ret$corr.matrix
-
-corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
 
 ###################################
 # compare the two ngram models    #

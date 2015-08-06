@@ -54,7 +54,7 @@ summarize(group_by_(new.docs, .dots=c("jam",class)),
           perc.response=with.children/total.posts,
           perc.5=with.5/total.posts,
           perc.10=with.10/total.posts
-          )
+)
 
 # how about for top-line comments?
 summarize(group_by_(new.docs[is.na(new.docs$ancestors),], .dots=c("jam", class)), 
@@ -89,7 +89,53 @@ summarize(group_by_(new.docs, .dots=c("jam", class)),
          )
 
 
-  # how many of its ancestors is it like?
+# let's focus on just threads above X in length
+min.thread <- 5
+
+# get the original comment of those threads
+long.threads <- new.docs[new.docs$n.children >= 5 & new.docs$parent_id=="null", c("id","n.children")]
+long.threads$original <- long.threads$id
+children.of.long <- melted.ancestors[melted.ancestors$value %in% long.threads$id,]
+names(children.of.long) <- c("original", "id")
+children.of.long <- rbind(long.threads[c("original","id")], children.of.long)
+children.of.long <- merge(children.of.long, new.docs[c("id", class)])
+
+class.counts.by.thread <- summarize(group_by_(children.of.long, .dots=c("original")), 
+          count=n(),
+          num_man = sum(manager=="Manager", na.rm=TRUE),
+          num_oth = sum(manager=="Other", na.rm=TRUE),
+          perc_oth = num_oth/count,
+          perc_man = num_man/count
+          )
+
+hist(class.counts.by.thread$perc_man, breaks=10)
+hist(class.counts.by.thread$perc_oth, breaks=10)
+hist(class.counts.by.thread$count)
+summarize(group_by_(class.counts.by.thread, .dots=c("original")),
+          tot = sum(count, na.rm=TRUE),
+          tot = sum(count, na.rm=TRUE)
+)
+
+class.counts.by.thread <- merge(class.counts.by.thread, 
+                                new.docs[c("id", class)],
+                                by.x="original",
+                                by.y="id"
+                          )
+
+
+# get the list of children for each of these
+
+
+
+# how many of its ancestors is it like?
+class <- "manager"
+# same as parent?
+match.to.ancestors <- merge(new.docs[,c("id", "parent_id", class)], 
+                          new.docs[,c("id", class)], 
+                          by.x="parent_id",
+                          by.y="id",
+                          suffixes=c("child","parent"),
+                          all.x=TRUE)
 
 #dplyr is already loaded from mallet_analyses
 

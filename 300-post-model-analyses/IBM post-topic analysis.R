@@ -206,4 +206,13 @@ topic.vocab.diff("continent", documents, topic.model, 2, number.words=10)
 
 
 
+##############################
+# topic co-occurence
+##############################
 
+ret.1 <- topic.co.occur(topic.model)
+#topic.counts
+ret.1$co.occur.count
+ret.1$corr.matrix
+
+corr.heatmap(ret.1$corr.matrix, min=-2, max=2)

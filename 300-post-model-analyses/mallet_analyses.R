@@ -140,6 +140,17 @@ plot.all.topic.shares <- function(df, docs, col.keeps,
   }
 }
 
+topic.occurence.counts <- function(topic.model,
+                                   correlationMinTokens = 4, 
+                                   correlationMinProportion = 0.1) {
+  doc.topics <- mallet.doc.topics(topic.model.1, smoothed=T, normalized=T)
+  num.docs = nrow(doc.topics)
+  unnormal.doc.topics <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
+  doc.len <- rowSums(unnormal.doc.topics)
+  num.topic.tokens <- doc.topics * doc.len
+  topic.occur <- doc.topics > correlationMinProportion & num.topic.tokens >= correlationMinTokens
+}
+
 ########################
 # Topic Co-occurence 
 #    adapted from David Mimno's jsLDA 
@@ -175,18 +186,19 @@ topic.co.occur <- function(topic.model.1,
     unnormal.doc.topics <- mallet.doc.topics(topic.model.2, smoothed=F, normalized=F)
     doc.len.2 <- rowSums(unnormal.doc.topics)
   }
-  
-  # topic occurence binary matrix
-  topic.occur.1 <- doc.topics.1 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens
-  topic.occur.2 <- doc.topics.2 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens
+
   
   # grab the number of tokens per document
   #Count the number of docs with this topic
   num.topic.tokens.1 <- doc.topics.1 * doc.len.1
-  topic.counts.1 <- colSums(doc.topics.1 > correlationMinProportion & num.topic.tokens.1 >= correlationMinTokens)
-  
+  topic.occur.1 <- doc.topics.1 > correlationMinProportion &
+                    num.topic.tokens.1 >= correlationMinTokens
+  topic.counts.1 <- colSums(topic.occur.1)
+  print(topic.counts.1)
   num.topic.tokens.2 <- doc.topics.2 * doc.len.2
-  topic.counts.2 <- colSums(doc.topics.2 > correlationMinProportion & num.topic.tokens.2 >= correlationMinTokens)
+  topic.occur.2 <- doc.topics.2 > correlationMinProportion & 
+                  num.topic.tokens.2 >= correlationMinTokens
+  topic.counts.2 <- colSums(topic.occur.2)
   
   # iterate through each pair of topics and add to the cooccurence count
   co.occur.count <- matrix(0, n.topics, n.topics)
