@@ -5,25 +5,10 @@ library(mallet)
 library(countrycode)
 library(dplyr)
 
-run.id <- as.numeric(Sys.getenv("ARRAYID"))
-initial.type <- Sys.getenv("INITIAL")
-n.topics <- as.numeric(Sys.getenv("TOPICS"))
-if (is.na(n.topics)) {
-  n.topics <- 30
-}
-initial.state <- sprintf("anchor/%s_state-%d.gz", initial.type, n.topics)
-
 this.dir = "." #"/Users/mimno/Documents/github/ibm-topic-models"
 setwd(this.dir)
-model.dir <- "models_dir"
-model.name <- sprintf("%s_ngram_model", initial.type)
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
 world.file <- "place_docs_here/world-docs-ngrams.tsv"
-iters <- 800
-maxims <- 100
-model_ids <- c(run.id)
-
-dir.create("models_dir/LDAvis")
 
 ###################################
 #   Loading and processing data   #
@@ -106,23 +91,4 @@ mallet.instances <- mallet.import(documents$id,
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
 # To save and reload through java:
-# mallet.instances$save(.jnew("java/io/File", "saved.instances"))
-# mallet.instances <- J("cc.mallet.types.InstanceList")$load(.jnew("java/io/File", paste(this.dir, "saved.instances", sep="/", collapse="")))
-
-# persist the documents so that we don't need to go through these steps everytime.  
-#file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
-#save(documents, file=file.name)
-
-source('200-topic-models/lda_visualize.R')
-# now, run 10 of the models and see how they compare
-for (i in model_ids) {
-  # create and train a topic model from the mallet.instances
-  new.topic.model <- MalletLDA(num.topics=n.topics)
-  new.topic.model$loadDocuments(mallet.instances)
-  new.topic.model$initializeFromState(.jnew("java/io/File", paste(this.dir, initial.state, sep="/", collapse="")))
-  new.topic.model$setAlphaOptimization(20, 50)
-  new.topic.model$train(iters)
-  new.topic.model$maximize(maxims)
-  model.label = paste(model.name, n.topics, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
-  create.ldavis(new.topic.model, model.dir, model.label)
-}
+mallet.instances$save(.jnew("java/io/File", "saved.instances"))
