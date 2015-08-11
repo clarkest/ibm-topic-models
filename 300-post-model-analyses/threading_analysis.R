@@ -1,20 +1,29 @@
-source("300-post-model-analyses/mallet_analyses.R")
-
 n.topics <- 30
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
+wd <-  "/media/sf_ibm-topic-model"
 setwd(wd)
+source("300-post-model-analyses/mallet_analyses.R")
 model.name <- "windows"
 iters <- 800
 maxims <- 50
-model.num <- 1
+model.num <- 8
 
+# unfortunately, the Ancestry text was done in windows, so we need the windows version
+# of the documents (especially their ids) in order to do the matching
+load("models_dir/windows-docs.Rdata")
+win.docs <- documents
+
+# now load the unix model data and documents
 list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
 topic.model <- list$topic.model
 documents <- list$documents
 doc.topics <- list$doc.topics
 doc.topics.frame <- list$doc.topics.frame
 model.label <- list$model.label
+
+# sanity check that the document sets are indexed the same way
+#   this should be 0
+sum(documents$CreationTime != win.docs$CreationTime)
 
 #################
 #   THREADING   #
@@ -31,7 +40,8 @@ ancestry <- read.delim("place_docs_here/thread_ancestry.csv",
 
 # map to documents by id 
 ##  -- note that the document ids have been altered because of the duplicate ids
-new.docs <- merge(documents, ancestry, by.x="id", by.y="id")
+merge.win.docs <- merge(win.docs, ancestry, by.x="id", by.y="id")
+new.docs <- cbind(documents, merge.win.docs[,c("title","parent_id","ancestry","generation")])
 
 # transform the ancestry text into a list of ancestors
 new.docs$ancestors <- 
