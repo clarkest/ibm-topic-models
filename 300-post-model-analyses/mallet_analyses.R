@@ -88,18 +88,35 @@ plot_topic_shares <- function(df,
                               output.dir="output/default/", 
                               topic.num,
                               topic.num.label=NULL,
-                              ylim=NULL,
-                              threshold.for.count=NULL) {
+                              ylim=c(0,0.2),
+                              threshold.prev=NULL,
+                              threshold.words=40*threshold.prev,
+                              doc.len=NULL) {
+  
   dir.create(output.dir, showWarnings = FALSE)
   aggregate.set <- c("DateWindow", "jam", by.vars)
   topic.name <-  colnames(df)[topic.num]
-  if (is.null(threshold.for.count)) {
-    topic.rate <- aggregate(df[topic.num], by=df[,aggregate.set], mean) 
-    
-  } else {
+  boot.hi <- function(x) { smean.cl.boot(x)["Upper"] }
+  boot.low <- function(x) { smean.cl.boot(x)["Lower"] }
+  boots <- function(x) { smean.cl.boot(x) }
+  if (is.null(threshold.prev)) {
+    #topic.rate <- summarize(group_by_(cbind(df[topic.num], df[aggregate.set]), .dots=aggregate.set), mean)
     topic.rate <- aggregate(df[topic.num], 
                             by=df[,aggregate.set], 
-                            function(x) sum(ifelse(x>threshold.for.count,1,0))
+                            function(x) boots(x)
+    )
+  } else {
+    # if we have document lengths, then for smaller documents we want the threshold prev to be higher 
+    # to make sure we're above the threshold.words for that document
+    if (!is.null(doc.len)) {
+      threshold.prev <- ifelse(threshold.prev * doc.len < threshold.words, 
+                               threshold.words/doc.len, 
+                               threshold.prev
+                              )
+    }
+    topic.rate <- aggregate(df[topic.num], 
+                            by=df[,aggregate.set], 
+                            function(x) boots(ifelse(x>threshold.prev,1,0))
     )
   }
   if (is.null(topic.num.label)) topic.num.label <- topic.num
@@ -110,32 +127,40 @@ plot_topic_shares <- function(df,
     topic.rate$by.var <- topic.rate[,by.vars]
   }
   #colnames(avg.topic.rate)[colnames(avg.topic.rate) == topic.name] <- 'topic.data'
-  
-  plt <- qplot(as.integer(DateWindow), get(topic.name), 
-               data = topic.rate, geom = "line", color=by.var, 
-               ylab = topic.name) + geom_point() + coord_cartesian(ylim=ylim)
+  plt <- qplot(as.integer(DateWindow), get(topic.name)[,"Mean"], 
+               data = topic.rate, 
+               geom = "line", 
+               color = by.var, 
+               ylab = topic.name) +
+            geom_errorbar(aes(ymin=get(topic.name)[,"Lower"], 
+                      ymax=get(topic.name)[,"Upper"]), 
+                      width=.3) + 
+            geom_point() + 
+            coord_cartesian(ylim=ylim) 
   plt.title <- paste(sprintf("%02d",topic.num.label),"-",topic.name)
   ggsave(file.path(output.dir, paste(plt.title, ".png", sep="")),
          plt+thm+ggtitle(plt.title)
   )
 }
 
-plot.all.topic.shares <- function(df, docs, col.keeps, 
+plot.all.topic.shares <- function(model.object,
+                                  col.keeps, 
                                   by.vars, 
                                   output.dir="outputs/default/",
                                   topic.num.labels=NULL,
-                                  ylim=c(0,0.2),
-                                  threshold.for.count=NULL) {
-  doc.topics.data <- cbind(df, docs[col.keeps])
+                                  ...) {
+  
+  doc.topics.data <- cbind(model.object$doc.topics.frame, 
+                           model.object$documents[col.keeps])
   # we want the DateWindows with enough data for these by variables
-  temp.posts.by.window <- get.posts.by.window(docs, by.vars)
+  temp.posts.by.window <- get.posts.by.window(model.object$documents, by.vars)
   doc.topics.data <- doc.topics.data[doc.topics.data$DateWindow %in% unique(temp.posts.by.window$DateWindow),]
   
-  for (topic in 1:ncol(df)) {
+  for (topic in 1:ncol(model.object$doc.topics.frame)) {
     if (is.null(topic.num.labels)) {
-      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, ylim=ylim, threshold.for.count=threshold.for.count)
+      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, ...)
     } else {
-      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, topic.num.labels[topic], ylim=ylim, threshold.for.count=threshold.for.count)
+      plot_topic_shares(doc.topics.data, by.vars, output.dir, topic, topic.num.labels[topic], ...)
     }
   }
 }

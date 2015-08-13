@@ -119,13 +119,14 @@ mallet.instances$save(.jnew("java/io/File", "saved.instances"))
 # persist the documents so that we don't need to go through these steps everytime.  
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
 save(documents, file=file.name)
+#load(file.name)
 
 source('200-topic-models/lda_visualize.R')
 # now, run 10 of the models and see how they compare
 for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
-  new.topic.model$setNumThreads(5L)
+  new.topic.model$setNumThreads(8L)
   new.topic.model$loadDocuments(mallet.instances)
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)

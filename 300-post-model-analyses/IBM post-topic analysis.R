@@ -1,20 +1,22 @@
-source("300-post-model-analyses/mallet_analyses.R")
 
-n.topics <- 30
+
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
-model.name <- "ngram_model"
-iters <- 800
-maxims <- 50
-model.num <- 4
+source("300-post-model-analyses/mallet_analyses.R")
 
-list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
-topic.model <- list$topic.model
-documents <- list$documents
-doc.topics <- list$doc.topics
-doc.topics.frame <- list$doc.topics.frame
-model.label <- list$model.label
+model.name <- "anchor_ngram_model"
+n.topics <- 30
+iters <- 800
+maxims <- 100
+model.num <- 8
+
+model.object <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+topic.model <- model.object$topic.model
+documents <- model.object$documents
+doc.topics <- model.object$doc.topics
+doc.topics.frame <- model.object$doc.topics.frame
+model.label <- model.object$model.label
 
 # make sure the outpus directory for this model exists
 output.dir <- file.path("outputs", model.label) 
@@ -61,13 +63,13 @@ ggsave(file.path(output.dir, "indexed_posts_by_time.png"), plt+thm)
 # topic / forum
 col.keeps <- c("forum", "continent", "jam", "manager", "DateWindow")
 by.vars <- c("jam", "forum")
-plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, 
+plot.all.topic.shares(model.object, col.keeps, by.vars, 
                       file.path(output.dir, "forum_prev/"), ylim=c(0,0.35))
 
 # managers and jam
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
-plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, file.path(output.dir, "manager_prev/"))
+plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "manager_prev/"))
 
 #diagnostic tool for seeing a particular topic's raw numbers
 #View(avg.topic.rate <- aggregate(doc.topics.data[2], by=doc.topics.data[,aggregate.set], mean))
@@ -80,30 +82,37 @@ plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, file.path
 ######
 # 3.a. histograms of topic prevalance over documents, with a threshold prevalence
 ######
+# add the document lengths to the model.object
+unnormal.doc.topics <- mallet.doc.topics(model.object$topic.model, smoothed=F, normalized=F)
+model.object$doc.len <- rowSums(unnormal.doc.topics)
 
 threshold <- 0.1
+# minimum number of words
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
-plot.all.topic.shares(doc.topics.frame, documents, col.keeps, by.vars, sprintf(file.path(output.dir, "threshold_%1.0f/"), 100*threshold), ylim=NULL, threshold.for.count=threshold)
-
-############
-#  3.b. plot only prevalvence over a threshold
-############
-
-threshold <- 0.05
-
-#col.keeps <- c("manager", "continent", "jam", "DateWindow")
-by.vars <- c("manager", "jam")
-#doc.topics.data <- cbind(doc.topics.frame, documents[col.keeps])
-#doc.topics.data <- doc.topics.data[doc.topics.data$DateWindow %in% unique(posts.by.window$DateWindow),]
-
-this.output.dir <- file.path(output.dir, "topic_prev_threshold/")
-for (topic in 1:n.topics) {
-  thresh.doc.by.topic <- doc.topics.data[doc.topics.data[topic] > threshold,]
-  plot_topic_shares(thresh.doc.by.topic, by.vars, this.output.dir, topic, ylim=c(0,0.3))
-}
-
-
+plot.all.topic.shares(model.object,
+                      col.keeps, 
+                      by.vars, 
+                      sprintf(file.path(output.dir, "threshold_%1.0f/"), 100*threshold),
+                      ylim=NULL, 
+                      threshold.prev=threshold
+                      )
+threshold<-0.2
+plot.all.topic.shares(model.object,
+                      col.keeps, 
+                      by.vars, 
+                      sprintf(file.path(output.dir, "threshold_%1.0f/"), 100*threshold),
+                      ylim=NULL, 
+                      threshold.prev=threshold
+)
+threshold<-0.05
+plot.all.topic.shares(model.object,
+                      col.keeps, 
+                      by.vars, 
+                      sprintf(file.path(output.dir, "threshold_%1.0f/"), 100*threshold),
+                      ylim=NULL, 
+                      threshold.prev=threshold
+)
 
 #################
 # working with just the topics of focus

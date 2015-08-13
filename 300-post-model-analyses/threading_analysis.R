@@ -1,11 +1,13 @@
-n.topics <- 30
+
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-wd <-  "/media/sf_ibm-topic-model"
+# wd <-  "/media/sf_ibm-topic-model"
+wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
-model.name <- "windows"
+model.name <- "anchor_ngram_model"
+n.topics <- 30
 iters <- 800
-maxims <- 50
+maxims <- 100
 model.num <- 8
 
 # unfortunately, the Ancestry text was done in windows, so we need the windows version
@@ -79,24 +81,49 @@ summarize(group_by_(new.docs[is.na(new.docs$ancestors),], .dots=c("jam", class))
 
 # are people more likely to respond to people in the same class as them?
 class <- "manager"
+
+class.parent <- paste0(class,".parent")
 # same as parent?
 match.to.parents <- merge(new.docs[,c("id", "parent_id", class)], 
       new.docs[,c("id", class)], 
       by.x="parent_id",
       by.y="id",
-      suffixes=c("child","parent"),
+      suffixes=c(".child",".parent"),
       all.x=TRUE)
 
-match.to.parents$match.parent <- match.to.parents[paste0(class,"child")] == match.to.parents[paste0(class,"parent")]
-match.to.parents <- match.to.parents[c("id", "match.parent")]
+match.to.parents$match.parent <- 
+  match.to.parents[paste0(class,".child")] == match.to.parents[class.parent]
+match.to.parents <- match.to.parents[c("id", "match.parent", class.parent)]
 
 new.docs <- merge(new.docs, match.to.parents)
-  
+
+# look at whether comments share the same CLASS as their parent
 summarize(group_by_(new.docs, .dots=c("jam", class)), 
          match=sum(match.parent, na.rm=TRUE), 
          different=sum(!match.parent, na.rm=TRUE),
          match_perc = match / (match+different)
          )
+subset <- new.docs$jam == "values"
+val.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, "match.parent"]))
+val.class.chi$residuals
+
+# BETTER: chi-square standard residuals of child class and parent class
+subset <- new.docs$jam == "values"
+val.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, class.parent]))
+val.class.chi$residuals
+
+subset <- new.docs$jam == "world"
+world.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, class.parent]))
+world.class.chi$residuals
+
+
+# what we really want is expected values that are based on the total population proportions of comments
+# not "the number of postings by manaers that received responses,"
+# but, "the number of posts by managers"
+
+t <- table(new.docs[subset, class], new.docs[subset, class.parent])
+a <- table(new.docs[subset, class]) / sum(subset)
+colSums(t)
 
 
 # let's focus on just threads above X in length
