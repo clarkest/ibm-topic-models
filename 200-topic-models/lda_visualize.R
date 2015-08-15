@@ -7,8 +7,8 @@ source("library/lda_vis_documents.R")
 create.ldavis <- function (new.topic.model, 
                            model.dir, 
                            model.name, 
-                           cooccurenceThreshold==FALSE, 
-                           cooccurenceMinTokens==FALSE) {  
+                           cooccurenceThreshold=FALSE, 
+                           cooccurenceMinTokens=FALSE) {  
   # from the trained topic.model, create the lists needed by LDAvis
   new.topic.words <- mallet.topic.words(new.topic.model, smoothed=T, normalized=T)
   new.doc.topics <- mallet.doc.topics(new.topic.model, smoothed=T, normalized=T)
