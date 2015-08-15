@@ -133,5 +133,7 @@ for (i in model_ids) {
   new.topic.model$maximize(maxims)
   model.label = paste(model.name, n.topics, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
   create.ldavis(new.topic.model, model.dir, model.label)
+  # also dump the state to disk so that we can analyze this model later
+  new.topic.model$printState(.jnew("java.io.File", paste(model.dir, paste0(model.label, ".gz"), sep="/")))
 }
 
