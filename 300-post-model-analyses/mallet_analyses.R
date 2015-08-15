@@ -205,7 +205,7 @@ topic.co.occur <- function(topic.model.1,
       stop(sprintf("Model 1 has %d docs and % topics. Model 2 has %d and %d. Not sure how I can compare these.",
                    num.docs, n.topics,
                    nrow(doc.topics.2), topic.model.2$getNumTopics()
-      )
+        )
       )
     }
     unnormal.doc.topics <- mallet.doc.topics(topic.model.2, smoothed=F, normalized=F)
@@ -234,7 +234,8 @@ topic.co.occur <- function(topic.model.1,
       corr.matrix[topic.i, topic.j] <- log(num.docs * co.occurs / (topic.counts.1[topic.i] * topic.counts.2[topic.j]))
     }
   }
-  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix))
+  dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary")
+  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=dist.matrix))
 }
 
 

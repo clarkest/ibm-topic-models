@@ -1,15 +1,16 @@
-source("300-post-model-analyses/mallet_analyses.R")
+
 
 n.topics <- 30
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 wd <-  "/media/sf_ibm-topic-model"
 setwd(wd)
+source("300-post-model-analyses/mallet_analyses.R")
 model.name <- "anchor_ngram_model"
 iters <- 800
 maxims <- 100
 model.num <- 8
 
-list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+model.object <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
 topic.model <- list$topic.model
 documents <- list$documents
 doc.topics <- list$doc.topics
@@ -17,7 +18,7 @@ doc.topics.frame <- list$doc.topics.frame
 model.label <- list$model.label
 
 
-co.occur <- topic.co.occur(topic.model)
+co.occur <- topic.co.occur(model.object$topic.model)
 corr.heatmap(co.occur$corr.matrix)
 
 correlates <- melt(co.occur$corr.matrix)
