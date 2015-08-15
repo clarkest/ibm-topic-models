@@ -234,7 +234,7 @@ topic.co.occur <- function(topic.model.1,
       corr.matrix[topic.i, topic.j] <- log(num.docs * co.occurs / (topic.counts.1[topic.i] * topic.counts.2[topic.j]))
     }
   }
-  dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary")
+  dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary")[1:n.topics, 1:n.topics]
   return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=dist.matrix))
 }
 
