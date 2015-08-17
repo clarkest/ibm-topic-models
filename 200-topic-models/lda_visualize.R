@@ -19,7 +19,7 @@ create.ldavis <- function (new.topic.model,
   term.freq[term.freq == 0] <- 1
 
   
-  out.dir = paste(model.dir, "LDAvis", model.name, sep="/")
+  out.dir <- paste(model.dir, "LDAvis", model.name, sep="/")
   ldavis.json <- createJSON(new.topic.words, new.doc.topics, doc.len, as.character(vocab$words), 
                             term.freq, R=50, sort.topics=FALSE)
   serVis(ldavis.json, out.dir = out.dir, open.browser = FALSE)
