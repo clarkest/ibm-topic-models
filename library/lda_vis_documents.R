@@ -173,7 +173,6 @@ createJSON <- function(phi = matrix(), theta = matrix(), doc.length = integer(),
   topic.frequency <- topic.frequency[o]
   topic.proportion <- topic.proportion[o]
 
-# TODO -- it's already done the sort by this point, so the labels are all jacked up!
   # compute intertopic distances using the specified multidimensional
   # scaling method:
   if (is.null(other.dist)) {
@@ -317,3 +316,4 @@ pca.from.dist <- function(dist) {
   pca.fit <- cmdscale(dist, k = 2)
   data.frame(x = pca.fit[,1], y = pca.fit[,2])
 }
+
