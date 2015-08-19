@@ -1,5 +1,6 @@
-binmode STDOUT, ":utf8";
-binmode IN, ":utf8";
+#binmode STDOUT, ":utf8";
+#binmode STDIN, ":utf8";
+use utf8;
 
 my @drop_ids = ();
 open DROPS, "lists/new_ids_dropped.txt";
@@ -120,10 +121,16 @@ while (<>) {
 
         # broken UTF-8
         $text =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
-        $text =~ s/[\xe2]\W+/ /g;
+        #remove failed utf8 that are now ? marks
+        # do it a few times to get the repeats, which violate the \B
+        $text =~ s/\B\?+//g;
+        #$text =~ s/\x{a20a}//g;
+        # remove all non ascii
+        $text =~ s/[^[:ascii:]]//g;
 
         $title =~ s/(\p{L})[\xe2]\p{P}+(\p{L})/$1'$2/g;
-        $title =~ s/[\xe2]\W+/ /g;
+        $title =~ s/\B\?+//g;
+        $title =~ s/[^[:ascii:]]//g;
 
         # check for duplicates -- BEFORE doing the text replacement.  
         ## this keeps the dupes reduction consistent between ngram and nongram

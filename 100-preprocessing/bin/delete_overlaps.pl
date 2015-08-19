@@ -1,8 +1,9 @@
+use utf8;
 my $doc = 0;
 
 my %terms = ();
 open TERMS, shift @ARGV;
-binmode TERMS, ":utf8";
+
 while (<TERMS>) {
     chomp;
     my ($count, $term) = split /\t/, $_;
@@ -11,8 +12,6 @@ while (<TERMS>) {
 close TERMS;
 
 open IN, shift @ARGV;
-binmode IN, ":utf8";
-binmode STDOUT, ":utf8";
 
 ## first line
 my $first_line = <IN>;

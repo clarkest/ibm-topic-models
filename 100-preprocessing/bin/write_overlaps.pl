@@ -1,3 +1,4 @@
+use utf8;
 my $max = 9;
 
 my @documents;
@@ -8,8 +9,7 @@ my %doc_counts = ();
 my $doc = 0;
 
 open IN, shift @ARGV;
-binmode IN, ":utf8";
-binmode STDOUT, ":utf8";
+
 
 while (<IN>) {
     chomp;

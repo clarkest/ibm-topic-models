@@ -1,5 +1,5 @@
-binmode STDOUT, ":utf8";
-#binmode IN, ":utf8";
+use utf8;
+
 #my %abbrev_replacements = ();
 my @source = ();
 my @target = ();
@@ -14,20 +14,6 @@ while (<REPS>) {
     #print "$source to $destination\n";
     push (@source, $fields[0]);
     push (@target, $fields[1]);
-}
-close REPS;
-
-#my %plur_replacements = ();
-open REPS, "lists/plurals.csv";
-while (<REPS>) {
-    chomp;
-    my @fields = split /,/, $_;
-    #my $source = $fields[1];
-    #my $destination = $fields[0];
-    #$plur_replacements{$source} = $destination;
-    push (@source, $fields[1]);
-    push (@target, $fields[0]);
-    #print "$source to $destination\n";
 }
 close REPS;
 
@@ -46,6 +32,24 @@ while (<REPS>) {
 }
 close REPS;
 
+#my %plur_replacements = ();
+open REPS, "lists/plurals.csv";
+while (<REPS>) {
+    chomp;
+    my @fields = split /,/, $_;
+    #my $source = $fields[1];
+    #my $destination = $fields[0];
+    #$plur_replacements{$source} = $destination;
+    push (@source, $fields[1]);
+    push (@target, $fields[0]);
+    #print "$source to $destination\n";
+}
+close REPS;
+
+for my $i (0..$#source) {
+   $source[$i] = qr/\b$source[$i]\b/i;
+}
+
 my $doc=0;
 while (<>) {
     chomp;
@@ -55,8 +59,10 @@ while (<>) {
     my $title = $fields[12];
 
     for my $i (0..$#source) {
-       $text =~ s/\b$source[$i]\b/$target[$i]/gi;
-       $title =~ s/\b$source[$i]\b/$target[$i]/gi;
+       $text =~ s/$source[$i]/$target[$i]/g;
+       $title =~ s/$source[$i]/$target[$i]/g;
+        #$text =~ s/\b$source[$i]\b/$target[$i]/gi;
+       #$title =~ s/\b$source[$i]\b/$target[$i]/gi;
     }
     $fields[17] = $text;
     $fields[12] = $title;
