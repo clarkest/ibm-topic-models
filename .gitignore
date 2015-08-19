@@ -4,3 +4,10 @@ models_dir/*
 outputs/*
 .DS_Store
 .Rhistory
+anchor/anchor_state-30.gz
+anchor/anchors-30.txt
+anchor/initial_state-30.gz
+anchor/instances.pruned
+anchor/topic_words-30.txt
+anchor/vocab.txt
+saved.instances
