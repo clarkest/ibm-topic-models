@@ -3,6 +3,7 @@
 library(LDAvis)
 # but use our edited createJSON function
 source("library/lda_vis_documents.R")
+source("300-post-model-analyses/mallet_analyses.R")
 
 create.ldavis <- function (new.topic.model, 
                            model.dir, 
@@ -24,9 +25,9 @@ create.ldavis <- function (new.topic.model,
                             term.freq, R=50, sort.topics=FALSE)
   serVis(ldavis.json, out.dir = out.dir, open.browser = FALSE)
   # if we've supplied a threshold, output the doc distance matrix as well
-  if (correlationMinProportion) {
+  if (cooccurenceThreshold) {
     if (!cooccurenceMinTokens) {cooccurenceMinTokens = 40 * cooccurenceThreshold}
-    corr.obj <- topic.co.occur(model.object$topic.model, cooccurenceMinTokens, cooccurenceThreshold)
+    corr.obj <- topic.co.occur(new.topic.model, cooccurenceMinTokens, cooccurenceThreshold)
     docdist.out.dir = paste(out.dir, "doc_distance", sep="/")
     docdist.ldavis.json <- createJSON(new.topic.words, new.doc.topics, doc.len, as.character(vocab$words), 
                               term.freq, R=50, sort.topics=FALSE,
@@ -59,8 +60,7 @@ create.ldavis <- function (new.topic.model,
     fileConn<-file(js_file)
     writeLines(js.out, fileConn)
     close(fileConn)
-  }
-  
+  } 
 }
 
 

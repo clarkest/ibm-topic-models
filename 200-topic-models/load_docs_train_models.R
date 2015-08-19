@@ -6,14 +6,14 @@ library(countrycode)
 
 n.topics <- 30
 
-this.dir = "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model/"
+this.dir = "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
-model.name <- "windows"
+model.name <- "mac"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
 world.file <- "place_docs_here/world-docs-ngrams.tsv"
 iters <- 800
-maxims <- 50
+maxims <- 100
 model_ids <- c(1)
 
 

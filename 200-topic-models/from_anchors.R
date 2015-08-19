@@ -41,6 +41,20 @@ world <- read.delim(world.file,
                     quote=""
 )
 
+# update all world comment ids and parent ids to include the title so that we no longer have duplicate ids
+# need to strip out the ? marks from titles to match the SQL ids
+titles <- gsub("\\?","",world$title)
+# then remove the non-ascii characters and append to the supposed-to-be-unique part 
+# of the comment id
+world$commentid <- paste(substring(world$commentid,2,20), 
+                         substring(iconv(titles, "UTF-8", "ASCII", sub=""), 1, 20), 
+                         sep="."
+                         ) 
+world$parent_comment_id <- ifelse(world$parent_comment_id=='null','null',
+                                  paste(substring(world$parent_comment_id,2,20), 
+                                        substring(iconv(titles, "UTF-8", "ASCII", sub=""), 1, 20), 
+                                        sep=".")
+                            ) 
 
 #removing these outright to not affect the 8-hr blocks
 #world[world$CreationDate == "10/29/2004",]$CreationDate <- "10/28/2004"
@@ -119,10 +133,11 @@ for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
   new.topic.model$loadDocuments(mallet.instances)
+  new.topic.model$setNumThreads(8L)
   new.topic.model$initializeFromState(.jnew("java/io/File", paste(this.dir, initial.state, sep="/", collapse="")))
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)
   new.topic.model$maximize(maxims)
   model.label = paste(model.name, n.topics, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
-  create.ldavis(new.topic.model, model.dir, model.label)
+  create.ldavis(new.topic.model, model.dir, model.label, cooccurenceThreshold=0.1, cooccurenceMinTokens=4)
 }
