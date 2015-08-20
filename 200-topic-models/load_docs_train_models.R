@@ -108,7 +108,7 @@ documents$forum <- factor(documents$forum)
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
                                   "200-topic-models/en.txt", 
-                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+                                    token.regexp = "\\p{L}[\\p{L}\_\-&@\\p{N}]+[\\p{N}\\p{L}]"
 )
 
 ## Save a mallet instance list for anchor calculation

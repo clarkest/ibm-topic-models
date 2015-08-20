@@ -115,7 +115,7 @@ documents$forum <- factor(documents$forum)
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
                                   "200-topic-models/en.txt", 
-                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+                                  token.regexp = "\\p{L}[\\p{L}\_\-&@\\p{N}]+[\\p{N}\\p{L}]"
 )
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
@@ -124,8 +124,8 @@ mallet.instances <- mallet.import(documents$id,
 # mallet.instances <- J("cc.mallet.types.InstanceList")$load(.jnew("java/io/File", paste(this.dir, "saved.instances", sep="/", collapse="")))
 
 # persist the documents so that we don't need to go through these steps everytime.  
-#file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
-#save(documents, file=file.name)
+file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
+save(documents, file=file.name)
 
 source('200-topic-models/lda_visualize.R')
 # now, run 10 of the models and see how they compare
@@ -140,4 +140,5 @@ for (i in model_ids) {
   new.topic.model$maximize(maxims)
   model.label = paste(model.name, n.topics, iters, maxims, formatC(i, width=2, flag="0"), sep="-")
   create.ldavis(new.topic.model, model.dir, model.label, cooccurenceThreshold=0.1, cooccurenceMinTokens=4)
+  new.topic.model$printState(.jnew("java.io.File", paste(model.dir, paste0(model.label, ".gz"), sep="/")))
 }
