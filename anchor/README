@@ -1,4 +1,4 @@
-## Run 200-topic-models/load_docs_train_models.R up to this line:
+	## Run 200-topic-models/load_docs_train_models.R up to this line:
 
 #  ## Save a mallet instance list for anchor calculation
 #  mallet.instances$save(.jnew("java/io/File", "saved.instances"))
@@ -24,6 +24,7 @@ setenv INITIAL anchor
 
 ## BASH version:
 export RUNID=1
+export ARRAYID=1
 export INITIAL=anchor
 
 ## run it!
