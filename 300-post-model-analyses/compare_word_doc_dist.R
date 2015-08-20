@@ -81,3 +81,12 @@ hist(combined$sd.diff)
 combined[with(combined, order(sd.diff)),]
 
 results[results$pair=="4-15",]
+
+
+
+
+# Hierarchical clustering
+
+plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 0.3), labels=1:30)
+plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 0), labels=1:30)
+plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 1.0), labels=1:30)

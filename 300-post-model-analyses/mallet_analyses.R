@@ -18,7 +18,7 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
   mallet.instances <- mallet.import(documents$id, 
                                     documents$text, 
                                     stop.word.file, 
-                                    token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+                                    token.regexp = "\\p{L}[\\p{L}\\_\\-&@\\p{N}]+[\\p{N}\\p{L}]"
   )
   
   ## Initialize from a previously trained state
