@@ -3,7 +3,7 @@ wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
-model.name <- "anchor_ngram_model"
+model.name <- "anchor_ngram"
 n.topics <- 30
 iters <- 800
 maxims <- 100

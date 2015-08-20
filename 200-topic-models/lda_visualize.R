@@ -9,7 +9,8 @@ create.ldavis <- function (new.topic.model,
                            model.dir, 
                            model.name, 
                            cooccurenceThreshold=FALSE, 
-                           cooccurenceMinTokens=FALSE) {  
+                           cooccurenceMinTokens=FALSE,
+                           mds.method=cmdscale) {  
   # from the trained topic.model, create the lists needed by LDAvis
   new.topic.words <- mallet.topic.words(new.topic.model, smoothed=T, normalized=T)
   new.doc.topics <- mallet.doc.topics(new.topic.model, smoothed=T, normalized=T)
@@ -22,7 +23,7 @@ create.ldavis <- function (new.topic.model,
   
   out.dir <- paste(model.dir, "LDAvis", model.name, sep="/")
   ldavis.json <- createJSON(new.topic.words, new.doc.topics, doc.len, as.character(vocab$words), 
-                            term.freq, R=50, sort.topics=FALSE)
+                            term.freq, R=50, sort.topics=FALSE, mds.method=mds.method)
   serVis(ldavis.json, out.dir = out.dir, open.browser = FALSE)
   # if we've supplied a threshold, output the doc distance matrix as well
   if (cooccurenceThreshold) {
@@ -31,7 +32,7 @@ create.ldavis <- function (new.topic.model,
     docdist.out.dir = paste(out.dir, "doc_distance", sep="/")
     docdist.ldavis.json <- createJSON(new.topic.words, new.doc.topics, doc.len, as.character(vocab$words), 
                               term.freq, R=50, sort.topics=FALSE,
-                              other.dist=corr.obj$dist)
+                              other.dist=corr.obj$dist, mds.method=mds.method)
     serVis(docdist.ldavis.json, out.dir = docdist.out.dir, open.browser = FALSE)
     
     # edit the word-dist js to include a link to the doc-dist 
@@ -60,6 +61,22 @@ create.ldavis <- function (new.topic.model,
     fileConn<-file(js_file)
     writeLines(js.out, fileConn)
     close(fileConn)
+    
+    #change the ldavis title in the html
+    old.title <- "<title>LDAvis</title>"
+    new.title <- sprintf("<title>%s</title>", model.name)
+    html_file = paste(out.dir, "index.html", sep="/")
+    docs_html_file = paste(docdist.out.dir, "index.html", sep="/")
+    html <- readChar(html_file, file.info(html_file)$size)
+    html.out <- gsub(old.title, new.title, html)
+    fileConn<-file(html_file)
+    writeLines(html.out, fileConn)
+    close(fileConn)
+    fileConn<-file(docs_html_file)
+    writeLines(html.out, fileConn)
+    close(fileConn)
+    
+    # it is the same file in both places, so just squish the doc file too
   } 
 }
 

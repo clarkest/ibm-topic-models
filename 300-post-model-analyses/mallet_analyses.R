@@ -18,7 +18,7 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
   mallet.instances <- mallet.import(documents$id, 
                                     documents$text, 
                                     stop.word.file, 
-                                    token.regexp = "\\p{L}[\\p{L}\\_\\-&@\\p{N}]+[\\p{N}\\p{L}]"
+                                    token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
   )
   
   ## Initialize from a previously trained state
@@ -235,7 +235,7 @@ topic.co.occur <- function(topic.model.1,
     }
   }
   dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary")[1:n.topics, 1:n.topics]
-  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=dist.matrix))
+  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=as.dist(dist.matrix)))
 }
 
 

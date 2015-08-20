@@ -120,7 +120,7 @@
 test.func <- function(str) { print(str)}
 createJSON <- function(phi = matrix(), theta = matrix(), doc.length = integer(), 
                        vocab = character(), term.frequency = integer(), R = 30, 
-                       lambda.step = 0.01, mds.method = jsPCA, cluster, 
+                       lambda.step = 0.01, mds.method = cmdscale, cluster, 
                        plot.opts = list(xlab = "PC1", ylab = "PC2"),
                        other.dist=NULL, 
                        sort.topics=TRUE,
@@ -176,10 +176,11 @@ createJSON <- function(phi = matrix(), theta = matrix(), doc.length = integer(),
   # compute intertopic distances using the specified multidimensional
   # scaling method:
   if (is.null(other.dist)) {
-    mds.res <- mds.method(phi)
+    mds.res <- jsPCA(phi, mds.method)
   } else {
-    mds.res <- pca.from.dist(other.dist)
+    mds.res <- layout(other.dist, mds.method)
   }
+  
   if (is.matrix(mds.res)) {
     colnames(mds.res) <- c("x", "y")
   } else if (is.data.frame(mds.res)) {
@@ -298,7 +299,7 @@ createJSON <- function(phi = matrix(), theta = matrix(), doc.length = integer(),
 #' many columns as there are terms in the vocabulary.
 #' 
 #' @export
-jsPCA <- function(phi) {
+jsPCA <- function(phi, mds.method=cmdscale) {
   # first, we compute a pairwise distance between topic distributions
   # using a symmetric version of KL-divergence
   # http://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence
@@ -308,12 +309,11 @@ jsPCA <- function(phi) {
   }
   dist.mat <- proxy::dist(x = phi, method = jensenShannon)
   # then, we reduce the K by K proximity matrix down to K by 2 using PCA
-  pca.fit <- cmdscale(dist.mat, k = 2)
-  data.frame(x = pca.fit[,1], y = pca.fit[,2])
+  layout(dist.mat, mds.method)
 }
 
-pca.from.dist <- function(dist) {
-  pca.fit <- cmdscale(dist, k = 2)
-  data.frame(x = pca.fit[,1], y = pca.fit[,2])
+layout <- function(dist, mds.method) {
+  locations <- mds.method(dist, k = 2)
+  #locations <- test(dist, k=2)
+  data.frame(x = locations[,1], y = locations[,2])
 }
-
