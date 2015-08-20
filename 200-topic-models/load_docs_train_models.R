@@ -9,7 +9,7 @@ n.topics <- 30
 this.dir = "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
-model.name <- "mac"
+model.name <- "anchor_ngram"
 value_file<-"place_docs_here/values-docs-ngrams.tsv"
 world.file <- "place_docs_here/world-docs-ngrams.tsv"
 iters <- 800
@@ -67,7 +67,8 @@ rbind(
                    forum = as.character(values$Forum),
                    user = as.character(values$AuthorEmail),
                    job = as.character(values$JobResp),
-                   office = as.character(values$Office)
+                   office = as.character(values$Office),
+                   title = as.character(values$Name)
   ),
   data.frame(id = as.character(world$commentid), text = as.character(world$text), 
              CreationDate = world$creation_date, 
@@ -80,7 +81,8 @@ rbind(
              forum = as.character(world$forum),
              user = as.character(world$author_email),
              job = as.character(world$jobresp),
-             office = as.character(world$office)
+             office = as.character(world$office),
+             title = as.character(world$title)
   )
 )
 
@@ -108,17 +110,18 @@ documents$forum <- factor(documents$forum)
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
                                   "200-topic-models/en.txt", 
-                                    token.regexp = "\\p{L}[\\p{L}\_\-&@\\p{N}]+[\\p{N}\\p{L}]"
+                                    token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
 )
+# persist the documents so that we don't need to go through these steps everytime.  
+file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
+save(documents, file=file.name)
 
 ## Save a mallet instance list for anchor calculation
 mallet.instances$save(.jnew("java/io/File", "saved.instances"))
 
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
-# persist the documents so that we don't need to go through these steps everytime.  
-file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
-save(documents, file=file.name)
+
 #load(file.name)
 
 source('200-topic-models/lda_visualize.R')

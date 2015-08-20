@@ -52,9 +52,8 @@ state <- read.table(gzfile(in.state),
 names(state) <- c("doc","source","pos","typeindex","type","topic")
 state.2 <- cbind(state[,c("doc")], documents[state$doc+1, c("jam", "manager")], state[,c("type","topic")])
 names(state.2) <- c("doc","year","source","docword","topic")
-state.2$topic <- as.numeric(state.2$topic) - 1
 state.2$doc <- as.numeric(state.2$doc) + 1
-write.table(state.2, paste0(out.dir,"doc_token_topic.csv"), sep=",",  row.names=FALSE, fileEncoding="UTF-8")
+write.table(state.2, paste0(out.dir,"doc_token_topic.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
 
 # sub-corpus vocabularies
 # Topic: 0
@@ -96,8 +95,9 @@ for (i in 1:n.topics) {
   topic.out.str <- sprintf(template, i-1, paste(factor.lvls, collapse=","), paste(rows.for.out[range], collapse=",\n"))
   out.strs <- c(out.strs, topic.out.str)
 }
-
-write(paste(out.strs, collapse=",\n"), paste0(out.dir,"sub_corpus_vocab.txt"))
+full.text <- paste(out.strs, collapse=",\n")
+header <- paste(factor.lvls, collapse=",")
+write(paste(header, full.text, sep=",\n"), paste0(out.dir,"sub_corpus_vocab.txt"))
 
 
 # "doc","topic","docprop","source","year"
@@ -111,10 +111,10 @@ b <- melt(a, id.vars=c("doc", "manager", "jam"))
 b <- b[b$value>0,]
 names(b) <- c("doc", "source", "year", "topic", "docprop")
 b <- b[c("doc","topic","docprop","source","year")]
-b <- b[order(b$doc, -b$docprop),]
+b <- b[order(b$doc, b$topic),]
 b$topic <- as.numeric(b$topic) - 1
 
-write.table(b, paste0(out.dir,"doc_topic_props.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
+write.table(b, paste0(out.dir,"doc_topic_props.csv"), sep=",",  quote=FALSE,row.names=FALSE, fileEncoding="UTF-8")
 
 
 # rawtext
