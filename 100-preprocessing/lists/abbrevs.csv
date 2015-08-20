@@ -1,70 +1,70 @@
-"exec","executive"
-"execs","executive"
-"ibm execs","executive"
-"ibm executives","executive"
-"mgmt","management"
-"thru","through"
-"bi","business intelligence"
-"info","information"
-"1st","first"
-"2nd","second"
-"3rd","third"
-"biz","business"
-"dev","development"
-"hr","human resources"
-"sept 11","september 11th"
-"september 11 2001","september 11th"
-"september 11","september 11th"
-"tom watson sr","watson_sr"
-"tj watson sr","watson_sr"
-"mr watson sr","watson_sr"
-"tom watson jr","watson_jr"
-"tj watson jr","watson_jr"
-"thomas j watson","watson_jr"
-"tj watson","watson_jr"
-"thomas j watson jr","watson_jr"
-"thomas watson jr","watson_jr"
-"watson jrs","watson_jr"
-"thomas watson","tom_watson"
-"mr watsons","tom_watson"
-"tom watsons","tom_watson"
-"mr watson","tom_watson"
-"mr. watson,"tom_watson"
-"sam palmisanos","sam_palmisano"
-"sam palmisano","sam_palmisano"
-"mr palmisano","sam_palmisano"
-"sam p","sam_palmisano"
-"sam said","sam_palmisano said"
-"Sam Palmisamo","sam_palmisano"
-"palmisano","sam_palmisano"
-"Samuael Palmisano","sam_palmisano"
-"Samual J. Palmisano","sam_palmisano"
-"Mr. Palmisano","sam_palmisano"
-"Sam J. Palmisano","sam_palmisano"
-"Sam  Palmisano","sam_palmisano"
-"Gerstner","lou_gerstner"
-"louis gerstner","lou_gerstner"
-"Lu Gerstner","lou_gerstner"
-"lou gerstener","lou_gerstner"
-"Mr gerstner","lou_gerstner"
-"Luo Gerstner","lou_gerstner"
-"mr. gestner","lou_gerstner"
-"Lou  Gerstner","lou_gerstner"
-"lou g","lou_gerstner"
-"customer sat","customer satisfaction"
-"employee sat","employee satisfaction"
-"ny times","new_york_times"
-"new york times","new_york_times"
-"ibm corp","ibm"
-"ibm corporation","ibm"
-"ibm company", "ibm"
-"wall st","wall_street"
-"sr","senior"
-"jr","junior"
-"ibmers","ibmer"
-"good ol","good_old"
-"1st lines","first_line_manager"
-"ondemand","on demand"
-"grady booch ibm fellow ibm rational chief scientist","grady_booch"
+exec,executive
+execs,executive
+ibm execs,executive
+ibm executives,executive
+mgmt,management
+thru,through
+bi,business intelligence
+info,information
+1st,first
+2nd,second
+3rd,third
+biz,business
+dev,development
+hr,human resources
+sept 11,september 11th
+september 11 2001,september 11th
+september 11,september 11th
+tom watson sr,watson_sr
+tj watson sr,watson_sr
+mr watson sr,watson_sr
+tom watson jr,watson_jr
+tj watson jr,watson_jr
+thomas j watson,watson_jr
+tj watson,watson_jr
+thomas j watson jr,watson_jr
+thomas watson jr,watson_jr
+watson jrs,watson_jr
+thomas watson,tom_watson
+mr watsons,tom_watson
+tom watsons,tom_watson
+mr watson,tom_watson
+mr. watson,tom_watson
+sam palmisanos,sam_palmisano
+sam palmisano,sam_palmisano
+mr palmisano,sam_palmisano
+sam p,sam_palmisano
+sam said,sam_palmisano said
+Sam Palmisamo,sam_palmisano
+palmisano,sam_palmisano
+Samuael Palmisano,sam_palmisano
+Samual J. Palmisano,sam_palmisano
+Mr. Palmisano,sam_palmisano
+Sam J. Palmisano,sam_palmisano
+Sam  Palmisano,sam_palmisano
+Gerstner,lou_gerstner
+louis gerstner,lou_gerstner
+Lu Gerstner,lou_gerstner
+lou gerstener,lou_gerstner
+Mr gerstner,lou_gerstner
+Luo Gerstner,lou_gerstner
+mr. gestner,lou_gerstner
+Lou  Gerstner,lou_gerstner
+lou g,lou_gerstner
+customer sat,customer satisfaction
+employee sat,employee satisfaction
+ny times,new_york_times
+new york times,new_york_times
+ibm corp,ibm
+ibm corporation,ibm
+ibm company, ibm
+wall st,wall_street
+sr,senior
+jr,junior
+ibmers,ibmer
+good ol,good_old
+1st lines,first_line_manager
+ondemand,on demand
+grady booch ibm fellow ibm rational chief scientist,grady_booch
 ibm',ibm
 ibms,ibm
