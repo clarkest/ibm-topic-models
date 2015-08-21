@@ -56,17 +56,21 @@ anchor.run <- function(model.ids, initial.type, n.topics) {
     model.label = paste(model.name, n.topics,formatC(i, width=2, flag="0"), sep="-")
     create.ldavis(new.topic.model, model.dir, model.label, 
                   cooccurenceThreshold=0.1, cooccurenceMinTokens=4, 
-                  mds.method=function(x, k) tsne(x, k=k, perplexity=8, max_iter=2500))
+                  mds.method=function(x, k) tsne(x, k=k, perplexity=6, max_iter=2500))
     new.topic.model$printState(.jnew("java.io.File", paste(model.dir, paste0(model.label, ".gz"), sep="/")))
   }
 }
 
 anchor.run(c(run.id), "anchor", 30)
 #anchor.run(c(1:10), "anchor", 30)
-perps <- c(7)
-for (p in perps) {
-  model.label = paste(model.name, n.topics, iters, maxims, formatC(p, width=2, flag="0"), sep="-")
-  create.ldavis(new.topic.model, model.dir, model.label, 
-              cooccurenceThreshold=0.1, cooccurenceMinTokens=4, 
-              mds.method=function(x, k) tsne(x, k=k, perplexity=p, max_iter=2500))
-}
+
+# perplexity sensitivity analysis
+
+#perps <- c(5:15)
+#for (p in perps) {
+#  model.label = paste(model.name, n.topics, iters, maxims, formatC(p, width=2, flag="0"), sep="-")
+#  create.ldavis(new.topic.model, model.dir, model.label, 
+#              cooccurenceThreshold=0.1, cooccurenceMinTokens=4, 
+#              mds.method=function(x, k) tsne(x, k=k, perplexity=p, max_iter=2500))
+#}
+"

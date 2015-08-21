@@ -8,7 +8,7 @@ library(rJava)
 library(mallet)
 library(reshape2)
 
-load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics) {
+load.from.saved.state <- function(model.name, model.num, n.topics) {
   stop.word.file <- "200-topic-models/en.txt"
   
   # load the persisted documents -- these are needed before we can load a model from state
@@ -22,7 +22,7 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
   )
   
   ## Initialize from a previously trained state
-  model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
+  model.label <- paste(model.name, n.topics, formatC(model.num, width=2, flag="0"), sep="-")
   file.name <- paste("models_dir", paste0(model.label, ".gz"), sep="/")
   topic.model <- MalletLDA(num.topics=n.topics)
   topic.model$loadDocuments(mallet.instances)
@@ -30,10 +30,10 @@ load.from.saved.state <- function(model.name, iters, maxims, model.num, n.topics
   return(topic.model)
 }
 
-load.model.for.analysis <- function(n.topics, model.name, iters, maxims, model.num) {
+load.model.for.analysis <- function(n.topics, model.name, model.num) {
   
-  topic.model <- load.from.saved.state(model.name, iters, maxims, model.num, n.topics)
-  model.label <- paste(model.name, n.topics, iters, maxims, formatC(model.num, width=2, flag="0"), sep="-")
+  topic.model <- load.from.saved.state(model.name, model.num, n.topics)
+  model.label <- paste(model.name, n.topics, formatC(model.num, width=2, flag="0"), sep="-")
   file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
   
   # this should create an object called "documents"
