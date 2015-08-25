@@ -69,8 +69,7 @@ anchor.run(c(run.id), "anchor", 30)
 #perps <- c(5:15)
 #for (p in perps) {
 #  model.label = paste(model.name, n.topics, iters, maxims, formatC(p, width=2, flag="0"), sep="-")
-#  create.ldavis(new.topic.model, model.dir, model.label, 
+#create.ldavis(new.topic.model, model.dir, model.label, 
 #              cooccurenceThreshold=0.1, cooccurenceMinTokens=4, 
 #              mds.method=function(x, k) tsne(x, k=k, perplexity=p, max_iter=2500))
 #}
-"

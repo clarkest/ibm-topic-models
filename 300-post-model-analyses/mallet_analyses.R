@@ -8,8 +8,21 @@ library(rJava)
 library(mallet)
 library(reshape2)
 
-load.from.saved.state <- function(model.name, model.num, n.topics) {
+get.regex <- function(regex.file, regex.name) {
+  df <- read.table(regex.file, stringsAsFactors=F, sep=",", header=T, allowEscapes=T, strip.white=T)
+  if (sum(df$name==regex.name) > 0) {
+      return(head(df[df$name==regex.name,"regex"],1))
+  } else {
+    # return the first regex
+    return(df[1,"regex"])
+  }
+}
+
+load.from.saved.state <- function(model.name, model.num, n.topics, regex.name="curated_punctuation") {
   stop.word.file <- "200-topic-models/en.txt"
+  regex.file <- "200-topic-models/regex.txt"
+  
+  regex <- get.regex(regex.file, regex.name)
   
   # load the persisted documents -- these are needed before we can load a model from state
   file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
@@ -18,7 +31,8 @@ load.from.saved.state <- function(model.name, model.num, n.topics) {
   mallet.instances <- mallet.import(documents$id, 
                                     documents$text, 
                                     stop.word.file, 
-                                    token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
+                                    token.regexp=regex
+                                    #token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
   )
   
   ## Initialize from a previously trained state
@@ -30,9 +44,9 @@ load.from.saved.state <- function(model.name, model.num, n.topics) {
   return(topic.model)
 }
 
-load.model.for.analysis <- function(n.topics, model.name, model.num) {
+load.model.for.analysis <- function(n.topics, model.name, model.num, ...) {
   
-  topic.model <- load.from.saved.state(model.name, model.num, n.topics)
+  topic.model <- load.from.saved.state(model.name, model.num, n.topics, ...)
   model.label <- paste(model.name, n.topics, formatC(model.num, width=2, flag="0"), sep="-")
   file.name <- paste0(paste("models_dir", model.name, sep="/"), "-docs.Rdata")
   

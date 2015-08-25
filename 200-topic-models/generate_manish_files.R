@@ -138,3 +138,13 @@ prepare_browser_docs <- function(model.num) {
 }
 
 prepare_browser_docs(1)
+prepare_browser_docs(2)
+prepare_browser_docs(3)
+prepare_browser_docs(4)
+prepare_browser_docs(5)
+prepare_browser_docs(6)
+prepare_browser_docs(7)
+prepare_browser_docs(8)
+prepare_browser_docs(9)
+prepare_browser_docs(10)
+

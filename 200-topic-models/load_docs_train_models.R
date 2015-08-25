@@ -140,3 +140,18 @@ for (i in model_ids) {
   new.topic.model$printState(.jnew("java.io.File", paste(model.dir, paste0(model.label, ".gz"), sep="/")))
 }
 
+wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
+setwd(wd)
+source("300-post-model-analyses/mallet_analyses.R")
+source('200-topic-models/lda_visualize.R')
+ad.hoc.ldavis <- function(n.topics, model.name, model.num, out.name) {
+  model.dir <- "models_dir"
+  model.object <- load.model.for.analysis(n.topics, model.name, model.num)
+  model.label = paste(out.name, model.num, sep="_")
+  create.ldavis(model.object$topic.model, model.dir, model.label, 
+                cooccurenceThreshold=0.1, cooccurenceMinTokens=4)
+}
+ad.hoc.ldavis(30,"anchor_ngram",2,"anchor_PCA")
+for (i in 3:10) {
+  ad.hoc.ldavis(30,"anchor_ngram",i,"anchor_PCA")
+}

@@ -1,0 +1,3 @@
+"name","regex"
+"curated_punctuation", "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
+"old_punctuation", "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
