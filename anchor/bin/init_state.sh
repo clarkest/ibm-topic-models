@@ -18,6 +18,6 @@ bin/mallet prune --input $INSTANCES --output $PRUNED_INSTANCES --prune-count 10
 
 bin/mallet run cc.mallet.classify.tui.Vectors2Info --input $PRUNED_INSTANCES --print-features > $OUTDIR/vocab.txt
 
-bin/anchor train-anchor --input $PRUNED_INSTANCES --anchors-file $ANCHORS --num-topics $TOPICS --topics-file $TOPIC_WORDS --min-docs 100 --num-random-projections 2000 --projection-density 0.1
+bin/anchor train-anchor --input $PRUNED_INSTANCES --anchors-file $ANCHORS --num-topics $TOPICS --topics-file $TOPIC_WORDS --min-docs 100 --num-random-projections 10000 --projection-density 0.2
 
 gzcat $INITIAL_STATE | perl -w bin/modify-state.pl $OUTDIR/vocab.txt $TOPIC_WORDS | gzip > $OUTDIR/anchor_state-$TOPICS.gz
