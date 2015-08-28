@@ -1,17 +1,16 @@
 
 
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
+wd <-  "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
-model.name <- "anchor_ngram_model"
+model.name <- "old_model"
 n.topics <- 30
-iters <- 800
-maxims <- 100
 model.num <- 8
 
-model.object <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+#model.object <- load.model.for.analysis(n.topics, model.name, model.num, regex.name="old_punctuation") 
+model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
 topic.model <- model.object$topic.model
 documents <- model.object$documents
 doc.topics <- model.object$doc.topics

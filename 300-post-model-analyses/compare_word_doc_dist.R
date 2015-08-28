@@ -9,17 +9,17 @@ write.table(unnormal.unsmooth.df, file="/Users/clarkbernier/Downloads/anchor_8_d
 
 
 
-wd <-  "C:/Users/clarkest/Dropbox/IBM Local/ibm-topic-model"
+wd <-  "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
-model.name <- "anchor_ngram_model"
+model.name <- "anchor_ngram"
 n.topics <- 30
-iters <- 800
-maxims <- 100
-model.num <- 8
+model.num <- 1
+cooccurenceMinTokens <- 4
+cooccurenceThreshold <- 0.1
 
-model.object <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
 corr.obj <- topic.co.occur(model.object$topic.model, cooccurenceMinTokens, cooccurenceThreshold)
 topic.words <- mallet.topic.words(model.object$topic.model, smoothed=T, normalized=T)
 
@@ -90,3 +90,7 @@ results[results$pair=="4-15",]
 plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 0.3), labels=1:30)
 plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 0), labels=1:30)
 plot(mallet.topic.hclust(model.object$doc.topics, topic.words, 1.0), labels=1:30)
+
+
+?mallet.topic.hclust
+
