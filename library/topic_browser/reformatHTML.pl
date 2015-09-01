@@ -65,7 +65,7 @@ while (my $line = <PROPFILE>) {
 	my %hash;
 	@hash{ @fldArr } = @lineArr;
 	push(@{$propHash_doc->{$hash{doc}}}, \%hash);
-	push(@{$propHash->{$hash{topic}}->{$hash{year}}}, \%hash);
+	push(@{$propHash->{$hash{topic}}->{$hash{factor}}}, \%hash);
 	
 }
 
@@ -76,7 +76,6 @@ my $topicNum;
 my $first_line = <FILEYR>;
 chomp($first_line);
 my @yrs = split(/,/,$first_line);
-	#("values", "world");
 while (my $line = <FILEYR>) {
 	#print STDERR "file yr line [$line]\n";
 	if ($line =~ /^Topic: (\d+)/) {
@@ -189,7 +188,7 @@ for my $yrelem (0..$#yrs+1) {
 		my $newfile = $output_folder . '/topic_' . ($x+1) . "_" . $yr . '.html';
 		print STDERR "New file is [$newfile]\n";
 		open (TOPICOUT2, "+>$newfile") or die $!;
-		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Manager</th><th>Forum</th></tr>";
+		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Manager</th><th>Factor</th></tr>";
 		my @rows;
 		if ($yr ne "full") {
 			if (exists $propHash->{$x}->{$yr}) {
@@ -208,7 +207,7 @@ for my $yrelem (0..$#yrs+1) {
 			#print data on topic
 			#print STDERR "row", Dumper($row);
 			print TOPICOUT2 "<tr><td><a href=\"article_", $row->{doc}, ".html
-			\">", $row->{doc},"</a></td><td>", $row->{docprop}, "</td><td>",$row->{source}, "</td><td>",$row->{year},"</td></tr>";
+			\">", $row->{doc},"</a></td><td>", $row->{docprop}, "</td><td>",$row->{source}, "</td><td>",$row->{factor},"</td></tr>";
 		}
 		
 		print TOPICOUT2 "</table></body></html>";
