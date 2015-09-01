@@ -5,13 +5,15 @@ source("300-post-model-analyses/mallet_analyses.R")
 
 model.name <- "anchor_ngram"
 n.topics <- 30
-model.num <- 1
+model.num <- 9
 
 prepare_browser_docs <- function(model.num) {
   model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
   documents <- model.object$documents
+  documents$jam.forum <- paste(documents$jam, documents$forum, sep="-")
+  factor <- "jam.forum"
   tm <- model.object$topic.model
-  out.dir <- paste0("/Users/clarkbernier/Dropbox/IBM Local/topic_browser/ibm_",model.num,"/")
+  out.dir <- paste0("/Users/clarkbernier/sandbox/ibm_docs/ibm_",model.num,"/")
   dir.create(out.dir, showWarnings=FALSE)
   in.state <- paste0("/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/models_dir/",model.object$model.label, ".gz") 
   words.per.topic <- 100
@@ -38,7 +40,7 @@ prepare_browser_docs <- function(model.num) {
   write.table(out.set, paste0(out.dir,"topic_word_score.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
   
   
-  # "doc","year","source","docword","topic"
+  # "doc","FACTOR NAME","source","docword","topic"
   # 1,1986,"HOU","briefs",10
   # order by doc, token order within doc  ## VERY IMPORTANT ##
   
@@ -51,8 +53,9 @@ prepare_browser_docs <- function(model.num) {
                       comment.char="",
                       quote="")
   names(state) <- c("doc","source","pos","typeindex","type","topic")
-  state.2 <- cbind(state[,c("doc")], documents[state$doc+1, c("jam", "manager")], state[,c("type","topic")])
-  names(state.2) <- c("doc","year","source","docword","topic")
+  
+  state.2 <- cbind(state[,c("doc")], documents[state$doc+1, c(factor, "manager")], state[,c("type","topic")])
+  names(state.2) <- c("doc",factor,"source","docword","topic")
   state.2$doc <- as.numeric(state.2$doc) + 1
   write.table(state.2, paste0(out.dir,"doc_token_topic.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
   
@@ -63,7 +66,6 @@ prepare_browser_docs <- function(model.num) {
   # word[2][year1], word[2][year2], ...
   # "arts [0.18578508431641]", "arts [0.18578508431641]", etc.
   
-  factor <- "jam"
   template <- "\nTopic: %d
   %s 
   %s"
@@ -106,12 +108,12 @@ prepare_browser_docs <- function(model.num) {
   
   doc.topics <- mallet.doc.topics(model.object$topic.model, smoothed=F, normalized=T)
   a <- data.frame(doc.topics)
-  a <- cbind(1:nrow(a), a, documents$manager, documents$jam)
-  names(a) <- c("doc", 1:n.topics, "manager", "jam")
-  b <- melt(a, id.vars=c("doc", "manager", "jam"))
+  a <- cbind(1:nrow(a), a, documents$manager, documents[,factor])
+  names(a) <- c("doc", 1:n.topics, "manager", factor)
+  b <- melt(a, id.vars=c("doc", "manager", factor))
   b <- b[b$value>0,]
-  names(b) <- c("doc", "source", "year", "topic", "docprop")
-  b <- b[c("doc","topic","docprop","source","year")]
+  names(b) <- c("doc", "source", factor, "topic", "docprop")
+  b <- b[c("doc","topic","docprop","source",factor)]
   b <- b[order(b$doc, b$topic),]
   b$topic <- as.numeric(b$topic) - 1
   
