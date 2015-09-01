@@ -99,8 +99,12 @@ foreach my $ky (sort { $a <=> $b } keys(%$outputHash) ) {
 	$k++;
 }
 
+# create the menu entries for each factor level
+my $select_list = join('</option><option>', @yrs);
+print STDERR $select_list;
+
 my $navform = "<form><select onChange='yr=this.value;if (yr==
-\"All factors\") {window.location.href=\"topics.html\";} else { window.location.href=\"topics_\" + yr + \".html\";}'><option>Select a subcorpus</option><option>All factors</option><option>values</option><option>world</option></select></form>
+\"All factors\") {window.location.href=\"topics.html\";} else { window.location.href=\"topics_\" + yr + \".html\";}'><option>Select a subcorpus</option><option>All factors</option><option>$select_list</option></select></form>
 Click on a topic header to look at articles for a topic";
 
 print TOPICOUT1 "<html><body><h3>Topics for Full Corpus</h3><h5>Source file: $topic_word_file",	"$ytr_topic_word_file<br/>Date Generated ",`date`, "Method:Standard LDA using R-LDA<br/>$param_string</h5>", 
@@ -173,6 +177,7 @@ for my $yrelem (0..$#yrs) {
 }
 
 
+
 my @topics = keys(%$yr_hash);
 for my $yrelem (0..$#yrs+1) {
 	my $yr = "full";
@@ -184,7 +189,7 @@ for my $yrelem (0..$#yrs+1) {
 		my $newfile = $output_folder . '/topic_' . ($x+1) . "_" . $yr . '.html';
 		print STDERR "New file is [$newfile]\n";
 		open (TOPICOUT2, "+>$newfile") or die $!;
-		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Manager</th><th>Jam</th></tr>";
+		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Manager</th><th>Forum</th></tr>";
 		my @rows;
 		if ($yr ne "full") {
 			if (exists $propHash->{$x}->{$yr}) {
