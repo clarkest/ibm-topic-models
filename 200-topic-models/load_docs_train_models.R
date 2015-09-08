@@ -155,3 +155,30 @@ ad.hoc.ldavis(30,"anchor_ngram",2,"anchor_PCA")
 for (i in 3:10) {
   ad.hoc.ldavis(30,"anchor_ngram",i,"anchor_PCA")
 }
+
+
+
+# add the gender information to the saved documents file
+file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
+load(file.name)
+
+# backup the old file in case we mess things up
+save(documents, file=paste0(file.name , ".bkup"))
+
+# load the gendered names
+genders <- read.table("place_docs_here/gendered_names.csv", 
+                      header=F, sep=",", col.names=c("email","name","gender"))
+# clean up the gender labels
+genders[genders$gender=="ambiguous", "gender"] <- "unknown"
+genders[genders$gender=="unclear", "gender"] <- "unknown"
+genders[genders$gender=="MALE", "gender"] <- "male"
+genders$gender <- factor(genders$gender)
+
+# remove trailing chars from emails and lowercase all emails
+documents$user <- gsub(" -pfld", "", tolower(documents$user))
+genders$email <- tolower(genders$email)
+
+
+new.docs <- merge(documents, genders, by.x="user", by.y="email", all.x=T)
+documents <- new.docs
+save(documents, file=file.name)
