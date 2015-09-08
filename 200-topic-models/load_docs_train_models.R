@@ -178,7 +178,14 @@ genders$gender <- factor(genders$gender)
 documents$user <- gsub(" -pfld", "", tolower(documents$user))
 genders$email <- tolower(genders$email)
 
-
+# merge, but preserve the original documents ordering (or the model state won't be recoverable)
+documents$sort.order <- seq_len(nrow(documents))
 new.docs <- merge(documents, genders, by.x="user", by.y="email", all.x=T)
-documents <- new.docs
+new.docs <- new.docs[order(new.docs$sort.order),]
+documents <- subset(new.docs, select=-c(sort.order))
+
 save(documents, file=file.name)
+
+subset(new.docs, select=-c("sort.order"))
+
+head()
