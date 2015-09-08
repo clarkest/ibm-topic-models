@@ -5,9 +5,9 @@ wd <-  "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
-model.name <- "old_model"
+model.name <- "anchor_ngram"
 n.topics <- 30
-model.num <- 8
+model.num <- 9
 
 #model.object <- load.model.for.analysis(n.topics, model.name, model.num, regex.name="old_punctuation") 
 model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
@@ -69,6 +69,11 @@ plot.all.topic.shares(model.object, col.keeps, by.vars,
 col.keeps <- c("manager", "continent", "jam", "DateWindow")
 by.vars <- c("manager", "jam")
 plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "manager_prev/"))
+
+# gender and jam
+col.keeps <- c("gender", "continent", "jam", "DateWindow", "manager")
+by.vars <- c("gender", "jam")
+plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "gender_prev/"), ylim=c(0,0.15))
 
 #diagnostic tool for seeing a particular topic's raw numbers
 #View(avg.topic.rate <- aggregate(doc.topics.data[2], by=doc.topics.data[,aggregate.set], mean))
