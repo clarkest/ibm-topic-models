@@ -4,11 +4,11 @@ setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
 AddMultiLevelFactor <- function(docs, factor.list) {
-  if length(factor.list) > 1 {
+  if (length(factor.list) > 1) {
     multi.label <- paste(factor.list, collapse="--")
     docs[multi.label] <- do.call(paste, c(docs[factor.list], sep = "-"))
   } else {
-    multi.label <-factor.list[1]
+    multi.label <- factor.list[1]
   }
   return(list(label=multi.label, docs=docs))
 }
@@ -161,4 +161,6 @@ PrepareBrowserDocs <- function(model.num, factor.list=c("jam", "forum"),
 model.name <- "anchor_ngram"
 n.topics <- 30
 model.num <- 9
-PrepareBrowserDocs(model.num, "jam_forum")
+PrepareBrowserDocs(model.num,
+                   factor.list=c("jam", "forum"), 
+                   other.data=c("manager", "gender", "doc.length", "title"))
