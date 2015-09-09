@@ -140,7 +140,6 @@ PrepareBrowserDocs <- function(model.num, factor.list=c("jam", "forum"),
   Jam: %s
   %s 
   Forum: %s
-  Thread: %s \n
   Corpus Text: \n%s
   === END RECORD ==="
   other.data.template <- paste0(paste0(other.data, collapse=": %s\n  "), ": %s")
@@ -150,8 +149,7 @@ PrepareBrowserDocs <- function(model.num, factor.list=c("jam", "forum"),
                1:nrow(documents),
                documents$jam, 
                other.data.str, 
-               documents$forum, 
-               documents$DateWindow, 
+               documents$forum,  
                documents$text
   )
   write(a, paste0(out.dir,"text.txt"))
@@ -164,3 +162,7 @@ model.num <- 9
 PrepareBrowserDocs(model.num,
                    factor.list=c("jam", "forum"), 
                    other.data=c("manager", "gender", "doc.length", "title"))
+
+PrepareBrowserDocs(model.num,
+                   factor.list=c("jam"), 
+                   other.data=c("manager", "forum", "gender", "doc.length", "title"))

@@ -4,19 +4,17 @@
 wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
-model.name <- "anchor_ngram_model"
+model.name <- "anchor_ngram"
 n.topics <- 30
-iters <- 800
-maxims <- 100
-model.num <- 8
+model.num <- 9
 
 # unfortunately, the Ancestry text was done in windows, so we need the windows version
 # of the documents (especially their ids) in order to do the matching
-load("models_dir/windows-docs.Rdata")
+load(sprintf("models_dir/%s-docs.Rdata",model.name))
 win.docs <- documents
 
 # now load the unix model data and documents
-list <- load.model.for.analysis(n.topics, model.name, iters, maxims, model.num) 
+list <- load.model.for.analysis(n.topics, model.name, model.num) 
 topic.model <- list$topic.model
 documents <- list$documents
 doc.topics <- list$doc.topics
@@ -35,7 +33,7 @@ sum(documents$CreationTime != win.docs$CreationTime)
 # were "missing links"
 
 # load the ancestry information from the sql dump
-ancestry <- read.delim("place_docs_here/thread_ancestry.csv", 
+ancestry <- read.delim("place_docs_here/thread_ancestry_mac.csv", 
                        encoding="UTF-8", 
                        sep="\t", quote='', 
                        stringsAsFactors=FALSE)
