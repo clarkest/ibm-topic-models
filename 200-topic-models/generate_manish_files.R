@@ -3,25 +3,41 @@ wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
-model.name <- "anchor_ngram"
-n.topics <- 30
-model.num <- 9
+AddMultiLevelFactor <- function(docs, factor.list) {
+  if length(factor.list) > 1 {
+    multi.label <- paste(factor.list, collapse="--")
+    docs[multi.label] <- do.call(paste, c(docs[factor.list], sep = "-"))
+  } else {
+    multi.label <-factor.list[1]
+  }
+  return(list(label=multi.label, docs=docs))
+}
 
-prepare_browser_docs <- function(model.num) {
+GetDocsWithDocLen <- function(model.object) {
+  unnormal.doc.topics <- mallet.doc.topics(model.object$topic.model, smoothed=F, normalized=F)
+  ret.val <- model.object$documents
+  ret.val$doc.length <- rowSums(unnormal.doc.topics)
+  return (ret.val)
+}
+
+PrepareBrowserDocs <- function(model.num, factor.list=c("jam", "forum"), 
+                               other.data=c("manager", "gender", "doc.length", "title")) {
   model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
-  documents <- model.object$documents
-  documents$jam.forum <- paste(documents$jam, documents$forum, sep="-")
-  factor <- "jam.forum"
+  docs <- GetDocsWithDocLen(model.object)
+  labeled.docs <- AddMultiLevelFactor(docs, factor.list)
+  documents <- labeled.docs$docs
+  factor <- labeled.docs$label
   tm <- model.object$topic.model
-  out.dir <- paste0("/Users/clarkbernier/sandbox/ibm_docs/ibm_",model.num,"/")
+  out.dir <- paste0("/Users/clarkbernier/sandbox/ibm_docs/ibm_", model.num, "/")
   dir.create(out.dir, showWarnings=FALSE)
-  in.state <- paste0("/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/models_dir/",model.object$model.label, ".gz") 
+  in.state <- paste0("/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/models_dir/",
+                     model.object$model.label, ".gz") 
   words.per.topic <- 100
+  vocab <- mallet.word.freqs(model.object$topic.model)
   
   # topic, word, score
   # 0,arts,0.132423295699499
   # order by topic, score
-  vocab <- mallet.word.freqs(model.object$topic.model)
   topic.words <- mallet.topic.words(model.object$topic.model, smoothed=F, normalized=T)
   a <- data.frame(t(topic.words))
   a <- cbind(vocab$words, a)
@@ -39,10 +55,11 @@ prepare_browser_docs <- function(model.num) {
   out.set$topic <- as.numeric(out.set$topic) - 1
   write.table(out.set, paste0(out.dir,"topic_word_score.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
   
-  
-  # "doc","FACTOR NAME","source","docword","topic"
-  # 1,1986,"HOU","briefs",10
+
+  # "doc","docword","topic"
+  # 1,"briefs",10
   # order by doc, token order within doc  ## VERY IMPORTANT ##
+ # source appears to be entirely unused in this file
   
   # we need the gibbs state from this model
   state <- read.table(gzfile(in.state), 
@@ -52,13 +69,14 @@ prepare_browser_docs <- function(model.num) {
                       stringsAsFactors=FALSE, 
                       comment.char="",
                       quote="")
-  names(state) <- c("doc","source","pos","typeindex","type","topic")
+  names(state) <- c("doc","undefined","pos","typeindex","type","topic")
   
-  state.2 <- cbind(state[,c("doc")], documents[state$doc+1, c(factor, "manager")], state[,c("type","topic")])
-  names(state.2) <- c("doc",factor,"source","docword","topic")
+  state.2 <- state[,c("doc","type","topic")]
+  names(state.2) <- c("doc","docword","topic")
   state.2$doc <- as.numeric(state.2$doc) + 1
   write.table(state.2, paste0(out.dir,"doc_token_topic.csv"), sep=",", quote=FALSE, row.names=FALSE, fileEncoding="UTF-8")
-  
+
+
   # sub-corpus vocabularies
   # Topic: 0
   # 1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,
@@ -66,13 +84,10 @@ prepare_browser_docs <- function(model.num) {
   # word[2][year1], word[2][year2], ...
   # "arts [0.18578508431641]", "arts [0.18578508431641]", etc.
   
-  template <- "\nTopic: %d
-  %s 
-  %s"
+  template <- "\nTopic: %d\n%s\n%s"
   factor.lvls <- levels(factor(documents[, factor]))
   words.by.factor <- NULL
   for (lvl in factor.lvls) { 
-    # we use normalizations so the rows sum to 1, and smoothing so nothing is exactly zero
      topic.words <- mallet.subset.topic.words(model.object$topic.model, documents[,factor]==lvl, 
                                     normalized=T, smoothed=F)
      a <- data.frame(t(topic.words))
@@ -108,12 +123,12 @@ prepare_browser_docs <- function(model.num) {
   
   doc.topics <- mallet.doc.topics(model.object$topic.model, smoothed=F, normalized=T)
   a <- data.frame(doc.topics)
-  a <- cbind(1:nrow(a), a, documents$manager, documents[,factor])
-  names(a) <- c("doc", 1:n.topics, "manager", factor)
-  b <- melt(a, id.vars=c("doc", "manager", factor))
+  a <- cbind(1:nrow(a), a, documents[,other.data], documents[,factor])
+  names(a) <- c("doc", 1:n.topics, other.data, factor)
+  b <- melt(a, id.vars=c("doc", other.data, factor))
   b <- b[b$value>0,]
-  names(b) <- c("doc", "source", factor, "topic", "docprop")
-  b <- b[c("doc","topic","docprop","source",factor)]
+  names(b) <- c("doc", other.data, "factor", "topic", "docprop")
+  b <- b[c("doc", "topic", "docprop", "factor", other.data)]
   b <- b[order(b$doc, b$topic),]
   b$topic <- as.numeric(b$topic) - 1
   
@@ -123,15 +138,18 @@ prepare_browser_docs <- function(model.num) {
   # rawtext
   template <- "=== RECORD %d === \n  
   Jam: %s
-  Manager: %s 
+  %s 
   Forum: %s
   Thread: %s \n
   Corpus Text: \n%s
   === END RECORD ==="
+  other.data.template <- paste0(paste0(other.data, collapse=": %s\n  "), ": %s")
+  other.data.str <- do.call("sprintf", c(other.data.template, documents[,other.data]))
+  
   a <- sprintf(template,
                1:nrow(documents),
                documents$jam, 
-               documents$manager, 
+               other.data.str, 
                documents$forum, 
                documents$DateWindow, 
                documents$text
@@ -139,14 +157,8 @@ prepare_browser_docs <- function(model.num) {
   write(a, paste0(out.dir,"text.txt"))
 }
 
-prepare_browser_docs(1)
-prepare_browser_docs(2)
-prepare_browser_docs(3)
-prepare_browser_docs(4)
-prepare_browser_docs(5)
-prepare_browser_docs(6)
-prepare_browser_docs(7)
-prepare_browser_docs(8)
-prepare_browser_docs(9)
-prepare_browser_docs(10)
 
+model.name <- "anchor_ngram"
+n.topics <- 30
+model.num <- 9
+PrepareBrowserDocs(model.num, "jam_forum")

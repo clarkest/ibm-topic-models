@@ -17,6 +17,7 @@ perl reformatHTML.pl topic_12_ctm.csv ytr_12_ctm.csv topic_props_12_ctm.csv rawt
 
 perl reformatHTML.pl ibm/topic_word_score.csv ibm/sub_corpus_vocab.txt ibm/doc_topic_props.csv ibm/text.txt /users/clarkbernier/sandbox/ibm_topic_browser ibm/doc_token_topic.csv "Anchor Model 1"
 
-export RUNID=1
+export RUNID=9
+export DOCSDIR="/Users/clarkbernier/sandbox/ibm_docs/ibm_$RUNID"
 mkdir /users/clarkbernier/sandbox/ibm_topic_browser_$RUNID
-perl reformatHTML.pl ibm/topic_word_score.csv ibm/sub_corpus_vocab.txt ibm/doc_topic_props.csv ibm/text.txt /users/clarkbernier/sandbox/ibm_topic_browser_$RUNID ibm/doc_token_topic.csv "Anchor Model $RUNID"
+perl reformatHTML.pl $DOCSDIR/topic_word_score.csv $DOCSDIR/sub_corpus_vocab.txt $DOCSDIR/doc_topic_props.csv $DOCSDIR/text.txt /users/clarkbernier/sandbox/ibm_topic_browser_$RUNID $DOCSDIR/doc_token_topic.csv "Anchor Model $RUNID"

@@ -175,7 +175,10 @@ for my $yrelem (0..$#yrs) {
 	close TOPICOUT2;
 }
 
-
+# we explicitly use everything in the propfile from [0-3], 
+#   so keep just the 4th and after elements
+my @hashKeys = splice(@fldArr, 4);
+my $otherHeadings = join("</th><th>", @hashKeys); 
 
 my @topics = keys(%$yr_hash);
 for my $yrelem (0..$#yrs+1) {
@@ -188,7 +191,7 @@ for my $yrelem (0..$#yrs+1) {
 		my $newfile = $output_folder . '/topic_' . ($x+1) . "_" . $yr . '.html';
 		print STDERR "New file is [$newfile]\n";
 		open (TOPICOUT2, "+>$newfile") or die $!;
-		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Manager</th><th>Factor</th></tr>";
+		print TOPICOUT2 "<html><body><h3>Topic " . ($x+1) . " Articles for $yr Corpus</h3><h5>Source file: $ytr_topic_word_file</h5><table border=1><tr><th>Article</th><th>Document Proportion</th><th>Sub Corpus</th><th>$otherHeadings</th></tr>";
 		my @rows;
 		if ($yr ne "full") {
 			if (exists $propHash->{$x}->{$yr}) {
@@ -206,8 +209,13 @@ for my $yrelem (0..$#yrs+1) {
 		foreach my $row (@rows) {
 			#print data on topic
 			#print STDERR "row", Dumper($row);
+			my $otherVals = "";
+			foreach my $otherKey (@hashKeys) {
+				$otherVals .= "<td>$row->{$otherKey}</td>";
+			}
+			
 			print TOPICOUT2 "<tr><td><a href=\"article_", $row->{doc}, ".html
-			\">", $row->{doc},"</a></td><td>", $row->{docprop}, "</td><td>",$row->{source}, "</td><td>",$row->{factor},"</td></tr>";
+			\">", $row->{doc},"</a></td><td>", $row->{docprop}, "</td><td>",$row->{factor}, "</td>", $otherVals, "</tr>";
 		}
 		
 		print TOPICOUT2 "</table></body></html>";
@@ -221,6 +229,7 @@ my $recId = 1;
 open (WDTFILE, $wdt_file) or die $!;
 my $wdt_line = <WDTFILE>;
 $wdt_line = <WDTFILE>;
+
 while ($rawtext =~ m/=== RECORD (\d+) ===(.*?)=== END RECORD ===/sg) {
 	open (TOPICOUT2, "+>$output_folder" . '/article_' . $1 . '.html') or die $!;
 	print TOPICOUT2 "<html><body><h3>Text for Article $1 </h3><table border=1><tr><th>Topic</th><th>Proportion</th></tr>";
@@ -242,13 +251,10 @@ while ($rawtext =~ m/=== RECORD (\d+) ===(.*?)=== END RECORD ===/sg) {
 	while ($wdt_line =~ /^$rec_num\,/) {
 		chop($wdt_line);
 		my @wdt_line_arr = split(/,/,$wdt_line);
-		my $match_text = $wdt_line_arr[3];
+		my $match_text = $wdt_line_arr[1];
 		$match_text =~ s/\"//g;
 		
-		if ($match_text eq "national_endowment_arts") {
-			$match_text = 'national endowment.*?arts';
-		}
-		my $match_topic = $wdt_line_arr[4];
+		my $match_topic = $wdt_line_arr[2];
 		my $spancolor = $topic_colors[$match_topic];
 		#print STDERR "looking to peel [$newtext]\n";
 		#print STDERR "==ltext is [$left_text]\n";
