@@ -158,6 +158,10 @@ for (i in 3:10) {
 
 
 
+#######################
+# Gender Update       #
+#######################
+
 # add the gender information to the saved documents file
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
 load(file.name)
@@ -172,20 +176,23 @@ genders <- read.table("place_docs_here/gendered_names.csv",
 genders[genders$gender=="ambiguous", "gender"] <- "unknown"
 genders[genders$gender=="unclear", "gender"] <- "unknown"
 genders[genders$gender=="MALE", "gender"] <- "male"
+#TODO move this further up stream
+#genders[is.na(gender$gender), "gender"] <- "unknown"
 genders$gender <- factor(genders$gender)
 
 # remove trailing chars from emails and lowercase all emails
 documents$user <- gsub(" -pfld", "", tolower(documents$user))
+documents$user <- gsub(" - pfld", "", tolower(documents$user))
 genders$email <- tolower(genders$email)
 
 # merge, but preserve the original documents ordering (or the model state won't be recoverable)
 documents$sort.order <- seq_len(nrow(documents))
 new.docs <- merge(documents, genders, by.x="user", by.y="email", all.x=T)
+# two names fell off the list -- update them here
+new.docs[new.docs$user=="jonish@us.ibm.com", "gender"] <- "female"
+new.docs[new.docs$user=="tim_main@uk.ibm.com", "gender"] <- "male"
+# return to old sort order
 new.docs <- new.docs[order(new.docs$sort.order),]
 documents <- subset(new.docs, select=-c(sort.order))
 
 save(documents, file=file.name)
-
-subset(new.docs, select=-c("sort.order"))
-
-head()
