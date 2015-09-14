@@ -245,3 +245,87 @@ for (i in 1: round(length(percents)/2)) {
     print (sprintf("%f compared to %f", perc.small, perc.large))
   }
 }
+
+
+
+
+
+# bootstrapped distance metric
+print(args)
+topic=as.numeric(args[1])
+print(paste("topic",topic))
+dat=read.csv("yearly_topic_term_probs.csv", header=F)
+topic=as.numeric(args)
+print(paste("topic",topic))
+num_reps=1000
+smooth=.0000000001
+repl_frame=data.frame(frame_num=(0:num_reps))
+
+KLD <- function(x,y) sum(x * log(x/y))
+symKLD<- function(x,y) (0.5 * KLD(x, y)) + (0.5 * KLD(y, x))
+
+
+
+year=1986
+prev_dist_list=list()
+i=1
+datrow=dat[dat$V2==year & dat$V1==topic,4:length(dat)]
+freq_dist0=as.vector(datrow)
+freq_dist0 = freq_dist0 + smooth
+freq_dist0 = freq_dist0 / sum(freq_dist0)
+prev_dist_list[[i]] = freq_dist0
+for (i in seq(2,num_reps+1)) {
+  print(paste("topicc",topic,"year",year,"iter", i))
+  topicnumwords=dat[dat$V2==year & dat$V1==topic,"V3"]
+  smpl_table=table(sample(seq(1:length(datrow)), size = topicnumwords, replace = TRUE, prob = datrow))
+  freq_dist0=rep(0,length(datrow))
+  freq_dist0[as.numeric(names(smpl_table))]=smpl_table
+  freq_dist0 = freq_dist0 / sum(freq_dist0)
+  freq_dist0 = freq_dist0 + smooth
+  freq_dist0 = freq_dist0 / sum(freq_dist0)
+  prev_dist_list[[i]] = freq_dist0
+}
+
+for (year in 1987:1997) {
+  repl_vec=rep(0,num_reps+1)
+  new_prev_dist=list()
+  datrow=dat[dat$V2==year & dat$V1==topic,4:length(dat)]
+  i=1
+  freq_dist1=as.vector(datrow)
+  
+  freq_dist1 = freq_dist1 + smooth
+  freq_dist1 = freq_dist1 / sum(freq_dist1)
+  
+  freq_dist0 = prev_dist_list[[i]]
+  symm_kl = symKLD(freq_dist1,freq_dist0)
+  
+  new_prev_dist[[i]] = freq_dist1
+  repl_vec[i] = symm_kl
+  for (i in seq(2,num_reps+1)) {
+    print(paste("topic",topic,"year",year,"iter", i))
+    topicnumwords=dat[dat$V2==year & dat$V1==topic,"V3"]
+    smpl_table=table(sample(seq(1:length(datrow)), size = topicnumwords, replace = TRUE, prob = datrow))
+    freq_dist1=rep(0,length(datrow))
+    freq_dist1[as.numeric(names(smpl_table))]=smpl_table
+    freq_dist1 = freq_dist1 / sum(freq_dist1)
+    freq_dist1 = freq_dist1 + smooth
+    freq_dist1 = freq_dist1 / sum(freq_dist1)
+    
+    freq_dist0 = prev_dist_list[[i]]
+    symm_kl = symKLD(freq_dist1,freq_dist0)
+    
+    
+    
+    
+    new_prev_dist[[i]] = freq_dist1
+    repl_vec[i] = symm_kl
+  }
+  prev_dist_list = new_prev_dist
+  newcol=data.frame(x=repl_vec)
+  names(newcol)=paste("v",year,topic,sep="_")
+  repl_frame = cbind(repl_frame,newcol)
+}
+write.csv(repl_frame, paste(topic,"yearly_topic_kl_ci.csv",sep="_"), row.names=FALSE)
+
+
+
