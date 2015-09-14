@@ -8,11 +8,6 @@ model.name <- "anchor_ngram"
 n.topics <- 30
 model.num <- 9
 
-# unfortunately, the Ancestry text was done in windows, so we need the windows version
-# of the documents (especially their ids) in order to do the matching
-load(sprintf("models_dir/%s-docs.Rdata",model.name))
-win.docs <- documents
-
 # now load the unix model data and documents
 list <- load.model.for.analysis(n.topics, model.name, model.num) 
 topic.model <- list$topic.model
@@ -21,42 +16,58 @@ doc.topics <- list$doc.topics
 doc.topics.frame <- list$doc.topics.frame
 model.label <- list$model.label
 
-# sanity check that the document sets are indexed the same way
-#   this should be 0
-sum(documents$CreationTime != win.docs$CreationTime)
+MyParentsParents <- function(id, parents, ancestor.list=c()) {
+  parent.id <- toString(parents[id])
+  if (parent.id=="NA") {
+    return (c("missing", ancestor.list))
+  } else if (parent.id == "null") {
+    return (ancestor.list)
+  } else {
+    return (MyParentsParents(parent.id, parents, c(parent.id, ancestor.list)))
+  }
+}
+#TODO -- memoize this!
+MyParentsParentsStr <- function(id, parents, ancestor.list="") {
+  parent.id <- toString(parents[id])
+  if (parent.id=="NA") {
+    return (paste("missing", ancestor.list, sep=","))
+  } else if (parent.id == "null") {
+    return (ancestor.list)
+  } else {
+    return (MyParentsParentsStr(parent.id, parents, paste(parent.id, ancestor.list, sep=",")))
+  }
+}
 
-#################
-#   THREADING   #
-#################
+parents <- documents$parent
+names(parents) <- documents$id
+# i'm not proud of this hackiness, but it works
+#   generating the list directly using MyParentsParents wasn't playing well with melt()
+#   however, using the old unlist(strsplit()) code worked beautifully
+#   so, generate the string first, then use the old code to get back at the lists
+ancestors <- sapply(documents$id, MyParentsParentsStr, parents)
+names(ancestors) <- documents$id
 
-# the ancestry was calculated in SQL, using the non-processed data for cases when culled docs
-# were "missing links"
-
-# load the ancestry information from the sql dump
-ancestry <- read.delim("place_docs_here/thread_ancestry_mac.csv", 
-                       encoding="UTF-8", 
-                       sep="\t", quote='', 
-                       stringsAsFactors=FALSE)
-
-# map to documents by id 
-##  -- note that the document ids have been altered because of the duplicate ids
-merge.win.docs <- merge(win.docs, ancestry, by.x="id", by.y="id")
-new.docs <- cbind(documents, merge.win.docs[,c("title","parent_id","ancestry","generation")])
-
+threaded.docs <- documents
 # transform the ancestry text into a list of ancestors
-new.docs$ancestors <- 
-  lapply(new.docs$ancestry, function(x) unlist(strsplit(x, split=",")))
+threaded.docs$ancestors <- lapply(ancestors, function(x) unlist(strsplit(x, split=",")))
+threaded.docs$generation <- sapply(threaded.docs$ancestors, length) + 1
 
-names(new.docs$ancestors) <- new.docs$id
-new.docs$ancestors[new.docs$ancestors=="null"] <- NA 
-melted.ancestors <- melt(new.docs$ancestors[new.docs$ancestors!="null"])
+threaded.docs$ancestors[threaded.docs$ancestors==""] <- NA 
+melted.ancestors <- melt(threaded.docs$ancestors)
+
 num.children <- summarize(group_by(melted.ancestors, value), n.children=n())
-new.docs <- merge(new.docs, num.children, by.x="id", by.y="value", all.x=TRUE, suffixes=c("x",""))
-new.docs$n.children[is.na(new.docs$n.children)] <- 0
+# drop the count on "missing"
+num.children <- num.children[num.children$value!="missing",]
+threaded.docs <- merge(threaded.docs, num.children, by.x="id", by.y="value", all.x=TRUE, suffixes=c("x",""))
+threaded.docs$n.children[is.na(threaded.docs$n.children)] <- 0
 
-class <- "manager"
+# let's save these, since that recursive ancestry is freaking slow
+save(threaded.docs, file=sprintf("place_docs_here/threaded_docs.Rdata", model.name))
+# load(sprintf("place_docs_here/threaded_docs.Rdata")
+
 # how many managers v. others get a response when they post?
-summarize(group_by_(new.docs, .dots=c("jam",class)), 
+ResponseRates <- function(class) {
+  summarize(group_by_(threaded.docs, .dots=c("jam",class)), 
           total.posts=n(), 
           with.children=sum(n.children>0),
           with.5=sum(n.children>=5),
@@ -64,10 +75,17 @@ summarize(group_by_(new.docs, .dots=c("jam",class)),
           perc.response=with.children/total.posts,
           perc.5=with.5/total.posts,
           perc.10=with.10/total.posts
-)
+  )
+}
+class <- "manager"
+ResponseRates("manager")
+ResponseRates("gender")
+# do post shares change between jams though??
+table(threaded.docs$jam, threaded.docs$manager) / as.vector(table(threaded.docs$jam))
+table(threaded.docs$jam, threaded.docs$gender) / as.vector(table(threaded.docs$jam))
 
 # how about for top-line comments?
-summarize(group_by_(new.docs[is.na(new.docs$ancestors),], .dots=c("jam", class)), 
+summarize(group_by_(threaded.docs[is.na(threaded.docs$ancestors),], .dots=c("jam", class)), 
           total.posts=n(), 
           with.children=sum(n.children>0),
           with.5=sum(n.children>=5),
@@ -79,12 +97,13 @@ summarize(group_by_(new.docs[is.na(new.docs$ancestors),], .dots=c("jam", class))
 
 # are people more likely to respond to people in the same class as them?
 class <- "manager"
+class <- "gender"
 
 class.parent <- paste0(class,".parent")
 # same as parent?
-match.to.parents <- merge(new.docs[,c("id", "parent_id", class)], 
-      new.docs[,c("id", class)], 
-      by.x="parent_id",
+match.to.parents <- merge(threaded.docs[,c("id", "parent", class)], 
+      threaded.docs[,c("id", class)], 
+      by.x="parent",
       by.y="id",
       suffixes=c(".child",".parent"),
       all.x=TRUE)
@@ -92,26 +111,36 @@ match.to.parents <- merge(new.docs[,c("id", "parent_id", class)],
 match.to.parents$match.parent <- 
   match.to.parents[paste0(class,".child")] == match.to.parents[class.parent]
 match.to.parents <- match.to.parents[c("id", "match.parent", class.parent)]
+#attr(match.to.parents$match.parent, "dimanmes") <- NULL
 
-new.docs <- merge(new.docs, match.to.parents)
+threaded.docs <- merge(threaded.docs, match.to.parents)
+# oddly, the match.parent column is picking up attributes that kill summarize.  so, remove them
+attr(threaded.docs$match.parent, "dimnames") <- NULL
+attr(threaded.docs$match.parent, "dimnames") <- NULL
+
+
+
 
 # look at whether comments share the same CLASS as their parent
-summarize(group_by_(new.docs, .dots=c("jam", class)), 
+summarize(group_by_(threaded.docs, .dots=c("jam", class)), 
          match=sum(match.parent, na.rm=TRUE), 
          different=sum(!match.parent, na.rm=TRUE),
-         match_perc = match / (match+different)
+         match_perc = match / (match + different)
          )
-subset <- new.docs$jam == "values"
-val.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, "match.parent"]))
+
+subset <- threaded.docs$jam == "values"
+val.class.chi <- chisq.test(table(threaded.docs[subset, class], threaded.docs[subset, "match.parent"]))
 val.class.chi$residuals
+
+
 
 # BETTER: chi-square standard residuals of child class and parent class
-subset <- new.docs$jam == "values"
-val.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, class.parent]))
+subset <- threaded.docs$jam == "values"
+val.class.chi <- chisq.test(table(threaded.docs[subset, class], threaded.docs[subset, class.parent]))
 val.class.chi$residuals
 
-subset <- new.docs$jam == "world"
-world.class.chi <- chisq.test(table(new.docs[subset, class], new.docs[subset, class.parent]))
+subset <- threaded.docs$jam == "world"
+world.class.chi <- chisq.test(table(threaded.docs[subset, class], threaded.docs[subset, class.parent]))
 world.class.chi$residuals
 
 
@@ -119,8 +148,8 @@ world.class.chi$residuals
 # not "the number of postings by manaers that received responses,"
 # but, "the number of posts by managers"
 
-t <- table(new.docs[subset, class], new.docs[subset, class.parent])
-a <- table(new.docs[subset, class]) / sum(subset)
+t <- table(threaded.docs[subset, class], threaded.docs[subset, class.parent])
+a <- table(threaded.docs[subset, class]) / sum(subset)
 colSums(t)
 
 
@@ -128,12 +157,12 @@ colSums(t)
 min.thread <- 5
 
 # get the original comment of those threads
-long.threads <- new.docs[new.docs$n.children >= 5 & new.docs$parent_id=="null", c("id","n.children")]
+long.threads <- threaded.docs[threaded.docs$n.children >= 5 & threaded.docs$parent=="null", c("id","n.children")]
 long.threads$original <- long.threads$id
 children.of.long <- melted.ancestors[melted.ancestors$value %in% long.threads$id,]
 names(children.of.long) <- c("original", "id")
 children.of.long <- rbind(long.threads[c("original","id")], children.of.long)
-children.of.long <- merge(children.of.long, new.docs[c("id", class)])
+children.of.long <- merge(children.of.long, threaded.docs[c("id", class)])
 
 class.counts.by.thread <- summarize(group_by_(children.of.long, .dots=c("original")), 
           count=n(),
@@ -152,7 +181,7 @@ summarize(group_by_(class.counts.by.thread, .dots=c("original")),
 )
 
 class.counts.by.thread <- merge(class.counts.by.thread, 
-                                new.docs[c("id", class)],
+                                threaded.docs[c("id", class)],
                                 by.x="original",
                                 by.y="id"
                           )
@@ -165,9 +194,9 @@ class.counts.by.thread <- merge(class.counts.by.thread,
 # how many of its ancestors is it like?
 class <- "manager"
 # same as parent?
-match.to.ancestors <- merge(new.docs[,c("id", "parent_id", class)], 
-                          new.docs[,c("id", class)], 
-                          by.x="parent_id",
+match.to.ancestors <- merge(threaded.docs[,c("id", "parent", class)], 
+                          threaded.docs[,c("id", class)], 
+                          by.x="parent",
                           by.y="id",
                           suffixes=c("child","parent"),
                           all.x=TRUE)
