@@ -13,7 +13,7 @@ mallet.instances <- mallet.import(documents$id,
                                   token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
 )
 
-## Initialize from a previously trained state
+## Initialize a single topic model
 topic.model <- MalletLDA(num.topics=1)
 topic.model$loadDocuments(mallet.instances)
 topic.model$setNumThreads(5L)
@@ -27,7 +27,7 @@ jensenShannon <- function(x, y) {
 }
 dist.mat <- proxy::dist(x = phi, method = jensenShannon)
 
-percents <- seq(0.05,0.5, by=0.1)
+percents <- seq(0.05, 0.5, by=0.1)
 l1dists <- c()
 jsdists <- c()
 for (perc.small in percents) {
@@ -160,7 +160,11 @@ diff.replicate <- function(data, indices, dist.mthd=lp.dist, topic.model, perc.s
   lrg.boot.set <- mallet.subset.topic.words(topic.model, 
                                             data[,"rand"]=="large", 
                                             normalized=T, smoothed=T)
-  return(dist.mthd(boot.set, lrg.boot.set, ...))
+  # limit to just words above a threshold
+  corp.dist <- mallet.topic.words(topic.model, normalized=F, smooth=F)
+  threshold <- 50
+  
+  return(dist.mthd(boot.set[corp.dist>=threshold], lrg.boot.set[corp.dist>=threshold], ...))
 }
 
 lp.dist <- function(set.1, set.2, p) {
@@ -177,6 +181,8 @@ symm.kl <- function(set.1, set.2) {
   return ((up + down)/2)
 }
 
+
+doc.set <- documents
 percents <- seq(0.05, 1, by=0.05)
 p <- 1
 r <- 100
@@ -195,17 +201,17 @@ for (i in 1: round(length(percents)/2)) {
     print (sprintf("%f compared to %f", perc.small, perc.large))
     # we want to normalize by the stdev of each word under this sampling, 
     # so first we need to bootstrap token-level means and sd:
-    l1.diffs <- boot(data=documents, statistic=diff.replicate, R=r, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large, p=p)
-    js.diffs <- boot(data=documents, statistic=diff.replicate, R=r, dist.mthd=jensenShannon, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large)
-    l5.diffs <- boot(data=documents, statistic=diff.replicate, R=r, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large, p=0.5)
-    kl.diffs <- boot(data=documents, statistic=diff.replicate, R=r, dist.mthd=symm.kl, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large)
+    #l1.diffs <- boot(data=doc.set, statistic=diff.replicate, R=r, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large, p=p)
+    #js.diffs <- boot(data=doc.set, statistic=diff.replicate, R=r, dist.mthd=jensenShannon, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large)
+    #l5.diffs <- boot(data=doc.set, statistic=diff.replicate, R=r, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large, p=0.5)
+    kl.diffs <- boot(data=doc.set, statistic=diff.replicate, R=r, dist.mthd=symm.kl, topic.model=topic.model, perc.small=perc.small, perc.large=perc.large)
     
     #dist.cdf <- ecdf(boot.diffs$t)
     #js.cdf <- ecdf(js.diffs$t)
     #l5.cdf <- ecdf(l5.diffs$t)
-    l1.boots[[i]][[j]] <- l1.diffs$t
-    l5.boots[[i]][[j]] <- l5.diffs$t
-    js.boots[[i]][[j]] <- js.diffs$t
+    #l1.boots[[i]][[j]] <- l1.diffs$t
+    #l5.boots[[i]][[j]] <- l5.diffs$t
+    #js.boots[[i]][[j]] <- js.diffs$t
     kl.boots[[i]][[j]] <- kl.diffs$t
     
   }
@@ -214,6 +220,7 @@ for (i in 1: round(length(percents)/2)) {
 save(l1.boots, l5.boots, js.boots, kl.boots, file="/users/clarkbernier/boots.Rdata")
 #save(kl.boots, file="/users/clarkbernier/kl-boots.Rdata")
 #load("/users/clarkbernier/boots.Rdata")
+
 plot.heat <- function(boots, percents, file.name, fun=mean) {
   vals <- lapply(boots, function (x) lapply(x, fun))
   plot <- ggplot(data=melt(vals), aes(x=percents[as.integer(L2)], y=percents[as.integer(L1)])) + 
@@ -226,7 +233,7 @@ plot.heat(l5.boots, percents, "/users/clarkbernier/sandbox/outputs/l5means.png")
 plot.heat(js.boots, percents, "/users/clarkbernier/sandbox/outputs/jsmeans.png")
 plot.heat(kl.boots, percents, "/users/clarkbernier/sandbox/outputs/klmeans.png")
 
-plot.heat(l1.boots, percents, "/users/clarkbernier/sandbox/outputs/l1sd.png", sd)
+min(kl.plot.heat(l1.boots, percents, "/users/clarkbernier/sandbox/outputs/l1sd.png", sd)
 plot.heat(l5.boots, percents, "/users/clarkbernier/sandbox/outputs/l5sd.png", sd)
 plot.heat(js.boots, percents, "/users/clarkbernier/sandbox/outputs/jssd.png", sd)
 plot.heat(kl.boots, percents, "/users/clarkbernier/sandbox/outputs/klsd.png", sd)
@@ -250,82 +257,219 @@ for (i in 1: round(length(percents)/2)) {
 
 
 
+
+
+
+
+
 # bootstrapped distance metric
-print(args)
-topic=as.numeric(args[1])
-print(paste("topic",topic))
-dat=read.csv("yearly_topic_term_probs.csv", header=F)
-topic=as.numeric(args)
-print(paste("topic",topic))
-num_reps=1000
-smooth=.0000000001
-repl_frame=data.frame(frame_num=(0:num_reps))
+# reload model with one topic
+mallet.instances <- mallet.import(documents$id, 
+                                  documents$text, 
+                                  stop.word.file, 
+                                  token.regexp = "\\p{L}[\\p{L}\\p{P}\\p{N}]+[\\p{N}\\p{L}]"
+)
+topic.model <- MalletLDA(num.topics=1)
+topic.model$loadDocuments(mallet.instances)
+topic.model$setNumThreads(5L)
+topic.model$setAlphaOptimization(20, 50)
+topic.model$train(20)
+topic.model$maximize(10)
+
+# bootstrap the distance between the two distributions
+library(boot)
+library(data.table)
+library(dplyr)
 
 KLD <- function(x,y) sum(x * log(x/y))
-symKLD<- function(x,y) (0.5 * KLD(x, y)) + (0.5 * KLD(y, x))
+symKLD <- function(x,y) (0.5 * KLD(x, y)) + (0.5 * KLD(y, x))
+chi.sqr <- function(x, y) sum(ifelse((x+y==0), 0, (x-y)^2 / (x+y)))
+chi.sqr2 <- function(x, y, numx, numy) {
+  x.weight <- (numy/numx)^0.5
+  y.weight <- (numx/numy)^0.5
+  sum(ifelse((x+y)==0,0,(x.weight * x - y.weight*y)^2 / (x+y)))
+}                              
 
-
-
-year=1986
-prev_dist_list=list()
-i=1
-datrow=dat[dat$V2==year & dat$V1==topic,4:length(dat)]
-freq_dist0=as.vector(datrow)
-freq_dist0 = freq_dist0 + smooth
-freq_dist0 = freq_dist0 / sum(freq_dist0)
-prev_dist_list[[i]] = freq_dist0
-for (i in seq(2,num_reps+1)) {
-  print(paste("topicc",topic,"year",year,"iter", i))
-  topicnumwords=dat[dat$V2==year & dat$V1==topic,"V3"]
-  smpl_table=table(sample(seq(1:length(datrow)), size = topicnumwords, replace = TRUE, prob = datrow))
-  freq_dist0=rep(0,length(datrow))
-  freq_dist0[as.numeric(names(smpl_table))]=smpl_table
-  freq_dist0 = freq_dist0 / sum(freq_dist0)
-  freq_dist0 = freq_dist0 + smooth
-  freq_dist0 = freq_dist0 / sum(freq_dist0)
-  prev_dist_list[[i]] = freq_dist0
+ResampledDist <- function(word.dist, total.words, smooth) {
+  vocab.size <- length(word.dist)
+  resample <- sample(1:vocab.size,
+                     size=total.words,
+                     replace=T,
+                     prob=word.dist
+  )
+  # resample.table <- table(resample)
+  # resample.table <- dplyr::summarise(group_by(data.table(a=resample), a), Freq=n())
+  resample.table <- cbind(1:vocab.size, tabulate(resample, nbins=vocab.size))
+  # map back into a probability distribution across words
+  
+  #freq.dist <- rep(0, vocab.size)
+  #freq.dist[as.numeric(names(resample.table))] <- resample.table
+  #freq.dist[resample.table$a] <- resample.table$Freq
+  freq.dist <- resample.table[, 2] + smooth
+  freq.dist <- freq.dist / sum(freq.dist)
+  return(freq.dist)
 }
 
-for (year in 1987:1997) {
-  repl_vec=rep(0,num_reps+1)
-  new_prev_dist=list()
-  datrow=dat[dat$V2==year & dat$V1==topic,4:length(dat)]
-  i=1
-  freq_dist1=as.vector(datrow)
+boot.dist.replicant <- function(data, indices, perc.small, perc.large, smooth=0.000000001) {
+  documents <- data
+  documents$rand <- "no.use"
+  doc.sample <- sample(1:nrow(documents), nrow(documents)*(perc.small + perc.large), replace=F)
+  small.share <- perc.small / (perc.small + perc.large)
+  small.sub.sample <- sample(1:length(doc.sample), length(doc.sample)*small.share, replace=F)
+  documents[doc.sample[small.sub.sample],"rand"] <- "small"
+  documents[doc.sample[-small.sub.sample],"rand"] <- "large"
+  words.by.factor <- list()
+  words.by.factor[["large"]] <- mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="large", 
+                                                          normalized=F, smoothed=F)
+  words.by.factor[["small"]] <- mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="small", 
+                                                          normalized=F, smoothed=F)
   
-  freq_dist1 = freq_dist1 + smooth
-  freq_dist1 = freq_dist1 / sum(freq_dist1)
+  word.counts <- list()
+  word.counts[["large"]] <- sum(words.by.factor[["large"]])
+  word.counts[["small"]] <- sum(words.by.factor[["small"]])
   
-  freq_dist0 = prev_dist_list[[i]]
-  symm_kl = symKLD(freq_dist1,freq_dist0)
+  small.dist <- words.by.factor[["small"]] 
+  small.dist <- small.dist / sum(small.dist) + smooth
+  large.dist <- words.by.factor[["large"]] 
+  large.dist <- large.dist / sum(large.dist) + smooth
   
-  new_prev_dist[[i]] = freq_dist1
-  repl_vec[i] = symm_kl
-  for (i in seq(2,num_reps+1)) {
-    print(paste("topic",topic,"year",year,"iter", i))
-    topicnumwords=dat[dat$V2==year & dat$V1==topic,"V3"]
-    smpl_table=table(sample(seq(1:length(datrow)), size = topicnumwords, replace = TRUE, prob = datrow))
-    freq_dist1=rep(0,length(datrow))
-    freq_dist1[as.numeric(names(smpl_table))]=smpl_table
-    freq_dist1 = freq_dist1 / sum(freq_dist1)
-    freq_dist1 = freq_dist1 + smooth
-    freq_dist1 = freq_dist1 / sum(freq_dist1)
-    
-    freq_dist0 = prev_dist_list[[i]]
-    symm_kl = symKLD(freq_dist1,freq_dist0)
-    
-    
-    
-    
-    new_prev_dist[[i]] = freq_dist1
-    repl_vec[i] = symm_kl
+  num.reps <- 50
+  replications <- rep(NA, num.reps) 
+  for (i in 1:num.reps) {
+    freq_dist0 <- ResampledDist(small.dist, word.counts[["small"]], smooth)
+    freq_dist1 <- ResampledDist(large.dist, word.counts[["large"]], smooth)
+    replications[i] <- symKLD(freq_dist1, freq_dist0)
   }
-  prev_dist_list = new_prev_dist
-  newcol=data.frame(x=repl_vec)
-  names(newcol)=paste("v",year,topic,sep="_")
-  repl_frame = cbind(repl_frame,newcol)
+  
+  # symKLD(words.by.factor[["small"]], words.by.factor[["large"]])
+  # quantile(replications, probs=c(0.025, 0.975))
+  return(mean(replications))
 }
-write.csv(repl_frame, paste(topic,"yearly_topic_kl_ci.csv",sep="_"), row.names=FALSE)
+
+chi.replicant <- function(data, indices, perc.small, perc.large) {
+  documents <- data
+  documents$rand <- "no.use"
+  doc.sample <- sample(1:nrow(documents), nrow(documents)*(perc.small + perc.large), replace=F)
+  small.share <- perc.small / (perc.small + perc.large)
+  small.sub.sample <- sample(1:length(doc.sample), length(doc.sample)*small.share, replace=F)
+  documents[doc.sample[small.sub.sample],"rand"] <- "small"
+  documents[doc.sample[-small.sub.sample],"rand"] <- "large"
+  words.by.factor <- list()
+  words.by.factor[["large"]] <- mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="large", 
+                                                          normalized=T, smoothed=F)
+  words.by.factor[["small"]] <- mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="small", 
+                                                          normalized=T, smoothed=F)
+  
+  word.counts <- list()
+  word.counts[["large"]] <- sum(mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="large", 
+                                                          normalized=F, smoothed=F)
+                            )
+  word.counts[["small"]] <- sum(mallet.subset.topic.words(topic.model, 
+                                                          documents[,"rand"]=="small", 
+                                                          normalized=F, smoothed=F)
+                            )
+                                  
+  small.dist <- words.by.factor[["small"]] 
+  large.dist <- words.by.factor[["large"]] 
+  #out.val <- chi.sqr2(small.dist, large.dist, word.counts[["small"]], word.counts[["large"]])
+  out.val <- chi.sqr(small.dist, large.dist)
+  return(out.val)
+}
+
+a <- boot(data=documents, 
+          statistic=boot.dist.replicant, 
+          R=10, 
+          perc.small=0.05, perc.large=0.50, 
+          parallel="snow")
+
+Rprof("~/sandbox/dist_test.prof")
+statistic <- chi.replicant
+# statistic <- boot.dist.replicant
+percents <- seq(0.05, 1, by=0.05)
+p <- 1
+r <- 50
+boot.boots <- list()
+#for (i in 1: round(length(percents)/2)) {
+for (i in 1: round(length(percents)/2)) {
+  boot.boots[[toString(i)]] <- list()
+  for (j in i : (length(percents)-i)) {
+    perc.small <- percents[i]
+    perc.large <- percents[j]
+    print (sprintf("%f compared to %f", perc.small, perc.large))
+    a <- boot(data=documents, 
+              statistic=statistic, 
+              R=r, perc.small=perc.small, perc.large=perc.large,
+              parallel="snow")$t
+    boot.boots[[i]][[j]] <- a
+  }
+}
+# Rprof(NULL)
+# summaryRprof("~/sandbox/dist_test.prof")
+
+plot.heat(boot.boots, percents, "~/sandbox/outputs/chi_1_boots.png")
+save(boot.boots, file="~/sandbox/booted_boots.Rdata")
 
 
+library(microbenchmark)
+resample.table <- dplyr::summarise(group_by(data.table(a=resample), a), Freq=n())
+compare <- microbenchmark(dplyr::summarise(group_by(data.table(a=resample), a), Freq=n()), table(resample), times=100)
+autoplot(compare)
 
+compare <- microbenchmark(boot(data=documents, 
+                               statistic=boot.dist.replicant, 
+                               R=10, 
+                               perc.small=0.05, perc.large=0.50, 
+                               parallel="multicore"), 
+                          boot(data=documents, 
+                               statistic=boot.dist.replicant, 
+                               R=10, 
+                               perc.small=0.05, perc.large=0.50, 
+                               parallel="snow"),
+                          times=25
+                          )
+autoplot(compare)
+doc.bkup <- documents
+documents <- documents[ ,c("text","id")]
+documents<- doc.bkup
+save(documents, file="~/Desktop/docs.Rdata")
+
+library(devtools)
+?Rprof
+
+
+rawKLD <- function(x,y) (x * log(x/y))
+rawsymKLD <- function(x,y) (0.5 * KLD(x, y)) + (0.5 * rawKLD(y, x))
+freq_dist1 <- mallet.subset.topic.words(topic.model, 
+                                        documents[,"rand"]=="large", 
+                                        normalized=T, smoothed=T)
+freq_dist0 <- mallet.subset.topic.words(topic.model, 
+                                        documents[,"rand"]=="small", 
+                                        normalized=T, smoothed=T)
+corp.dist <- mallet.topic.words(topic.model, normalized=F, smooth=F)
+
+freq_dist1 <- freq_dist1 / (sum(freq_dist1) + smooth * length(freq_dist1)) + smooth
+freq_dist0 <- freq_dist0 / (sum(freq_dist0) + smooth * length(freq_dist0)) + smooth
+
+kl.by.token <- rawsymKLD(freq_dist1, freq_dist0)
+hist(kl.by.token, breaks=50)
+sum(kl.by.token[corp.dist<2]) / sum(kl.by.token)
+sum(corp.dist<2) / length(corp.dist)
+
+
+kl.share <- rep(0, 200)
+num.tokens <- rep(0,200)
+for (i in 1:200) {
+  kl.share[i] <- sum(b[corp.dist<i]) / sum(b)
+  num.tokens[i] <- sum(corp.dist<i)
+}
+plot(share)
+plot(num.tokens, kl.share)
+hist(freq_dist0)
+plot(freq_dist0, b)
+min(freq_dist1)
+min(freq_dist0)

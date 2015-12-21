@@ -12,24 +12,26 @@ job.word.counts[order(job.word.counts$Freq, decreasing=T),][1:500,]
 jobs <- summarize(group_by(documents, user), job.title=max(job))
 # clean up the titles
 job.titles <- jobs$job.title
-job.titles <- tolower(job.titles)
-job.titles <- gsub("h\\.r\\.", "hr", job.titles)
-job.titles <- gsub("a\\/r", "ar", job.titles)
-job.titles <- gsub("i\\.t\\.", "it", job.titles)
-job.titles <- gsub("i\\/t", "it", job.titles)
-job.titles <- gsub("\\be-", "e", job.titles)
-job.titles <- gsub("\\bz\\/", "z", job.titles)
-job.titles <- gsub("m\\/a", "mergers and acquisitions", job.titles)
-job.titles <- gsub("m\\&a", "mergers and acquisitions", job.titles)
-job.titles <- gsub("\\bmgr\\b", "manager", job.titles)
-job.titles <- gsub("[,\\.\\/]", " ", job.titles)
-job.titles <- gsub("\\bsr\\b", "senior", job.titles)
-
-job.titles <- gsub("[[:punct:]]", "", job.titles)
-job.titles <- gsub("\\s\\s+", " ", job.titles)
+CleanTitles <- function(job.titles) {
+  job.titles <- tolower(job.titles)
+  job.titles <- gsub("h\\.r\\.", "hr", job.titles)
+  job.titles <- gsub("a\\/r", "ar", job.titles)
+  job.titles <- gsub("i\\.t\\.", "it", job.titles)
+  job.titles <- gsub("i\\/t", "it", job.titles)
+  job.titles <- gsub("\\be-", "e", job.titles)
+  job.titles <- gsub("\\bz\\/", "z", job.titles)
+  job.titles <- gsub("m\\/a", "mergers and acquisitions", job.titles)
+  job.titles <- gsub("m\\&a", "mergers and acquisitions", job.titles)
+  job.titles <- gsub("\\bmgr\\b", "manager", job.titles)
+  job.titles <- gsub("[,\\.\\/]", " ", job.titles)
+  job.titles <- gsub("\\bsr\\b", "senior", job.titles)
+  
+  job.titles <- gsub("[[:punct:]]", "", job.titles)
+  job.titles <- gsub("\\s\\s+", " ", job.titles)
+}  
 #job.titles <- job.titles[!(job.titles %in% c(""))]
-View(job.titles)
-jobs$job.title <- job.titles
+#View(job.titles)
+jobs$job.title <- CleanTitles(job.titles)
 
 
 #####################
@@ -69,15 +71,16 @@ n.titles <- nrow(jobs)
 library(stringr)
 word.pair.counts <- cbind(word.pair.counts, 
                           str_split_fixed(word.pair.counts$job.word.pairs, ":", 2))
-p.w1.w2 <- word.pair.counts$Freq / n.titles
-
+word.pair.counts <- word.pair.counts[word.pair.counts$Freq>=10,]
 word.pair.counts$freq.1 <- sapply(word.pair.counts[,"1"], lookup.freq)
 word.pair.counts$freq.2 <- sapply(word.pair.counts[,"2"], lookup.freq) 
+
+p.w1.w2 <- word.pair.counts$Freq / n.titles
 p.w1 <- word.pair.counts$freq.1 / n.titles
 p.w2 <- word.pair.counts$freq.2 / n.titles
 word.pair.counts$mut.info <- log(p.w1.w2 / (p.w1 * p.w2))
 
-word.pair.counts[order(word.pair.counts$mut.info, decreasing=T),][1:500,c(1,2,5)]
+word.pair.counts[order(word.pair.counts$mut.info, decreasing=T),][1:500,c(1,2,5,6,7)]
 
 ##############
 # bi grams   #
@@ -93,15 +96,16 @@ bigram.counts <- data.frame(table(bigrams), stringsAsFactors=F)
 n.titles <- nrow(jobs)
 bigram.counts <- cbind(bigram.counts, 
                           str_split_fixed(bigram.counts$bigrams, ":", 2))
-p.w1.w2 <- bigram.counts$Freq / n.titles
-
+bigram.counts <- bigram.counts[bigram.counts$Freq>=10,]
 bigram.counts$freq.1 <- sapply(bigram.counts[,"1"], lookup.freq)
 bigram.counts$freq.2 <- sapply(bigram.counts[,"2"], lookup.freq) 
 p.w1 <- bigram.counts$freq.1 / n.titles
+
+p.w1.w2 <- bigram.counts$Freq / n.titles
 p.w2 <- bigram.counts$freq.2 / n.titles
 bigram.counts$mut.info <- log(p.w1.w2 / (p.w1 * p.w2))
 
-bigram.counts[order(bigram.counts$mut.info, decreasing=T),][1:50,c(1,2,5,6,7)]
+bigram.counts[order(bigram.counts$mut.info, decreasing=T),][1:500,c(1,2,5,6,7)]
 
 View(bigram.counts)
 

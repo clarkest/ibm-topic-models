@@ -81,6 +81,11 @@ val.chi$stdres
 world.chi <- chisq.test(table(world.docs$forum, world.docs$manager))
 world.chi$stdres
 
+# and with the new manager labels
+val.chi <- chisq.test(table(val.docs$forum, val.docs$new.mgr))
+val.chi$stdres
 
+world.chi <- chisq.test(table(world.docs$forum, world.docs$new.mgr))
+world.chi$stdres
 
 

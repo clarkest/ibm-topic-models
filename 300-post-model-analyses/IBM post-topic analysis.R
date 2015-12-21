@@ -17,6 +17,34 @@ doc.topics <- model.object$doc.topics
 doc.topics.frame <- model.object$doc.topics.frame
 model.label <- model.object$model.label
 
+# new manager labels
+mng.words <- c("mgr","manager","manages","mngr")
+exec.words <- c("president","ceo","cfo","chief","exec", "executive","vp","vice president","dir","director","treasurer")
+non.mgr.words <- c("program", "project")
+clean.titles <- CleanTitles(documents$job)
+
+# the replacing function
+LabelTitles <- function(titles, word.list, new.label, old.labels) {
+  for (word in word.list) {
+    regex <- paste0("\\b",word,"\\b")
+    old.labels[grepl(regex, titles)] <- new.label
+  } 
+  return(old.labels)
+}
+
+documents$new.mgr <- "other"
+new.mgr <- documents$new.mgr
+# manager words first
+new.mgr <- LabelTitles(clean.titles, mng.words, "manager", new.mgr)
+# exec words bump those up
+new.mgr <- LabelTitles(clean.titles, exec.words, "executive", new.mgr)
+# non manager words trump both though
+new.mgr <- LabelTitles(clean.titles, non.mgr.words, "other", new.mgr)
+#slap them back into the data frame and the model.object
+documents$new.mgr <- new.mgr
+model.object$documents <- documents
+table(new.mgr)
+
 # make sure the outpus directory for this model exists
 output.dir <- file.path("outputs", model.label) 
 dir.create(output.dir, showWarnings = FALSE)
@@ -27,11 +55,11 @@ dir.create(output.dir, showWarnings = FALSE)
 text.1.5 <- element_text(size=rel(1.5))
 text.1.0 <- element_text(size=rel(1.0))
 text.2.0 <- element_text(size=rel(2.0))
-thm <- theme(legend.text=text.1.5, 
-             axis.title=text.1.5,
-             legend.title=text.1.5,
-             axis.text=text.1.5,
-             plot.title=text.2.0           
+thm <- theme(legend.text=text.1.0, 
+             axis.title=text.1.0,
+             legend.title=text.1.0,
+             axis.text=text.1.0,
+             plot.title=text.1.0           
 )
 
 ##################################
@@ -41,6 +69,7 @@ thm <- theme(legend.text=text.1.5,
 
 #by.vars = c("manager", "continent", "jam")
 by.vars = c("manager", "jam")
+by.vars = c("new.mgr", "jam")
 posts.by.window <- get.posts.by.window(documents, by.vars)
 
 #output both the raw and the normalized plots
@@ -74,6 +103,12 @@ plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "m
 col.keeps <- c("gender", "continent", "jam", "DateWindow", "manager")
 by.vars <- c("gender", "jam")
 plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "gender_prev/"), ylim=c(0,0.15))
+
+# new manager labels!
+# managers and jam
+col.keeps <- c("new.mgr", "continent", "jam", "DateWindow")
+by.vars <- c("new.mgr", "jam")
+plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "new_manager_prev/"))
 
 #diagnostic tool for seeing a particular topic's raw numbers
 #View(avg.topic.rate <- aggregate(doc.topics.data[2], by=doc.topics.data[,aggregate.set], mean))
@@ -161,7 +196,7 @@ ggplot(documents, aes(x=log(words), color=manager)) + geom_density()
 ggplot(documents, aes(x=words, color=paste(jam,manager,sep="-"))) + geom_density()
 plt <- ggplot(documents, aes(x=log(words), color=paste(jam,manager,sep="-"))) + 
           geom_density()
-ggsave(file.path(output.dir, "relative_doc_lengths.png"), plt+thm)
+ggsave(file.path(output.dir, "relative_doc_lengths.png"), ?)
 
 ################################
 # histo of docs per user
