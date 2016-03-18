@@ -1,3 +1,7 @@
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(stargazer)
 
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 # wd <-  "/media/sf_ibm-topic-model"
@@ -151,7 +155,7 @@ by.root <- threaded.docs %>% group_by(root.id, jam) %>%
             forum=first(forum)) %>%
   arrange(desc(comments))
 
-library(tidyr)
+
 by.root.window <- threaded.docs %>% group_by(root.id, DateWindow) %>% 
   summarise(n=n()) %>% spread(DateWindow, n, fill="") 
 names(by.root.window) = c("root.id", sprintf("v%02d",1:11), sprintf("w%02d",1:10))
@@ -466,14 +470,17 @@ th.doc.topics$responded <- ifelse(th.doc.topics$n.children==0, 0, 1)
 th.doc.topics$is.exec <- ifelse(th.doc.topics$new.mgr=="executive", 1, 0)
 th.doc.topics$is.manager <- ifelse(th.doc.topics$new.mgr=="manager", 1, 0)
 th.doc.topics$ancestors <- th.doc.topics$generation - 1
+th.doc.topics$length <- rowSums(doc.topics.unnormal)
+th.doc.topics$length.sq <- rowSums(doc.topics.unnormal)^2
+th.doc.topics$log.length <- log(rowSums(doc.topics.unnormal))
 
 d.tps <- doc.topics.unsmooth
-# calculate the topic concentration for each document
-th.doc.topics$concentration <- rowSums(d.tps^2)
-th.doc.topics$solo.topic <- th.doc.topics$concentration == 1
-th.doc.topics$adj.concentration <- rowSums(d.tps^2) - th.doc.topics$solo.topic
-th.doc.topics$adj.conc.sq <- th.doc.topics$adj.concentration ^ 2
-ggplot(data=th.doc.topics, aes(x=concentration, color=jam)) + geom_density()
+# calculate the topic focus for each document
+th.doc.topics$focus <- rowSums(d.tps^2)
+th.doc.topics$solo.topic <- th.doc.topics$focus == 1
+th.doc.topics$adj.focus <- rowSums(d.tps^2) - th.doc.topics$solo.topic
+th.doc.topics$adj.conc.sq <- th.doc.topics$adj.focus ^ 2
+ggplot(data=th.doc.topics, aes(x=focus, color=jam)) + geom_density()
 
 # we'd also like to know how responses are related to the current temporal intensity of the conversations
 #  (1) is this the first comment in a thread?
@@ -493,6 +500,22 @@ th.doc.topics$log.sec.since.parent <- ifelse(is.na(th.doc.topics$log.sec.since.p
                                              th.doc.topics$log.sec.since.parent)
 th.doc.topics$log.sec.since.parent.sq <- th.doc.topics$log.sec.since.parent ^ 2
 th.doc.topics$log.sec.since.parent.cube <- th.doc.topics$log.sec.since.parent ^ 3
+
+# let's add in a flag to control for the last two periods of each jam
+th.doc.topics$last.period <- 
+  ifelse(th.doc.topics$DateWindow %in% c("2003-08-01 2", "2004-10-29 0", "2004-10-29 1"),
+         1, 0)
+# and u.s. nighttime
+th.doc.topics$u.s.time.window <- substr(th.doc.topics$DateWindow,12,13)
+# 4-hour windows?
+th.doc.topics$date.window.4 <- newDateWindows(th.doc.topics, 4)
+th.doc.topics$u.s.time.window.4 <- substr(th.doc.topics$date.window.4,12,13)
+time.window.names <- data.frame(u.s.time.window.4=as.character(0:5), 
+                                u.s.time.=c("00-04 PDT", "04-08 PDT", "08-12 PDT", "12-16 PDT", "16-20 PDT", "20-24 PDT"))
+th.doc.topics <- left_join(th.doc.topics, time.window.names, by="u.s.time.window.4")
+# allow Americas to be omitted continent
+th.doc.topics$continent2 <- ifelse(th.doc.topics$continent=="Americas", "AAmericas", th.doc.topics$continent)
+
 
 # straight prevelence
 colnames(d.tps) <- paste0("t", 1:30)
@@ -518,22 +541,26 @@ fit.values <- glm(f2,
 summary(fit.values)
 
 ## cut points for topics
-cutModels <- function(prev.thresh, controls, topic.interaction="") {
-  d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
-  colnames(d.tps) <- paste0("t", 1:30)
-  thread.dt.cuts <- 
-    cbind(select_(th.doc.topics, .dots=c("responded", "jam", controls)),
-          d.tps)
+cutModels <- function(prev.thresh=NULL, controls, topic.interaction="") {
+  if (is.null(prev.thresh)) {
+    thread.dt.cuts <- select_(th.doc.topics, .dots=c("responded", "jam", controls))
+  } else {
+    d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
+    colnames(d.tps) <- paste0("t", 1:30)
+    thread.dt.cuts <- 
+      cbind(select_(th.doc.topics, .dots=c("responded", "jam", controls)),
+            d.tps)
+  }
   if (topic.interaction != "") {
     d.tps.inter <- th.doc.topics[,topic.interaction] * d.tps
     colnames(d.tps.inter) <- paste0("t-",topic.interaction,"-", 1:30)
     thread.dt.cuts <- cbind(thread.dt.cuts, d.tps.inter)
   }
   formula <- responded ~ .
-  
-  fit.cuts <- glm(formula,
-               data=thread.dt.cuts,
-               family="binomial")
+  # no more Overall
+  # fit.cuts <- glm(formula,
+  #             data=thread.dt.cuts,
+  #             family="binomial")
   
   fit.world.cut <- glm(formula,
                    data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam),
@@ -543,8 +570,7 @@ cutModels <- function(prev.thresh, controls, topic.interaction="") {
                    data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam),
                    family="binomial")
   
-  ret.val <- list(fit.cuts, fit.value.cut, fit.world.cut)
-  names(ret.val) <- c(paste0("overall-", prev.thresh), paste0("value-", prev.thresh), paste0("world-", prev.thresh))
+  ret.val <- list(values=fit.value.cut, world=fit.world.cut)
   return(ret.val)
 }
 cuts.15 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
@@ -552,53 +578,66 @@ cuts.20 <- cutModels(0.20, controls=c("is.manager", "is.exec", "gender"))
 cuts.25 <- cutModels(0.25, controls=c("is.manager", "is.exec", "gender"))
 cuts.20.forum <- 
   cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum"))
+stargazer(cuts.15, cuts.15.a, type="text")
 
-# let's add in a flag to control for the last two periods of each jam
-th.doc.topics$last.period <- 
-  ifelse(th.doc.topics$DateWindow %in% c("2003-08-01 2", "2004-10-29 0", "2004-10-29 1"),
-         1, 0)
-# and u.s. nighttime
-th.doc.topics$u.s.time.window <- substr(th.doc.topics$DateWindow,12,13)
 cuts.20.times <- 
   cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum", "last.period", "u.s.time.window"))
 
-# 4-hour windows?
-th.doc.topics$date.window.4 <- newDateWindows(th.doc.topics, 4)
-th.doc.topics$u.s.time.window.4 <- substr(th.doc.topics$date.window.4,12,13)
-time.window.names <- data.frame(u.s.time.window.4=as.character(0:5), 
-                                u.s.time.=c("00-04 PDT", "04-08 PDT", "08-12 PDT", "12-16 PDT", "16-20 PDT", "20-24 PDT"))
-th.doc.topics <- left_join(th.doc.topics, time.window.names, by="u.s.time.window.4")
 
 cuts.20.times.4 <- 
   cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum", "last.period", "u.s.time."))
 
-
-
-# with concentration
-#cuts.15.c <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", "concentration"))
+# with focus
+#cuts.15.c <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", "focus"))
 cuts.15.noac <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
 cuts.15.ac <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", 
-                                         "adj.concentration", "solo.topic"))
+                                         "adj.focus", "solo.topic"))
 cuts.15.ac.2 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", 
-                                           "adj.concentration", "adj.conc.sq", "solo.topic"))
+                                           "adj.focus", "adj.conc.sq", "solo.topic"))
 
 stargazer(cuts.15.noac, cuts.15.ac, cuts.15.ac.2, type="text")
 
-# both concentration and interacting concentration with topic
+# both focus and interacting focus with topic
    # ----  though this isn't taking into account how concentrated the focal topic is 
-th.doc.topics$continent2 <- ifelse(th.doc.topics$continent=="Americas", "AAmericas", th.doc.topics$continent)
-cuts.20.ac.time <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.concentration", "solo.topic",
+cuts.20.ac.time <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.focus", "solo.topic",
                                          "is.first.comment","missing.parent","log.sec.since.parent", 
                                          "log.sec.since.parent.sq","u.s.time.", "continent2","last.period"))
-cuts.20.ac <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.concentration", 
+cuts.20.ac <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.focus", 
                                         "solo.topic", "u.s.time.", "continent2","last.period"))
 cuts.20.ac.int <- cutModels(0.2, 
-                        controls=c("is.manager", "is.exec", "gender", "adj.concentration", "solo.topic"), 
-                        topic.interaction="adj.concentration")
+                        controls=c("is.manager", "is.exec", "gender", "adj.focus", "solo.topic"), 
+                        topic.interaction="adj.focus")
 # stargazer(cuts.20.ac, cuts.20.ac.int, type="text")
 stargazer(cuts.20.ac, cuts.20.ac.time, type="text")
 
 
+# Nested models for World and Values
+# 1	occupation, gender, time and region
+cuts.20.1 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
+                                       "u.s.time.", "continent2", "last.period"))
+# 2	above + post length, solo topic, concentration, first comment, missing parent, log seconds, and forum
+cuts.20.2 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
+                                       "u.s.time.", "continent2", "last.period",
+                                       "length",  "length.sq", "adj.focus", "solo.topic",
+                                       "is.first.comment","missing.parent","log.sec.since.parent", 
+                                       "forum"))
+# 3	above + topics > .20
+cuts.20.3 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                        "u.s.time.", "continent2", "last.period",
+                                        "length",  "length.sq", "adj.focus", "solo.topic",
+                                        "is.first.comment","missing.parent","log.sec.since.parent", 
+                                        "forum"))
+# 4 maybe do a model with topic dummies only (to give us baseline descriptive measure)
+cuts.20.4 <- cutModels(0.2, controls=c("last.period", "length",  "length.sq"))
+
+stargazer(cuts.20.1$values, cuts.20.2$values, 
+          cuts.20.4$values, cuts.20.3$values, 
+          type='text', out="outputs/values_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(cuts.20.1$world, cuts.20.2$world, 
+          cuts.20.4$world, cuts.20.3$world, 
+          type='text', out="outputs/world_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
 
 # understanding the timing square function results
 val.int <- function(x) {-0.02*x^2 + 0.155 * x}
@@ -638,45 +677,61 @@ stargazer(combined[c(2,5,8,3,6,9)],
 # WHICH TOPIC RESPONDS ANALYSIS #
 #######################################
 
-sum(th.doc.topics$missing.parent)
-topic.prev <- 0.20
-parent.dtp <- data.frame(doc.topics.unsmooth > topic.prev)
-names(parent.dtp) <- paste0("parent_topic_", 1:30)
-parent.dtp$id <- th.doc.topics$id
-
-parent.child.topic.coef <- data.frame(matrix(NA,30,30))
-parent.child.topic.sig <- data.frame(matrix(NA,30,30))
-for (focal.topic in 1:30) {
-  names(parent.child.topic.rates)[focal.topic] <- paste0("topic_", focal.topic)
-  top.name <- paste0("parent_topic_", focal.topic)
-  th.doc.topics$focal.topic <- parent.dtp[,top.name]
-
-  glm.df <- th.doc.topics %>%  
-    #filter(jam == "values") %>%
-    select(parent, focal.topic) %>%
-    inner_join(parent.dtp, by=c("parent"="id")) %>%
-    select(-parent)
-  fit <- glm(focal.topic ~ . , data=glm.df)
-  parent.child.topic.sig[, focal.topic] <- summary(fit)$coef[-1,3]
-  parent.child.topic.coef[, focal.topic] <- summary(fit)$coef[-1,1]
+transitionMatrixPlot <- function(th.doc.topics, doc.topics.unsmooth, 
+                                 topic.prev, jam.list=c("values","world"), color, title) {  
+  parent.dtp <- data.frame(doc.topics.unsmooth > topic.prev)
+  names(parent.dtp) <- paste0("parent_topic_", 1:30)
+  parent.dtp$id <- th.doc.topics$id
+  
+  parent.child.topic.coef <- data.frame(matrix(NA,30,30))
+  parent.child.topic.sig <- data.frame(matrix(NA,30,30))
+  for (focal.topic in 1:30) {
+    names(parent.child.topic.coef)[focal.topic] <- paste0("topic_", focal.topic)
+    names(parent.child.topic.sig)[focal.topic] <- paste0("topic_", focal.topic)
+    top.name <- paste0("parent_topic_", focal.topic)
+    th.doc.topics$focal.topic <- parent.dtp[,top.name]
+  
+    glm.df <- th.doc.topics %>%  
+      filter(jam %in% jam.list) %>%
+      select(parent, focal.topic) %>%
+      inner_join(parent.dtp, by=c("parent"="id")) %>%
+      select(-parent)
+    fit <- glm(focal.topic ~ . , data=glm.df)
+    parent.child.topic.sig[, focal.topic] <- summary(fit)$coef[-1,3]
+    parent.child.topic.coef[, focal.topic] <- summary(fit)$coef[-1,1]
+  }
+  row.names(parent.child.topic.sig) <- paste0("topic_", 1:30)
+  row.names(parent.child.topic.coef) <- paste0("topic_", 1:30)
+  dat <- melt(as.matrix(parent.child.topic.sig))
+  coefs <- melt(as.matrix(parent.child.topic.coef))
+  dat$odds.ratio <- exp(coefs$value)
+  ggplot(dat, aes(as.factor(Var2), Var1, group=Var1)) +
+    geom_tile(aes(fill = value)) + 
+    geom_text(aes(fill = dat$odds.ratio, 
+                  label = round(dat$odds.ratio, 2)),
+                  size=3) +
+    scale_fill_gradientn(colors=c("white","white", color, color),
+                         values=rescale(c(min(dat$value), 1, 4, max(dat$value))),
+                         guide = FALSE) +
+    xlab("Child Topic") +
+    ylab("Parent Topic") +
+    ggtitle(title) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
 }
-library(scales)
-row.names(parent.child.topic.rates) <- 1:30
-dat <- melt(as.matrix(parent.child.topic.sig))
-coefs <- melt(as.matrix(parent.child.topic.coef))
-dat$odds.ratio <- exp(coefs$value)
-ggplot(dat, aes(as.factor(Var1), Var2, group=Var2)) +
-  geom_tile(aes(fill = value)) + 
-  geom_text(aes(fill = dat$odds.ratio, label = round(dat$odds.ratio, 3))) +
-  scale_fill_gradientn(colors=c("white","white","green","green"),
-                       values=rescale(c(min(dat$value), 1, 4, max(dat$value)))) +
-  xlab("Parent Topic") +
-  ylab("Child Topic") +
-  ggtitle("OVERALL: Normalized Logistic Regression Coefficient of Probability of Topic X Responding to Parent with Given Topic Mix")
-
-
+val.trans.mat <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth, 
+                     topic.prev=0.2, jam="values", color="red",
+                     title="Values Jam Estimated Topic Transition Matrix: 
+                     Odds Ratio of Child Topic in Response Given Parent Topic in Posting")
+world.trans.mat <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth, 
+                     topic.prev=0.2, jam="world", color="green",
+                     title="World Jam Estimated Topic Transition Matrix: 
+                     Odds Ratio of Child Topic in Response Given Parent Topic in Posting")
+ggsave("outputs/estimated topic transitions - values.png", 
+       plot=val.trans.mat, width=10, height=8)
+ggsave("outputs/estimated topic transitions - world.png", 
+       world.trans.mat, width=10, height=8)
 #######################################
-# CONVERSATION Temporal Concentration #
+# CONVERSATION Temporal focus #
 #######################################
 
 
@@ -1058,16 +1113,11 @@ time.to.child <- select(threaded.docs, id, Timestamp) %>%
   summarize(sec.to.first.child = min(as.numeric(Timestamp.y - Timestamp.x,units="secs")))
 
 # and merge back into the main set
-child.times <- select(threaded.docs, id, manager, forum, jam, gender, new.mgr, Timestamp) %>%
+child.times <- select(th.doc.topics, id, manager, forum, jam, u.s.time., is.manager, is.exec,
+                      gender, new.mgr, Timestamp, continent2, log.sec.since.parent,
+                      length, length.sq, is.first.comment, last.period, adj.focus, solo.topic,
+                      missing.parent) %>%
   left_join(time.to.child, by=c("id"))
-
-# it's good to control for the time of day
-date.window.4 <- newDateWindows(child.times, 4)
-child.times$u.s.time.window.4 <- substr(date.window.4,12,13)
-time.window.names <- data.frame(u.s.time.window.4=as.character(0:5), 
-                                u.s.time.=c("00-04 PDT", "04-08 PDT", "08-12 PDT", "12-16 PDT", "16-20 PDT", "20-24 PDT"))
-child.times <- left_join(child.times, time.window.names, by="u.s.time.window.4") %>%
-                select(-u.s.time.window.4, -Timestamp)
 
 
 # response rate by time of day
@@ -1096,33 +1146,75 @@ lm.df <- child.times %>% filter(sec.to.first.child>0)
 fit.response.time <- lm(log(sec.to.first.child) ~ new.mgr + gender + jam, data=lm.df)
 summary(fit.response.time)
 
-# by topic
-top.prev <- 0.20
-doc.tps <- doc.topics.unsmooth >= top.prev
-colnames(doc.tps) <- paste0("occur-tp",1:30)
-
-concentration <- rowSums(doc.topics.unsmooth^2)
-solo.topic <- concentration == 1
-adj.concentration <- rowSums(doc.topics.unsmooth^2) - solo.topic
-adj.conc.sq <- adj.concentration ^ 2
 
 
-lm.df <- cbind(child.times, doc.tps, solo.topic, adj.concentration) %>%  
-  filter(sec.to.first.child>0) %>%
-  select(-id, -manager, -forum, -jam)
-  #select(-manager, -forum, -jam, -mgr.gender, -forum.jam)
-library(stringr)
-fit.resp.topics <- lm(log(sec.to.first.child) ~ ., data=lm.df)
-fit.resp.topics.values <- lm(log(sec.to.first.child) ~ ., data=filter(lm.df, str_detect(forum.jam, "values")))
-fit.resp.topics.world <- lm(log(sec.to.first.child) ~ ., data=filter(lm.df, str_detect(forum.jam, "world")))
-
-summary(fit.resp.topics)
-stargazer(fit.resp.topics, fit.resp.topics.values, fit.resp.topics.world,
+regressResponseTime <- function(topic.prev=NULL, controls=c()) {
+  if (is.null(topic.prev)) {
+    lm.df <- child.times %>%
+      select_(.dots=c("sec.to.first.child", "jam", controls)) %>%
+      filter(sec.to.first.child > 0)  
+  } else {
+    doc.tps <- doc.topics.unsmooth >= topic.prev
+    colnames(doc.tps) <- paste0("occur-tp", 1:30)
+    lm.df <- child.times %>%
+      select_(.dots=c("sec.to.first.child", "jam", controls)) %>%
+      cbind(doc.tps) %>%
+      filter(sec.to.first.child > 0)
+  }
+  # no more overall models
+  # fit.resp.topics <- lm(log(sec.to.first.child) ~ ., data=lm.df)
+  fit.resp.topics.values <- lm(log(sec.to.first.child) ~ ., 
+                               data=select(filter(lm.df, jam=="values"), -jam))
+  fit.resp.topics.world <- lm(log(sec.to.first.child) ~ . , 
+                              data=select(filter(lm.df, jam=="world"), -jam))
+  return(list(values=fit.resp.topics.values, world=fit.resp.topics.world))
+}
+stargazer(fit.resp.topics.values, fit.resp.topics.world,
           type='text',
-          column.labels = c("both","values","world"), 
+          column.labels = c("values","world"), 
           omit.stat=c("F","ser"))
 
-# and as quantile regression
+# Nested models for World and Values
+# 1	occupation, gender, time and region
+fit.20.1 <- regressResponseTime(NULL, controls=c("is.manager", "is.exec", "gender", 
+                                        "u.s.time.", "continent2", "last.period"))
+# 2	above + post length, solo topic, concentration, first comment, missing parent, log seconds, and forum
+fit.20.2 <- regressResponseTime(NULL, controls=c("is.manager", "is.exec", "gender", 
+                                        "u.s.time.", "continent2", "last.period",
+                                        "length",  "length.sq", "adj.focus", "solo.topic",
+                                        "is.first.comment","missing.parent","log.sec.since.parent", 
+                                         "forum"))
+# 3	above + topics > .20
+fit.20.3 <- regressResponseTime(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                       "u.s.time.", "continent2", "last.period",
+                                       "length",  "length.sq", "adj.focus", "solo.topic",
+                                       "is.first.comment","missing.parent","log.sec.since.parent", 
+                                       "forum"))
+# 4 maybe do a model with topic dummies only (to give us baseline descriptive measure)
+fit.20.4 <- regressResponseTime(0.2, controls=c("last.period", "length",  "length.sq"))
+
+stargazer(fit.20.1$values, fit.20.2$values, 
+          fit.20.4$values, fit.20.3$values, 
+          type='text', out="outputs/values_log_time_to_first_child.txt")
+stargazer(fit.20.1$world, fit.20.2$world, 
+          fit.20.4$world, fit.20.3$world, 
+          type='text', out="outputs/world_log_time_to_first_child.txt")
+
+
+stargazer(fit.20.1$values, fit.20.2$values, 
+          fit.20.4$values, fit.20.3$values, 
+          type='text', out="outputs/values_log_time_to_first_child_exp.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(fit.20.1$world, fit.20.2$world, 
+          fit.20.4$world, fit.20.3$world, 
+          type='text', out="outputs/world_log_time_to_first_child_exp.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+
+###############################
+# QUANTILE REGRESSION VERSION #
+###############################
+
 library(quantreg)
 
 qr.resp.topics <- rq(log(sec.to.first.child) ~ ., tau=0.5, data=lm.df)
@@ -1155,7 +1247,7 @@ stargazer(qrs, type='text', column.labels = paste0("quantile:", names(qrs)))
 
 doc.tps.prev <- doc.topics.unsmooth 
 colnames(doc.tps.prev) <- paste0("prev_tp",1:30)
-lm.df <- cbind(child.times, doc.tps.prev, solo.topic, adj.concentration) %>%  
+lm.df <- cbind(child.times, doc.tps.prev, solo.topic, adj.focus) %>%  
   filter(sec.to.first.child>0) %>%
   select(-id, -manager, -forum, -jam, -prev_tp29)
 #select(-manager, -forum, -jam, -mgr.gender, -forum.jam)
