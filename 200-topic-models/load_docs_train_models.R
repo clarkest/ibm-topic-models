@@ -107,6 +107,9 @@ documents$forum <- factor(documents$forum)
 ##  as a file, I can't pass in a list from R.
 ## This function has a few hidden options (whether to lowercase, how we 
 ##   define a token). See ?mallet.import for details.
+
+old.docs <- documents
+documents <- filter(documents, jam=="values")
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
                                   "200-topic-models/en.txt", 
@@ -129,7 +132,7 @@ source('200-topic-models/lda_visualize.R')
 for (i in model_ids) {
   # create and train a topic model from the mallet.instances
   new.topic.model <- MalletLDA(num.topics=n.topics)
-  new.topic.model$setNumThreads(8L)
+  new.topic.model$setNumThreads(3L)
   new.topic.model$loadDocuments(mallet.instances)
   new.topic.model$setAlphaOptimization(20, 50)
   new.topic.model$train(iters)

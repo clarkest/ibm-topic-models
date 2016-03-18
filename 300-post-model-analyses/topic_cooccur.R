@@ -71,11 +71,11 @@ for (row in top.corr) {
 
 
 # forum differences by factor
-val.docs <- documents[documents$jam=="values",]
+val.docs <- threaded.docs[threaded.docs$jam=="values",]
 val.docs$forum <- factor(val.docs$forum)
 world.docs <- documents[documents$jam=="world",]
 
-val.chi <- chisq.test(table(val.docs$forum, val.docs$manager))
+val.chi <- chisq.test(table(val.docs$forum, val.docs$new.mgr))
 val.chi$stdres
 
 world.chi <- chisq.test(table(world.docs$forum, world.docs$manager))

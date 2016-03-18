@@ -1,6 +1,31 @@
 
+lp.dist <- function(set.1, set.2, p) {
+  return(sum(abs(set.1 - set.2)^p)^(1/p))
+}
+jensenShannon <- function(x, y) {
+  m <- 0.5*(x + y)
+  0.5*sum(x*log(x/m)) + 0.5*sum(y*log(y/m))
+}
+library(entropy)
+symm.kl <- function(set.1, set.2) {
+  up <- KL.plugin(set.1, set.2)
+  down <- KL.plugin(set.2, set.1)
+  return ((up + down)/2)
+}
+KLD <- function(x,y) sum(x * log(x/y))
+symKLD <- function(x,y) (0.5 * KLD(x, y)) + (0.5 * KLD(y, x))
+chi.sqr <- function(x, y) sum(ifelse((x+y==0), 0, (x-y)^2 / (x+y)))
+chi.sqr2 <- function(x, y, numx, numy) {
+  x.weight <- (numy/numx)^0.5
+  y.weight <- (numx/numy)^0.5
+  chi <- sum(ifelse((x+y)==0,0,(x.weight * x - y.weight*y)^2 / (x+y)))
+  # return the p-value
+  return(chi)
+}   
+
+
 # load the persisted documents -- these are needed before we can load a model from state
-file.name <- "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/models_dir/mac-docs.Rdata"
+file.name <- "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/models_dir/anchor_ngram-docs.Rdata"
 # this shoudl create an object called "documents"
 load(file.name)
 stop.word.file <- "200-topic-models/en.txt"
@@ -20,6 +45,8 @@ topic.model$setNumThreads(5L)
 topic.model$setAlphaOptimization(20, 50)
 topic.model$train(20)
 topic.model$maximize(10)
+
+corp.distribution <- mallet.topic.words(topic.model, normalized=F, smooth=F)
 
 jensenShannon <- function(x, y) {
   m <- 0.5*(x + y)
@@ -167,19 +194,6 @@ diff.replicate <- function(data, indices, dist.mthd=lp.dist, topic.model, perc.s
   return(dist.mthd(boot.set[corp.dist>=threshold], lrg.boot.set[corp.dist>=threshold], ...))
 }
 
-lp.dist <- function(set.1, set.2, p) {
-  return(sum(abs(set.1 - set.2)^p)^(1/p))
-}
-jensenShannon <- function(x, y) {
-  m <- 0.5*(x + y)
-  0.5*sum(x*log(x/m)) + 0.5*sum(y*log(y/m))
-}
-library(entropy)
-symm.kl <- function(set.1, set.2) {
-  up <- KL.plugin(set.1, set.2)
-  down <- KL.plugin(set.2, set.1)
-  return ((up + down)/2)
-}
 
 
 doc.set <- documents
@@ -233,7 +247,7 @@ plot.heat(l5.boots, percents, "/users/clarkbernier/sandbox/outputs/l5means.png")
 plot.heat(js.boots, percents, "/users/clarkbernier/sandbox/outputs/jsmeans.png")
 plot.heat(kl.boots, percents, "/users/clarkbernier/sandbox/outputs/klmeans.png")
 
-min(kl.plot.heat(l1.boots, percents, "/users/clarkbernier/sandbox/outputs/l1sd.png", sd)
+min(kl.plot.heat(l1.boots, percents, "/users/clarkbernier/sandbox/outputs/l1sd.png", sd))
 plot.heat(l5.boots, percents, "/users/clarkbernier/sandbox/outputs/l5sd.png", sd)
 plot.heat(js.boots, percents, "/users/clarkbernier/sandbox/outputs/jssd.png", sd)
 plot.heat(kl.boots, percents, "/users/clarkbernier/sandbox/outputs/klsd.png", sd)
@@ -473,3 +487,113 @@ hist(freq_dist0)
 plot(freq_dist0, b)
 min(freq_dist1)
 min(freq_dist0)
+
+
+
+
+
+
+################
+# directly from a distribution
+################
+vocab.size <- 40000
+vocab.size <- 30
+
+# uniform
+prob <- rep(1/vocab.size, vocab.size)
+
+# based on the corpus
+a <- corp.distribution[1,][order(corp.distribution[1,], decreasing=T)]
+a <- a[1:vocab.size]
+prob.corp <- a/sum(a)
+
+smooth <- 0.00001
+
+words.per.doc <- 150
+iters <- 500
+doc.sizes <- c(100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000)
+
+# return(pchisq(chi, df=length(x)))
+a <- rep(NA, length(doc.sizes)^2)
+size.pairs <- data.frame(docs.1=a, docs.2=a)
+i <- 0
+for (docs.1 in doc.sizes) {
+  for (docs.2 in doc.sizes) {
+    i <- i + 1
+    size.pairs[i,] <- cbind(docs.1, docs.2) 
+  }
+}  
+
+one.boot <- function(iters, words.per.doc, prob, docs.1, docs.2) {
+  smooth <- 0.000001
+  draws.1 <- rmultinom(iters, docs.1 * words.per.doc, prob)
+  draws.2 <- rmultinom(iters, docs.2 * words.per.doc, prob)
+  
+  l1.out <- rep(NA, iters)
+  l5.out <- rep(NA, iters)
+  js.out <- rep(NA, iters)
+  kl.out <- rep(NA, iters)
+  ch.out <- rep(NA, iters)
+  for (i in 1:iters) {
+    smooth.d1 <- draws.1[,i] + smooth
+    smooth.d1 <- smooth.d1 / sum(smooth.d1)
+    smooth.d2 <- draws.2[,i] + smooth
+    smooth.d2 <- smooth.d2 / sum(smooth.d2)
+    l1.out[i] <- lp.dist(smooth.d1, smooth.d2, p=1)
+    l5.out[i] <- lp.dist(smooth.d1, smooth.d2, p=0.5)
+    js.out[i] <- jensenShannon(smooth.d1, smooth.d2)
+    kl.out[i] <- symKLD(smooth.d1, smooth.d2)
+    ch.out[i] <- chi.sqr2(draws.1[,i], draws.2[,i], docs.1 * words.per.doc, docs.2 * words.per.doc) 
+  }
+  return(data.frame(docs.1=docs.1, docs.2=docs.2, l1=mean(l1.out), l5=mean(l5.out),
+                    js=mean(js.out), kl=mean(kl.out), ch=mean(ch.out)))
+}
+library(foreach)
+library(doParallel)
+library(ggplot2)
+cl <- makeCluster(3)
+registerDoParallel(cl)
+sims <- 
+  foreach(dcs=iter(size.pairs, by='row'), 
+          .combine=rbind,
+          .errorhandling="remove",
+          .inorder=FALSE) %dopar% {
+            row <- one.boot(iters, words.per.doc, prob, dcs$docs.1, dcs$docs.2)
+          }
+stopCluster(cl)
+
+save(sims, file="~/sandbox/dist_tests/40000_unif.Rdata")
+
+cl <- makeCluster(3)
+registerDoParallel(cl)
+sims.corp <- 
+  foreach(dcs=iter(size.pairs, by='row'), 
+          .combine=rbind,
+          .errorhandling="remove",
+          .inorder=FALSE) %dopar% {
+            row <- one.boot(iters, words.per.doc, prob.corp, dcs$docs.1, dcs$docs.2)
+          }
+stopCluster(cl)
+
+
+
+num.me <- function(x) {sprintf("%05d", x)}
+heat.plot <- function(df, stat) {
+  ggplot(data=df, aes(x=num.me(docs.1), y=num.me(docs.2))) + 
+    geom_tile(aes_string(fill=stat)) +
+    scale_fill_gradient(low="white", high="darkgreen") +
+    xlab("Number of Simulated Documents") +
+    xlab("Number of Simulated Documents") +
+    ggtitle(stat)
+}
+heat.plot(sims.corp, "kl")
+heat.plot(sims.corp, "js")
+heat.plot(sims.corp, "l1")
+heat.plot(sims.corp, "l5")
+heat.plot(sims.corp, "ch")
+
+heat.plot(sims, "kl")
+heat.plot(sims, "js")
+heat.plot(sims, "l1")
+heat.plot(sims, "l5")
+heat.plot(sims, "ch")

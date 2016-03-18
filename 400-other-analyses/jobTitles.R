@@ -161,7 +161,7 @@ for (i in 1:nrow(jobs)) {
   # iterate through the words again
   word.list <- strsplit(as.character(jobs[i,"job.title"]), " ")[[1]]
   if (length(word.list) > 1) {
-    for (w in (length(word.list)-1)) {
+    for (w in 1:(length(word.list)-1)) {
       # "general manger" -- exec
       if (word.list[w]=="general" & word.list[w+1]=="manager") {
         manager[[i]] <- c("exec") 

@@ -198,17 +198,23 @@ topic.occurence.counts <- function(topic.model,
 topic.co.occur <- function(topic.model.1,
                            correlationMinTokens = 4, 
                            correlationMinProportion = 0.1,
-                           topic.model.2 = NULL) {
-  n.topics <- topic.model.1$getNumTopics()
-  doc.topics.1 <- mallet.doc.topics(topic.model.1, smoothed=T, normalized=T)
+                           topic.model.2 = NULL,
+                           doc.topics.1=NULL,
+                           unnormal.doc.topics=NULL) {
+  if((is.null(doc.topics.1) | is.null(unnormal.doc.topics))) {
+    doc.topics.1 <- mallet.doc.topics(topic.model.1, smoothed=T, normalized=T)
+    n.topics <- topic.model.1$getNumTopics()
+    unnormal.doc.topics <- mallet.doc.topics(topic.model.1, smoothed=F, normalized=F)
+  } else {
+    n.topics <- ncol(doc.topics.1)
+  }
   doc.topics.2 <- NULL
   num.docs = nrow(doc.topics.1)
-  unnormal.doc.topics <- mallet.doc.topics(topic.model.1, smoothed=F, normalized=F)
+  
   doc.len.1 <- rowSums(unnormal.doc.topics)
   
   if (is.null(topic.model.2)) {
     print("initializing comparison model to first model")
-    topic.model.2 <- topic.model.1
     doc.topics.2 <- doc.topics.1
     doc.len.2 <- doc.len.1
   } else {
@@ -377,3 +383,13 @@ topic.vocab.diff <-
     }
     return(word.lists)
   }
+
+
+
+newDateWindows <- function(documents, hours.per.window) {
+  DateWindow <- 
+    paste(strftime(documents$Timestamp,"%Y-%m-%d"),
+          trunc(as.numeric(strftime(documents$Timestamp,"%H"))/hours.per.window)
+    )
+  return(factor(DateWindow))
+}
