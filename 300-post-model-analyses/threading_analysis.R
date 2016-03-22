@@ -517,6 +517,37 @@ th.doc.topics <- left_join(th.doc.topics, time.window.names, by="u.s.time.window
 th.doc.topics$continent2 <- ifelse(th.doc.topics$continent=="Americas", "AAmericas", th.doc.topics$continent)
 
 
+##################
+# I, we, and ibm #
+##################
+th.doc.topics$docs.have.ibm <- grepl("ibm", documents$text, ignore.case=T)
+th.doc.topics$docs.have.we <- grepl(" we ", documents$text, ignore.case=T)
+th.doc.topics$docs.have.i <- grepl(" I ", documents$text, ignore.case=T)
+
+mean(th.doc.topics$docs.have.ibm)
+mean(th.doc.topics$docs.have.we)
+mean(th.doc.topics$docs.have.i)
+# they're all related to each other
+chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
+chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.i)
+chisq.test(th.doc.topics$docs.have.we, th.doc.topics$docs.have.i)
+# in a positive way
+cor(cbind(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we, th.doc.topics$docs.have.i))
+
+# quick view at topics
+prev.thresh <- 0.2
+d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
+colnames(d.tps) <- paste0("topic_", 1:30)
+
+ibm.we.i.rates <- data.frame(
+  rate.ibm = colMeans(d.tps * th.doc.topics$docs.have.ibm) / colMeans(d.tps) / mean(th.doc.topics$docs.have.ibm),
+  rate.we = colMeans(d.tps * th.doc.topics$docs.have.we) / colMeans(d.tps) / mean(th.doc.topics$docs.have.we),
+  rate.i = colMeans(d.tps * th.doc.topics$docs.have.i) / colMeans(d.tps )/ mean(th.doc.topics$docs.have.ibm)
+)
+round(ibm.we.i.rates-1,2)
+        
+
+
 # straight prevelence
 colnames(d.tps) <- paste0("t", 1:30)
 thread.dt.prev <- cbind(select(th.doc.topics, responded, jam, is.manager, is.exec, gender),
@@ -627,9 +658,16 @@ cuts.20.3 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender",
                                         "length",  "length.sq", "adj.focus", "solo.topic",
                                         "is.first.comment","missing.parent","log.sec.since.parent", 
                                         "forum"))
+cuts.20.3.we <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                       "u.s.time.", "continent2", "last.period",
+                                       "length",  "length.sq", "adj.focus", "solo.topic",
+                                       "is.first.comment","missing.parent","log.sec.since.parent", 
+                                       "forum", 
+                                       "docs.have.ibm", "docs.have.we", "docs.have.i"))
 # 4 maybe do a model with topic dummies only (to give us baseline descriptive measure)
 cuts.20.4 <- cutModels(0.2, controls=c("last.period", "length",  "length.sq"))
 
+# output the tables
 stargazer(cuts.20.1$values, cuts.20.2$values, 
           cuts.20.4$values, cuts.20.3$values, 
           type='text', out="outputs/values_prob_response_odds_ratios.txt",
@@ -638,6 +676,33 @@ stargazer(cuts.20.1$world, cuts.20.2$world,
           cuts.20.4$world, cuts.20.3$world, 
           type='text', out="outputs/world_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+stargazer(cuts.20.3$values, cuts.20.3.we$values, cuts.20.3$world, cuts.20.3.we$world,
+          type='text', out="outputs/values_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+# testing the full models for multicolinearity
+library(car)
+vifv <- vif(cuts.20.3$values)
+vifv
+vifw <- vif(cuts.20.3$world)
+vifw
+
+# values: c("is.first.comment", "log.sec.since.parent")
+  # length and length2 as well, but we expect that
+cor(model.matrix(cuts.20.3$values))[, c("is.first.commentTRUE", "log.sec.since.parent")]
+  # they correlate with each other.  
+  # so, this is just the fact that they zero-inflation control for each other.
+
+# world: c("is.first.comment, missing.parent, log.sec.since.parent, forum
+  # length and length2 as well, but we expect that
+abs(cor(model.matrix(cuts.20.3$world))[, c("is.first.commentTRUE", "log.sec.since.parent",
+                                        "missing.parentTRUE", 
+                                        "forumforum 2", "forumforum 3", "forumforum 4", 
+                                        "forumforum 5", "forumforum 6")]) > 0.3
+  # same as values, and the fact that some topics in world are forum-specific  
+
+
 
 # understanding the timing square function results
 val.int <- function(x) {-0.02*x^2 + 0.155 * x}
@@ -1266,3 +1331,10 @@ summary(fit.resp.topics)
 #   % of total comments and % of total words
 
 # time of first 
+
+
+
+
+
+
+
