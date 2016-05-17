@@ -23,7 +23,13 @@ model.label <- list$model.label
 doc.topics.unsmooth <- mallet.doc.topics(topic.model, smoothed=F, normalized=T)
 doc.topics.unnormal <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
 unnormal.doc.topics <- doc.topics.unnormal
-'
+
+diags <- rJava::.jnew("cc/mallet/topics/TopicModelDiagnostics", rJava::.jcast(topic.model, "cc/mallet/topics/ParallelTopicModel"), 20L)
+diags$getCoherence()$scores
+diags$getEffectiveNumberOfWords()$scores
+diags$toXML()
+
+
 MyParentsParents <- function(id, parents, ancestor.list=c()) {
   parent.id <- toString(parents[id])
   if (parent.id=="NA") {
@@ -45,7 +51,7 @@ MyParentsParentsStr <- function(id, parents, ancestor.list="") {
     return (MyParentsParentsStr(parent.id, parents, paste(parent.id, ancestor.list, sep=",")))
   }
 }
-'
+
 
 # weak version of memoization, where anything already run from the leaf is stored
 # and the roots are stored up front
@@ -161,10 +167,14 @@ by.root.window <- threaded.docs %>% group_by(root.id, DateWindow) %>%
 names(by.root.window) = c("root.id", sprintf("v%02d",1:11), sprintf("w%02d",1:10))
 by.root <- left_join(by.root, by.root.window, by="root.id")
 
-ggplot(by.root, aes(x=n)) + geom_density()
+ggplot(by.root, aes(x=comments, color=jam)) + geom_histogram(breaks=1:25) + facet_wrap(~ jam)
+summary(by.root[,"comments"])
+summary(by.root[by.root$jam=="world", "comments"])
+summary(by.root[by.root$jam=="values", "comments"])
 
-
-
+sum(by.root$comments>25 & by.root$jam=="world")
+sum(by.root$comments>25 & by.root$jam=="values")
+by.root %>% group_by(jam) %>% summarise(mx=max(comments))
 ################
 # RESPONSE TIMING 
 ################
@@ -234,7 +244,7 @@ by.root$thread.topic.prev <- thread.topic.list
 library(xtable)
 library(digest)
 library(stringr)
-cut.off <- 5
+cut.off <- 1
 root.ids <- by.root$root.id[by.root$comments >= cut.off]
 out.frame <- by.root %>%
   filter(comments >= cut.off) %>%
@@ -524,9 +534,16 @@ th.doc.topics$docs.have.ibm <- grepl("ibm", documents$text, ignore.case=T)
 th.doc.topics$docs.have.we <- grepl(" we ", documents$text, ignore.case=T)
 th.doc.topics$docs.have.i <- grepl(" I ", documents$text, ignore.case=T)
 
+th.doc.topics %>% group_by(jam) %>% 
+  dplyr::summarise(ibm = mean(docs.have.ibm),
+                   we = mean(docs.have.we),
+                   i = mean(docs.have.i))
+
 mean(th.doc.topics$docs.have.ibm)
 mean(th.doc.topics$docs.have.we)
 mean(th.doc.topics$docs.have.i)
+
+
 # they're all related to each other
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.i)
@@ -546,6 +563,20 @@ ibm.we.i.rates <- data.frame(
 )
 round(ibm.we.i.rates-1,2)
         
+ibm.we.i.rates.values <- data.frame(
+  rate.ibm = colMeans(d.tps * th.doc.topics$docs.have.ibm * (th.doc.topics$jam=="values")) / colMeans(d.tps * (th.doc.topics$jam=="values")) / mean(th.doc.topics$docs.have.ibm),
+  rate.we = colMeans(d.tps * th.doc.topics$docs.have.we * (th.doc.topics$jam=="values")) / colMeans(d.tps * (th.doc.topics$jam=="values")) / mean(th.doc.topics$docs.have.we),
+  rate.i = colMeans(d.tps * th.doc.topics$docs.have.i * (th.doc.topics$jam=="values")) / colMeans(d.tps * (th.doc.topics$jam=="values"))/ mean(th.doc.topics$docs.have.ibm)
+)
+round(ibm.we.i.rates.values-1,2)
+
+ibm.we.i.rates.world <- data.frame(
+  rate.ibm = colMeans(d.tps * th.doc.topics$docs.have.ibm * (th.doc.topics$jam=="world")) / colMeans(d.tps * (th.doc.topics$jam=="world")) / mean(th.doc.topics$docs.have.ibm),
+  rate.we = colMeans(d.tps * th.doc.topics$docs.have.we * (th.doc.topics$jam=="world")) / colMeans(d.tps * (th.doc.topics$jam=="world")) / mean(th.doc.topics$docs.have.we),
+  rate.i = colMeans(d.tps * th.doc.topics$docs.have.i * (th.doc.topics$jam=="world")) / colMeans(d.tps * (th.doc.topics$jam=="world"))/ mean(th.doc.topics$docs.have.ibm)
+)
+round(ibm.we.i.rates.world-1,2)
+
 
 
 # straight prevelence
@@ -1335,6 +1366,11 @@ summary(fit.resp.topics)
 
 
 
-
-
-
+dtu <- doc.topics.unsmooth
+names(dtu) <- paste0("topic_", 1:30)  
+a <- cbind(select(documents,jam), dtu) %>%
+  group_by(jam) %>%
+  summarise_each(funs(mean)) %>%
+  select(2:31) %>% t() %>% round(3) 
+colnames(a) <- c("   values","   world")
+a
