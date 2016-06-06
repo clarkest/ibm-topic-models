@@ -34,6 +34,6 @@ stm.fit.100 <-
       init.type = "Spectral")
 
 
-plot.STM(stm.fit)
+labelTopics(stm.fit.30)
 
 
