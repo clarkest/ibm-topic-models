@@ -9,8 +9,10 @@
 cd anchor
 
 ##  Create an anchor state from the saved.instances file and save
-##   intermediate files to the current directory (.)
-bin/init_state.sh ../saved.instances .
+##   intermediate files to the current directory (./docs)
+##   and 30 topics
+##   can also add an additional label as a final argument
+bin/init_state.sh ../place_docs_here/saved.instances ./docs 30
 
 ##  Bump back down a dir...
 cd ..
