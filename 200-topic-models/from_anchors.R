@@ -4,6 +4,9 @@ library(rJava)
 library(mallet)
 library(countrycode)
 library(dplyr)
+library("tsne")
+source('200-topic-models/lda_visualize.R')
+
 this.dir = "." #"/Users/mimno/Documents/github/ibm-topic-models"
 setwd(this.dir)
 
@@ -42,9 +45,6 @@ anchor.run <- function(model.ids, initial.type, n.topics, mod.label="") {
                                     token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
   )
   #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
-  
-  source('200-topic-models/lda_visualize.R')
-  library("tsne")
   for (i in model.ids) {
     # create and train a topic model from the mallet.instances
     new.topic.model <- MalletLDA(num.topics=n.topics)

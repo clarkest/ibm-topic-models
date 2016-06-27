@@ -28,6 +28,7 @@ setenv INITIAL anchor
 export RUNID=1
 export ARRAYID=1
 export INITIAL=anchor
+export OUTLABEL=
 
 ## run it!
 R -f 200-topic-models/from_anchors.R
