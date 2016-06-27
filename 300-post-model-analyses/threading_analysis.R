@@ -704,28 +704,9 @@ round(ibm.we.i.rates.world-1,2)
 
 
 
-# straight prevelence
-colnames(d.tps) <- paste0("t", 1:30)
-thread.dt.prev <- cbind(select(th.doc.topics, responded, jam, is.manager, is.exec, gender),
-                        d.tps)
-
-fit.1 <- glm(responded ~ . - t29,
-             data=thread.dt.prev,
-             family="binomial")
-summary(fit.1)
-
-
-f2  <- responded ~ . - t29
-
-fit.world <- glm(f2,
-              data=thread.dt.prev %>% filter(jam=="world") %>% select(-jam),
-              family="binomial")
-summary(fit.world)
-
-fit.values <- glm(f2,
-             data=thread.dt.prev %>% filter(jam=="values") %>% select(-jam),
-             family="binomial")
-summary(fit.values)
+#####################
+# MODEL FUNCTION    #
+#####################
 
 ## cut points for topics
 cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interaction.terms = c()) {

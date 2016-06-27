@@ -196,7 +196,7 @@ ggplot(documents, aes(x=log(words), color=manager)) + geom_density()
 ggplot(documents, aes(x=words, color=paste(jam,manager,sep="-"))) + geom_density()
 plt <- ggplot(documents, aes(x=log(words), color=paste(jam,manager,sep="-"))) + 
           geom_density()
-ggsave(file.path(output.dir, "relative_doc_lengths.png"), ?)
+ggsave(file.path(output.dir, "relative_doc_lengths.png"), plt)
 
 ################################
 # histo of docs per user
@@ -264,3 +264,83 @@ ret.1$co.occur.count
 ret.1$corr.matrix
 
 corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
+
+
+
+########################
+# Individual Word Freq
+########################
+
+word <- "ibm"
+prev.thresh <- 0.2
+# word <- " i "
+# word <- " we "
+
+graphTopicWords <- function(word, prev.thres = 0.2) {
+  # which docs have the word?
+  documents[,"docs.have.word"] <- grepl(word, documents$text, ignore.case=T)
+  
+  #documents %>% group_by(jam) %>% 
+  #  dplyr::summarise(word = mean(docs.have.word))
+  
+  # quick view at topics
+  d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
+  colnames(d.tps) <- paste0("topic_", 1:30)
+  
+  #topic.word.rates <- colMeans(d.tps * documents$docs.have.word) / colMeans(d.tps) / mean(documents$docs.have.word)
+  # round(topic.word.rates-1,2)
+  
+  # topic.word.freq <- colMeans(d.tps * documents$docs.have.word) / colMeans(d.tps)
+  
+  df <- data.frame(
+    topic = sprintf("topic_%02d", 1:30),
+    val.freq = colMeans(d.tps * documents$docs.have.word * (documents$jam=="values")) / colMeans(d.tps * (documents$jam=="values")),
+    world.freq = colMeans(d.tps * documents$docs.have.word * (documents$jam=="world")) / colMeans(d.tps * (documents$jam=="world")),
+    stringsAsFactors = F
+  )
+  val.overall <- mean(documents$docs.have.word * (documents$jam=="values")) / mean(documents$jam=="values")
+  world.overall <- mean(documents$docs.have.word * (documents$jam=="world")) / mean(documents$jam=="world")
+  
+  df <- rbind(df, list("OVERALL", val.overall, world.overall))
+  
+  ggplot(data=df, aes(y=topic)) +
+    geom_point(aes(x=val.freq, color="Values Jam"), size=2) +
+    geom_point(aes(x=world.freq, color="World Jam"), size=2) +
+    xlim(0,1) + xlab(sprintf("Share of Documents Containing Word '%s'", word)) +
+    ggtitle(sprintf("Share of Documents Containing '%s'", word)) +
+    thm
+}
+
+getFilePath <- function(file.name) {
+  sprintf("%s/word_compare/%s.png", output.dir, file.name)
+}
+library(grid)
+
+# “I” “We” “IBM”
+g1 <- graphTopicWords(" I ")
+g2 <- graphTopicWords(" we ")
+g3 <- graphTopicWords("ibm")
+png(filename=getFilePath("we_i_ibm"), width=600, height=1800)
+  grid.newpage()
+  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), size = "last"))
+dev.off()
+
+# “Customer”, “client”, “solution”
+g1 <- graphTopicWords("customer")
+g2 <- graphTopicWords("client")
+g3 <- graphTopicWords("solution")
+png(filename=getFilePath("customer_client_solution"), width=600, height=1800)
+  grid.newpage()
+  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), size = "last"))
+dev.off()
+
+# “manager”, “Decision”, “empowerment”, “authority”,”mentoring”
+g1 <- graphTopicWords("manager")
+g2 <- graphTopicWords("decision")
+g3 <- graphTopicWords("empowerment")
+g4 <- graphTopicWords("authority")
+g5 <- graphTopicWords("mentor")
+png(filename=getFilePath("manager_empowerment"), width=600, height=2400)
+  grid.newpage()
+  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), ggplotGrob(g4), ggplotGrob(g5), size = "last"))
+dev.off()

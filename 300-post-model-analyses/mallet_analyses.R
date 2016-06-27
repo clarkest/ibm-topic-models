@@ -397,3 +397,26 @@ newDateWindows <- function(documents, hours.per.window) {
     )
   return(factor(DateWindow))
 }
+
+
+
+
+
+
+CleanTitles <- function(job.titles) {
+  job.titles <- tolower(job.titles)
+  job.titles <- gsub("h\\.r\\.", "hr", job.titles)
+  job.titles <- gsub("a\\/r", "ar", job.titles)
+  job.titles <- gsub("i\\.t\\.", "it", job.titles)
+  job.titles <- gsub("i\\/t", "it", job.titles)
+  job.titles <- gsub("\\be-", "e", job.titles)
+  job.titles <- gsub("\\bz\\/", "z", job.titles)
+  job.titles <- gsub("m\\/a", "mergers and acquisitions", job.titles)
+  job.titles <- gsub("m\\&a", "mergers and acquisitions", job.titles)
+  job.titles <- gsub("\\bmgr\\b", "manager", job.titles)
+  job.titles <- gsub("[,\\.\\/]", " ", job.titles)
+  job.titles <- gsub("\\bsr\\b", "senior", job.titles)
+  
+  job.titles <- gsub("[[:punct:]]", "", job.titles)
+  job.titles <- gsub("\\s\\s+", " ", job.titles)
+}  
