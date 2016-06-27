@@ -119,7 +119,7 @@ file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
 save(documents, file=file.name)
 
 ## Save a mallet instance list for anchor calculation
-mallet.instances$save(.jnew("java/io/File", "saved.instances"))
+mallet.instances$save(.jnew("java/io/File", "place.docs.here/saved.instances"))
 
 
 ## Separate Values and Jam Models
@@ -131,7 +131,7 @@ val.mallet.instances <- mallet.import(val.docs$id,
 )
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-val-docs.Rdata")
 save(val.docs, file=file.name)
-val.mallet.instances$save(.jnew("java/io/File", "values.instances"))
+val.mallet.instances$save(.jnew("java/io/File", "place.docs.here/values.instances"))
 
 world.docs <- filter(documents, jam=="world")
 world.mallet.instances <- mallet.import(world.docs$id, 
@@ -141,7 +141,7 @@ world.mallet.instances <- mallet.import(world.docs$id,
 )
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-world-docs.Rdata")
 save(world.docs, file=file.name)
-world.mallet.instances$save(.jnew("java/io/File", "world.instances"))
+world.mallet.instances$save(.jnew("java/io/File", "place.docs.here/world.instances"))
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
 
