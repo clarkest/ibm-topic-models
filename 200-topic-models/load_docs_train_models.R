@@ -123,27 +123,31 @@ mallet.instances$save(.jnew("java/io/File", "place.docs.here/saved.instances"))
 
 
 ## Separate Values and Jam Models
-val.docs <- filter(documents, jam=="values")
-val.mallet.instances <- mallet.import(val.docs$id, 
-                                  val.docs$text, 
+old.docs <- documents
+documents <- filter(old.docs, jam=="values")
+val.mallet.instances <- mallet.import(documents$id, 
+                                      documents$text, 
                                   "200-topic-models/en.txt", 
                                   token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
 )
-file.name <- paste0(paste(model.dir, model.name, sep="/"), "-val-docs.Rdata")
-save(val.docs, file=file.name)
+val.model.name <- "anchor_values_ngram"
+file.name <- paste0(paste(model.dir, val.model.name, sep="/"), "-docs.Rdata")
+save(documents, file=file.name)
 val.mallet.instances$save(.jnew("java/io/File", "place.docs.here/values.instances"))
 
-world.docs <- filter(documents, jam=="world")
-world.mallet.instances <- mallet.import(world.docs$id, 
-                                      world.docs$text, 
+documents <- filter(old.docs, jam=="world")
+world.mallet.instances <- mallet.import(documents$id, 
+                                        documents$text, 
                                       "200-topic-models/en.txt", 
                                       token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
 )
-file.name <- paste0(paste(model.dir, model.name, sep="/"), "-world-docs.Rdata")
-save(world.docs, file=file.name)
+world.model.name <- "anchor_world_ngram"
+file.name <- paste0(paste(model.dir, world.model.name, sep="/"), "-docs.Rdata")
+save(documents, file=file.name)
 world.mallet.instances$save(.jnew("java/io/File", "place.docs.here/world.instances"))
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
+documents <- old.docs
 
 ########### Continue if not using Anchors, otherwise:
    # 1. look at and follow ./anchor/README

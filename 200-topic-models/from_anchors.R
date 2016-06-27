@@ -10,18 +10,19 @@ setwd(this.dir)
 run.id <- as.numeric(Sys.getenv("ARRAYID"))
 initial.type <- Sys.getenv("INITIAL")
 n.topics <- as.numeric(Sys.getenv("TOPICS"))
+mod.label <- as.numeric(Sys.getenv("OUTLABEL"))
 
 
-anchor.run <- function(model.ids, initial.type, n.topics) {
+anchor.run <- function(model.ids, initial.type, n.topics, mod.label="") {
   if (is.na(n.topics)) {
     n.topics <- 30
   }
   iters <- 800
   maxims <- 100
-  initial.state <- sprintf("anchor/%s_state-%d.gz", initial.type, n.topics)
+  initial.state <- sprintf("anchor/docs/%s_state%s-%d.gz", initial.type, mod.label, n.topics)
   
   model.dir <- "models_dir"
-  model.name <- sprintf("%s_ngram", initial.type)
+  model.name <- sprintf("%s%s_ngram", initial.type, mod.label)
   file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
   
   dir.create("models_dir/LDAvis")
