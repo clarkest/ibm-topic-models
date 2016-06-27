@@ -10,8 +10,8 @@ this.dir = "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/"
 setwd(this.dir)
 model.dir <- "models_dir"
 model.name <- "anchor_ngram"
-value_file<-"place_docs_here/values-docs-ngrams.tsv"
-world.file <- "place_docs_here/world-docs-ngrams.tsv"
+value_file<-"place_docs_here/hashed-values-docs-ngrams.tsv"
+world.file <- "place_docs_here/hashed-world-docs-ngrams.tsv"
 iters <- 800
 maxims <- 100
 model_ids <- c(1)
@@ -109,7 +109,6 @@ documents$forum <- factor(documents$forum)
 ##   define a token). See ?mallet.import for details.
 
 old.docs <- documents
-documents <- filter(documents, jam=="values")
 mallet.instances <- mallet.import(documents$id, 
                                   documents$text, 
                                   "200-topic-models/en.txt", 
@@ -122,8 +121,33 @@ save(documents, file=file.name)
 ## Save a mallet instance list for anchor calculation
 mallet.instances$save(.jnew("java/io/File", "saved.instances"))
 
+
+## Separate Values and Jam Models
+val.docs <- filter(documents, jam=="values")
+val.mallet.instances <- mallet.import(val.docs$id, 
+                                  val.docs$text, 
+                                  "200-topic-models/en.txt", 
+                                  token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
+)
+file.name <- paste0(paste(model.dir, model.name, sep="/"), "-val-docs.Rdata")
+save(val.docs, file=file.name)
+val.mallet.instances$save(.jnew("java/io/File", "values.instances"))
+
+world.docs <- filter(documents, jam=="world")
+world.mallet.instances <- mallet.import(world.docs$id, 
+                                      world.docs$text, 
+                                      "200-topic-models/en.txt", 
+                                      token.regexp = "\\p{L}[\\p{L}\\_\\-&@'`\\p{N}]+[\\p{N}\\p{L}]"
+)
+file.name <- paste0(paste(model.dir, model.name, sep="/"), "-world-docs.Rdata")
+save(world.docs, file=file.name)
+world.mallet.instances$save(.jnew("java/io/File", "world.instances"))
 #token.regexp = "\\p{L}[\\p{L}\\p{P}]+\\p{L}")
 
+
+########### Continue if not using Anchors, otherwise:
+   # 1. look at and follow ./anchor/README
+   # 2. continue with:   R -f 200-topic-models/from_anchors.R
 
 #load(file.name)
 

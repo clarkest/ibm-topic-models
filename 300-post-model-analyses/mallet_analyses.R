@@ -249,27 +249,31 @@ topic.co.occur <- function(topic.model.1,
   corr.matrix <- matrix(0, n.topics, n.topics)
   for (topic.i in 1 : (n.topics)) {
     for (topic.j in  1 : (n.topics)) {
-      co.occurs <- sum(topic.occur.1[,topic.i] & topic.occur.2[,topic.j])
-      co.occur.count[topic.i, topic.j] <- co.occurs
-      corr.matrix[topic.i, topic.j] <- log(num.docs * co.occurs / (topic.counts.1[topic.i] * topic.counts.2[topic.j]))
+      # if one of hte topics is missing, we'd prefer to keep the "zero" correlation default
+      if (topic.counts.1[topic.i] >0 & topic.counts.2[topic.j] > 0) {
+        co.occurs <- sum(topic.occur.1[,topic.i] & topic.occur.2[,topic.j])
+        co.occur.count[topic.i, topic.j] <- co.occurs
+        corr.matrix[topic.i, topic.j] <- log(num.docs * (co.occurs) / (topic.counts.1[topic.i] * topic.counts.2[topic.j]))
+      }
     }
   }
-  dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary")[1:n.topics, 1:n.topics]
-  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=as.dist(dist.matrix)))
+  dist.matrix <- proxy::dist(t(topic.occur.1), t(topic.occur.2), method="binary", upper=TRUE)[1:n.topics, 1:n.topics]
+  simil.matrix <- proxy::simil(t(topic.occur.1), t(topic.occur.2), method="binary", upper=TRUE)[1:n.topics, 1:n.topics]
+  return(list(co.occur.count=co.occur.count, corr.matrix=corr.matrix, dist=dist.matrix, simil=simil.matrix))
 }
 
 
-corr.heatmap <- function(corr.matrix, min=-1, max=1) {
+corr.heatmap <- function(corr.matrix, min.v=-1, max.v=1) {
   y <- melt(corr.matrix)
   # replace values outside of [-1,1] with extremes
   y$new.val <- y$value
-  if (!is.null(min)) y[y$new.val < min, "new.val"] <- min 
-  if (!is.null(max))  y[y$new.val > max, "new.val"] <- max 
+  if (!is.null(min.v)) y[y$new.val < min.v, "new.val"] <- min.v
+  if (!is.null(max.v))  y[y$new.val > max.v, "new.val"] <- max.v 
   
   p <- ggplot(y, aes(y=Var1, x=Var2)) + 
     geom_tile(aes(fill=new.val)) + 
     scale_fill_gradient2(low = "red", mid = "white",
-                         high = "blue", midpoint = 0, limits=c(min,max)) + 
+                         high = "blue", midpoint = 0, limits=c(min.v, max.v)) + 
     xlab("") + ylab("")
   
   return(p)

@@ -1,4 +1,4 @@
-charles.coded <- read.csv("/Users/clarkbernier/Dropbox/2015/Data/VJ-WJ corpus with CH type additions.csv")
+charles.coded <- read.csv("/Users/clarkbernier/Dropbox/Semantic analysis/Topic model 2015/Data/VJ-WJ corpus with CH type additions.csv")
 charles.coded <- read.csv("place_docs_here/charles_coded_docs.csv", stringsAsFactors = F)
 names(charles.coded)
 sum(documents$id == charles.coded$ID)

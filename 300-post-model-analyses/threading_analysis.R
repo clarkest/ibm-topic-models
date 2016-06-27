@@ -1,7 +1,14 @@
 library(tidyr)
-library(dplyr)
+library(plyr)
 library(ggplot2)
+library(scales)
 library(stargazer)
+library(xtable)
+library(digest)
+library(stringr)
+detach("package:dplyr", unload=TRUE)
+library(dplyr)
+
 
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 # wd <-  "/media/sf_ibm-topic-model"
@@ -113,9 +120,10 @@ num.children <- summarize(group_by(melted.ancestors, value), n.children=n())
 num.children <- num.children[num.children$value!="missing",]
 # threaded.docs <- merge(threaded.docs, num.children, by.x="id", by.y="value", all.x=TRUE, suffixes=c("x",""))
 
-threaded.docs <- left_join(threaded.docs, num.children, by=c("id"="value"))
+threaded.docs <- 
+  left_join(threaded.docs, num.children, by=c("id"="value")) %>%
+  mutate(n.children = ifelse(is.na(n.children), 0, n.children))
 
-threaded.docs$n.children[is.na(threaded.docs$n.children)] <- 0
 
 ###################
 # MISSING THREADS #
@@ -144,7 +152,7 @@ for (i in 1:length(ans.list)) {
   }
 }
 ggplot() + geom_histogram(aes(x=threaded.docs$generation), binwidth = 1)
-save(threaded.docs, file=sprintf("place_docs_here/threaded_docs.Rdata", model.name))
+save(threaded.docs, file="place_docs_here/threaded_docs.Rdata")
 # load("place_docs_here/threaded_docs.Rdata")
 
 
@@ -153,9 +161,14 @@ sum(threaded.docs$missing.ancestor)
 # unique root ids?
 length(unique(threaded.docs$root.id))
 
+getMode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+  
 # what do groups by root.id look like?
 by.root <- threaded.docs %>% group_by(root.id, jam) %>% 
-  summarise(comments=n(), title.example=min(title),
+  summarise(comments=n(), title.example=getMode(title),
             first.post=min(Timestamp), last.post=max(Timestamp), 
             duration=difftime(max(Timestamp), min(Timestamp), units="hours"),
             forum=first(forum)) %>%
@@ -167,6 +180,8 @@ by.root.window <- threaded.docs %>% group_by(root.id, DateWindow) %>%
 names(by.root.window) = c("root.id", sprintf("v%02d",1:11), sprintf("w%02d",1:10))
 by.root <- left_join(by.root, by.root.window, by="root.id")
 
+save(by.root, file="place_docs_here/by_root.Rdata")
+
 ggplot(by.root, aes(x=comments, color=jam)) + geom_histogram(breaks=1:25) + facet_wrap(~ jam)
 summary(by.root[,"comments"])
 summary(by.root[by.root$jam=="world", "comments"])
@@ -175,6 +190,15 @@ summary(by.root[by.root$jam=="values", "comments"])
 sum(by.root$comments>25 & by.root$jam=="world")
 sum(by.root$comments>25 & by.root$jam=="values")
 by.root %>% group_by(jam) %>% summarise(mx=max(comments))
+
+
+
+
+
+####################################################
+##################### ANALYSES #####################
+####################################################
+
 ################
 # RESPONSE TIMING 
 ################
@@ -241,9 +265,7 @@ by.root$thread.topic.prev <- thread.topic.list
 ###################
 # thread browser
 ###################
-library(xtable)
-library(digest)
-library(stringr)
+
 cut.off <- 1
 root.ids <- by.root$root.id[by.root$comments >= cut.off]
 out.frame <- by.root %>%
@@ -363,7 +385,7 @@ topLineComments("new.mgr")
 topLineComments("gender")
 
 # are people more likely to respond to people in the same class as them?
-class <- "manager"
+class <- "new.mgr"
 class <- "gender"
 
 class.parent <- paste0(class,".parent")
@@ -380,7 +402,8 @@ match.to.parents$match.parent <-
 match.to.parents <- match.to.parents[c("id", "match.parent", class.parent)]
 #attr(match.to.parents$match.parent, "dimanmes") <- NULL
 
-threaded.docs <- merge(threaded.docs, match.to.parents)
+# CAREFUL WITH MERGES
+threaded.docs <- left_join(threaded.docs, match.to.parents)
 # oddly, the match.parent column is picking up attributes that kill summarize.  so, remove them
 attr(threaded.docs$match.parent, "dimnames") <- NULL
 attr(threaded.docs$match.parent, "dimnames") <- NULL
@@ -475,6 +498,7 @@ match.to.ancestors <- merge(threaded.docs[,c("id", "parent", class)],
 ##############################
 
 load("place_docs_here/threaded_docs.Rdata")
+load("place_docs_here/by_root.Rdata")
 th.doc.topics <- threaded.docs
 th.doc.topics$responded <- ifelse(th.doc.topics$n.children==0, 0, 1)
 th.doc.topics$is.exec <- ifelse(th.doc.topics$new.mgr=="executive", 1, 0)
@@ -491,6 +515,10 @@ th.doc.topics$solo.topic <- th.doc.topics$focus == 1
 th.doc.topics$adj.focus <- rowSums(d.tps^2) - th.doc.topics$solo.topic
 th.doc.topics$adj.conc.sq <- th.doc.topics$adj.focus ^ 2
 ggplot(data=th.doc.topics, aes(x=focus, color=jam)) + geom_density()
+
+ggplot(data=th.doc.topics, aes(y=focus, x=log.length)) + 
+  geom_point() +
+  geom_density_2d()
 
 # we'd also like to know how responses are related to the current temporal intensity of the conversations
 #  (1) is this the first comment in a thread?
@@ -511,7 +539,107 @@ th.doc.topics$log.sec.since.parent <- ifelse(is.na(th.doc.topics$log.sec.since.p
 th.doc.topics$log.sec.since.parent.sq <- th.doc.topics$log.sec.since.parent ^ 2
 th.doc.topics$log.sec.since.parent.cube <- th.doc.topics$log.sec.since.parent ^ 3
 
-# let's add in a flag to control for the last two periods of each jam
+
+# Track how long into a Conversation a comment was made
+
+thread.timing <- 
+  select(th.doc.topics, id, root.id, Timestamp) %>%
+  left_join(select(by.root, root.id, first.post)) %>%
+  mutate(secs.since.thread = as.numeric(Timestamp - first.post, units="secs")) 
+  
+# linear -- find comments in the prior X seconds, count as  (X - t) / X intensity
+
+linear.excitement <- function(X) {
+  tt <- thread.timing %>% 
+    left_join(select(thread.timing, id, root.id, secs.since.thread), by="root.id") %>%
+    filter(secs.since.thread.x - secs.since.thread.y >= 0  & 
+             secs.since.thread.x - secs.since.thread.y < X &
+             id.x != id.y) %>%
+    mutate(secs.ago = secs.since.thread.x - secs.since.thread.y) %>%
+    group_by(id.x) %>%
+    summarize(linear.X = sum((X - secs.ago) / X)) %>%
+    right_join(thread.timing, by=c("id.x" = "id")) %>%
+    select(id.x, linear.X) %>%
+    transmute(id=id.x, 
+               excitement = ifelse(is.na(linear.X), 0, linear.X))
+  return(tt)
+}
+
+linear.15 <- linear.excitement(900)
+linear.30 <- linear.excitement(1800)
+linear.60 <- linear.excitement(3600)
+linear.120 <- linear.excitement(7200)
+linear.180 <- linear.excitement(180 * 60)
+linear.240 <- linear.excitement(240 * 60)
+linear.set <- 
+  merge(linear.15, linear.30, by="id", suffixes=c("", ".30")) %>%
+  merge(linear.60, by="id", suffixes=c("",".60")) %>%
+  merge(linear.120, by="id", suffixes=c("",".120")) %>%
+  merge(linear.180, by="id", suffixes=c("",".180")) %>%
+  merge(linear.240, by="id", suffixes=c(".15",".240")) 
+
+th.doc.topics <- left_join(th.doc.topics, linear.set, by="id")
+
+gg <- 
+  th.doc.topics %>%
+    filter(!missing.parent & !is.first.comment) %>%
+    select(excitement.60, excitement.120, excitement.180, excitement.240) %>%
+    gather(window.minutes, excitement) %>%
+    ggplot(aes(excitement, colour=window.minutes)) +
+      geom_density(size=1) +
+      coord_cartesian(xlim=c(0,5), ylim=c(0,1.2)) +
+      theme(text=element_text(size=16))
+ggsave(gg, file="outputs/excitement_linear_decay_densities_hours.png")
+
+# exponential decay
+  # keep a running total score
+  # each comment, reduce running total multiplying by decay.rate ^ seconds.since.prior
+
+exp.excitement <- function(half.life.sec) {
+  alpha <- exp(log(0.5) / half.life.sec)
+  tt <- thread.timing %>% 
+    left_join(select(thread.timing, id, root.id, secs.since.thread), by="root.id") %>%
+    filter(secs.since.thread.x >= secs.since.thread.y  &
+             id.x != id.y) %>%
+    mutate(secs.ago = secs.since.thread.x - secs.since.thread.y) %>%
+    group_by(id.x) %>%
+    summarize(exp.X = sum(alpha ^ secs.ago)) %>%
+    right_join(thread.timing, by=c("id.x" = "id")) %>%
+    select(id.x, exp.X) %>%
+    transmute(id=id.x, 
+              exp.excite = ifelse(is.na(exp.X), 0, exp.X))
+  return(tt)
+}
+
+exp.5 <- exp.excitement(300)
+exp.10 <- exp.excitement(600)
+exp.20 <- exp.excitement(1200)
+exp.30 <- exp.excitement(1800)
+exp.60 <- exp.excitement(3600)
+exp.set <- 
+  merge(exp.5, exp.10, by="id", suffixes=c("", ".10")) %>%
+  merge(exp.20, by="id", suffixes=c("",".20")) %>%
+  merge(exp.30, by="id", suffixes=c("",".30")) %>%
+  merge(exp.60, by="id", suffixes=c(".5",".60")) 
+
+th.doc.topics <- left_join(th.doc.topics, exp.set, by="id")
+
+gg <- 
+  th.doc.topics %>%
+  filter(!missing.parent & !is.first.comment) %>%
+  select(exp.excite.5, exp.excite.10, exp.excite.20, exp.excite.30, exp.excite.60) %>%
+  gather(window.minutes, excitement) %>%
+  ggplot(aes(excitement, colour=window.minutes)) +
+  geom_density(size=1) +
+  coord_cartesian(xlim=c(0,5), ylim=c(0,3)) +
+  theme(text=element_text(size=16))
+ggsave(gg, file="outputs/excitement_exp_decay_densities.png")
+
+
+
+
+# Final Periods
+#    let's add in a flag to control for the last two periods of each jam
 th.doc.topics$last.period <- 
   ifelse(th.doc.topics$DateWindow %in% c("2003-08-01 2", "2004-10-29 0", "2004-10-29 1"),
          1, 0)
@@ -539,15 +667,12 @@ th.doc.topics %>% group_by(jam) %>%
                    we = mean(docs.have.we),
                    i = mean(docs.have.i))
 
-mean(th.doc.topics$docs.have.ibm)
-mean(th.doc.topics$docs.have.we)
-mean(th.doc.topics$docs.have.i)
-
 
 # they're all related to each other
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.i)
 chisq.test(th.doc.topics$docs.have.we, th.doc.topics$docs.have.i)
+
 # in a positive way
 cor(cbind(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we, th.doc.topics$docs.have.i))
 
@@ -603,14 +728,14 @@ fit.values <- glm(f2,
 summary(fit.values)
 
 ## cut points for topics
-cutModels <- function(prev.thresh=NULL, controls, topic.interaction="") {
+cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interaction.terms = c()) {
   if (is.null(prev.thresh)) {
-    thread.dt.cuts <- select_(th.doc.topics, .dots=c("responded", "jam", controls))
+    thread.dt.cuts <- select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls))
   } else {
     d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
     colnames(d.tps) <- paste0("t", 1:30)
     thread.dt.cuts <- 
-      cbind(select_(th.doc.topics, .dots=c("responded", "jam", controls)),
+      cbind(select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls)),
             d.tps)
   }
   if (topic.interaction != "") {
@@ -618,23 +743,38 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="") {
     colnames(d.tps.inter) <- paste0("t-",topic.interaction,"-", 1:30)
     thread.dt.cuts <- cbind(thread.dt.cuts, d.tps.inter)
   }
-  formula <- responded ~ .
+  
+  formula.text <- paste(c("responded ~ . ", interaction.terms), collapse = " + ")
+  formula <- as.formula(formula.text)
+  p.formula.text <- paste(c("n.children ~ . ", interaction.terms), collapse = " + ")
+  p.formula <- as.formula(p.formula.text)
   # no more Overall
   # fit.cuts <- glm(formula,
   #             data=thread.dt.cuts,
   #             family="binomial")
   
   fit.world.cut <- glm(formula,
-                   data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam),
+                   data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam,-n.children),
                    family="binomial")
   
   fit.value.cut <- glm(formula,
-                   data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam),
+                   data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -n.children),
                    family="binomial")
   
-  ret.val <- list(values=fit.value.cut, world=fit.world.cut)
+  poisson.world <- glm(p.formula,
+                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam),
+                       family=poisson())
+  
+  poisson.value <- glm(p.formula,
+                       data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam),
+                       family=poisson())
+  ret.val <- list(values=fit.value.cut, world=fit.world.cut, p.world=poisson.world, p.val = poisson.value)
   return(ret.val)
 }
+
+
+
+
 cuts.15 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
 cuts.20 <- cutModels(0.20, controls=c("is.manager", "is.exec", "gender"))
 cuts.25 <- cutModels(0.25, controls=c("is.manager", "is.exec", "gender"))
@@ -679,45 +819,255 @@ cuts.20.1 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender",
                                        "u.s.time.", "continent2", "last.period"))
 # 2	above + post length, solo topic, concentration, first comment, missing parent, log seconds, and forum
 cuts.20.2 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
-                                       "u.s.time.", "continent2", "last.period",
-                                       "length",  "length.sq", "adj.focus", "solo.topic",
-                                       "is.first.comment","missing.parent","log.sec.since.parent", 
-                                       "forum"))
+                                        "u.s.time.", "continent2", "last.period",
+                                        "log.length", "focus",  #"solo.topic",
+                                        "is.first.comment","missing.parent","log.sec.since.parent", 
+                                        "forum"))
+cuts.20.2.int <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
+                                            "u.s.time.", "continent2", "last.period",
+                                            "log.length", "focus",  #"solo.topic",
+                                            "is.first.comment","missing.parent","log.sec.since.parent", 
+                                            "forum"),
+                           interaction.terms = c("log.length : focus"))
+
 # 3	above + topics > .20
 cuts.20.3 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
                                         "u.s.time.", "continent2", "last.period",
-                                        "length",  "length.sq", "adj.focus", "solo.topic",
+                                        "log.length", "focus", #"solo.topic",
                                         "is.first.comment","missing.parent","log.sec.since.parent", 
                                         "forum"))
+cuts.20.3.int <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                       "u.s.time.", "continent2", "last.period",
+                                       "log.length", "focus", #"solo.topic",
+                                       "is.first.comment","missing.parent","log.sec.since.parent", 
+                                       "forum"),
+                       interaction.terms = c("log.length : focus"))
+cuts.20.3.exc60 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                           "u.s.time.", "continent2", "last.period",
+                                           "log.length", "focus", #"solo.topic",
+                                           "is.first.comment","missing.parent", "excitement.60",#"log.sec.since.parent", 
+                                           "forum"),
+                           interaction.terms = c("log.length : focus"))
+cuts.20.3.exc30 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                           "u.s.time.", "continent2", "last.period",
+                                           "log.length", "focus", #"solo.topic",
+                                           "is.first.comment","missing.parent", "excitement.30",#"log.sec.since.parent", 
+                                           "forum"),
+                           interaction.terms = c("log.length : focus"))
+cuts.20.3.exc15 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                             "u.s.time.", "continent2", "last.period",
+                                             "log.length", "focus", #"solo.topic",
+                                             "is.first.comment","missing.parent", "excitement.15",#"log.sec.since.parent", 
+                                             "forum"),
+                             interaction.terms = c("log.length : focus"))
+cuts.20.3.exc120 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                             "u.s.time.", "continent2", "last.period",
+                                             "log.length", "focus", #"solo.topic",
+                                             "is.first.comment","missing.parent", "excitement.120",#"log.sec.since.parent", 
+                                             "forum"),
+                             interaction.terms = c("log.length : focus"))
+cuts.20.3.exc180 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                             "u.s.time.", "continent2", "last.period",
+                                             "log.length", "focus", #"solo.topic",
+                                             "is.first.comment","missing.parent", "excitement.180",#"log.sec.since.parent", 
+                                             "forum"),
+                             interaction.terms = c("log.length : focus"))
+cuts.20.3.exc240 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                             "u.s.time.", "continent2", "last.period",
+                                             "log.length", "focus", #"solo.topic",
+                                             "is.first.comment","missing.parent", "excitement.240",#"log.sec.since.parent", 
+                                             "forum"),
+                             interaction.terms = c("log.length : focus"))
+cuts.20.3.exc <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                              "u.s.time.", "continent2", "last.period",
+                                              "log.length", "focus", #"solo.topic",
+                                              "is.first.comment","missing.parent",#"log.sec.since.parent", 
+                                              "excitement.240", "excitement.120", "excitement.60", "excitement.15",
+                                              "forum"),
+                              interaction.terms = c("log.length : focus"))
+
+
+cuts.20.3.exp5 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                              "u.s.time.", "continent2", "last.period",
+                                              "log.length", "focus", #"solo.topic",
+                                              "is.first.comment","missing.parent", "exp.excite.5","log.sec.since.parent", 
+                                              "forum"),
+                              interaction.terms = c("log.length : focus"))
+cuts.20.3.exp10 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                            "u.s.time.", "continent2", "last.period",
+                                            "log.length", "focus", #"solo.topic",
+                                            "is.first.comment","missing.parent","exp.excite.10","log.sec.since.parent", 
+                                            "forum"),
+                            interaction.terms = c("log.length : focus"))
+cuts.20.3.exp20 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                            "u.s.time.", "continent2", "last.period",
+                                            "log.length", "focus", #"solo.topic",
+                                            "is.first.comment","missing.parent", "exp.excite.20","log.sec.since.parent", 
+                                            "forum"),
+                            interaction.terms = c("log.length : focus"))
+cuts.20.3.exp30 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                            "u.s.time.", "continent2", "last.period",
+                                            "log.length", "focus", #"solo.topic",
+                                            "is.first.comment","missing.parent", "exp.excite.30","log.sec.since.parent", 
+                                            "forum"),
+                            interaction.terms = c("log.length : focus"))
+cuts.20.3.exp60 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
+                                            "u.s.time.", "continent2", "last.period",
+                                            "log.length", "focus", #"solo.topic",
+                                            "is.first.comment","missing.parent", "exp.excite.60","log.sec.since.parent", 
+                                            "forum"),
+                            interaction.terms = c("log.length : focus"))
+
+
+
+
+
 cuts.20.3.we <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
                                        "u.s.time.", "continent2", "last.period",
-                                       "length",  "length.sq", "adj.focus", "solo.topic",
-                                       "is.first.comment","missing.parent","log.sec.since.parent", 
+                                       "log.length", "focus", #"solo.topic",
+                                       "is.first.comment","missing.parent", "log.sec.since.parent", 
                                        "forum", 
                                        "docs.have.ibm", "docs.have.we", "docs.have.i"))
 # 4 maybe do a model with topic dummies only (to give us baseline descriptive measure)
-cuts.20.4 <- cutModels(0.2, controls=c("last.period", "length",  "length.sq"))
+cuts.20.4 <- cutModels(0.2, controls=c("last.period", "log.length"))
 
-# output the tables
-stargazer(cuts.20.1$values, cuts.20.2$values, 
-          cuts.20.4$values, cuts.20.3$values, 
+stargazer(cuts.20.3.int, 
           type='text', out="outputs/values_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
-stargazer(cuts.20.1$world, cuts.20.2$world, 
-          cuts.20.4$world, cuts.20.3$world, 
+
+# output the tables
+stargazer(cuts.20.1$values, cuts.20.2.int$values, 
+          cuts.20.4$values, cuts.20.3.exp10$values, 
+          type='text', out="outputs/values_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(cuts.20.1$world, cuts.20.2.int$world, 
+          cuts.20.4$world, cuts.20.3.exp10$world, 
           type='text', out="outputs/world_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
 
 stargazer(cuts.20.3$values, cuts.20.3.we$values, cuts.20.3$world, cuts.20.3.we$world,
-          type='text', out="outputs/values_prob_response_odds_ratios.txt",
+          type='text', out="outputs/we_i_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+
+# Excitation Models
+stargazer(cuts.20.3.int$world, cuts.20.3.exc15$world, 
+          cuts.20.3.exc30$world, cuts.20.3.exc60$world,
+          cuts.20.3.exc120$world, cuts.20.3.exc180$world,
+          cuts.20.3.exc240$world, cuts.20.3.exc$world,
+          type='text',
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          out="outputs/excite_linear_world.txt")
+stargazer(cuts.20.3.int$values, cuts.20.3.exc15$values, 
+          cuts.20.3.exc30$values, cuts.20.3.exc60$values,
+          cuts.20.3.exc120$values, cuts.20.3.exc180$values,
+          cuts.20.3.exc240$values, cuts.20.3.exc$values,
+          type='text',
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          out="outputs/excite_linear_values.txt")
+
+stargazer(cuts.20.3.int$world, cuts.20.3.exp5$world, 
+          cuts.20.3.exp10$world, cuts.20.3.exp20$world,
+          cuts.20.3.exp30$world, cuts.20.3.exp60$world,
+          type='text',
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          out="outputs/excite_exp_world.txt")
+stargazer(cuts.20.3.int$values, cuts.20.3.exp5$values, 
+          cuts.20.3.exp10$values, cuts.20.3.exp20$values,
+          cuts.20.3.exp30$values, cuts.20.3.exp60$values,
+          type='text',
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          out="outputs/excite_exp_values.txt")
+
+
+#  INTERACTION BETWEEN FOCUS AND LENGTH   #
+jam <- "values"
+interact.term <- "log.length:focus"
+var.int <- c("focus","log.length","log.length:focus")
+foc.int.vcov <- 
+  vcov(cuts.20.3.int[[jam]])[var.int, var.int]
+foc.int <- summary(cuts.20.3.int[[jam]])$coef[var.int,1]
+
+# at focus = 0.25, 0.5, 0.75, 1   effect of length
+focus.list <- c(0.25, 0.5, 0.75, 1)
+focus.val <- 0.5
+this.leng.coef <- foc.int[interact.term] * focus.val + foc.int["log.length"]
+this.leng.sd <- sqrt(
+  foc.int.vcov[interact.term, interact.term] + 
+    foc.int.vcov["log.length", "log.length"] + 
+    2 * foc.int.vcov[interact.term, "log.length"])
+this.leng.coef
+this.leng.coef / this.leng.sd
+
+
+
+# at length = 2, 4, 6, effect of focus
+reg.set <- cuts.20.3.int
+#reg.set <- cuts.20.2.int
+title <- "Estimated Reponse Rate Odds Ratio of Focus 
+at Different Comment Lengths
+Controlling for Topic"
+
+words <- c(10,20,40,80,160,320)
+jams <- c("values","world")
+emp.vec <- rep(NA, length(words) * length(jams))
+focus.coefs <- data.frame(words = emp.vec,
+                          log.leng = emp.vec,
+                          coef = emp.vec,
+                          sd = emp.vec,
+                          jam = emp.vec)
+i <- 0
+for (word in words) {
+  log.leng.val = log(word)
+  for (jam in jams) {
+    foc.int.vcov <- 
+      vcov(reg.set[[jam]])[var.int, var.int]
+    foc.int <- summary(reg.set[[jam]])$coef[var.int,1]
+    this.focus.coef <- foc.int[interact.term] * log.leng.val + foc.int["focus"]
+    this.focus.sd <- sqrt(
+      foc.int.vcov[interact.term, interact.term] + 
+        foc.int.vcov["focus", "focus"] + 
+        2 * foc.int.vcov[interact.term, "focus"])
+    i <- i + 1
+    focus.coefs[i,1:4] <- c(word, log.leng.val, this.focus.coef, this.focus.sd)
+    focus.coefs[i,5] <- jam
+  }
+  # this.focus.coef
+  # this.focus.coef / this.focus.sd
+}
+pd <- position_dodge(width=0.8)
+gg <- ggplot(data=focus.coefs, aes(x=words, color=jam)) +
+  geom_line(aes(y=exp(coef)), size=1.5) + 
+  geom_ribbon(aes(ymin = exp(coef - 1.96 * sd), ymax = exp(coef + 1.96 * sd), fill=jam), alpha=0.2) +
+  geom_hline(aes(yintercept = 1)) +
+  ylab("Estimated Response Rate Odds Ratio of Focus") + 
+  xlab("Length of Post") +
+  theme(text=element_text(size=16)) +
+  ggtitle(title)
+ggsave(gg, file = "focus odds ratio by comment length.png")
+
+# how many docs is that?
+th.doc.topics %>% filter(log.length>=4.4) %>% group_by(jam) %>% summarise(n=n())
+
+summary(lm(adj.focus ~ log.length, data=th.doc.topics))
+summary(lm(log.length ~ adj.focus + solo.topic, data=th.doc.topics))
+
+
 
 # testing the full models for multicolinearity
 library(car)
-vifv <- vif(cuts.20.3$values)
+vifv <- vif(cuts.20.2.int$values)
 vifv
-vifw <- vif(cuts.20.3$world)
+vifw <- vif(cuts.20.2$world)
 vifw
+
+vif(cuts.20.3.int$values)
+vif(cuts.20.3.int$world)
+
+vif(cuts.20.3.exp10$values)
+vif(cuts.20.3.exp10$world)
+
+
 
 # values: c("is.first.comment", "log.sec.since.parent")
   # length and length2 as well, but we expect that
@@ -743,7 +1093,7 @@ world.int <- function(x){0.011 * x^2 - 0.294 * x}
 exp(.294 / 0.022) # 176 hours, minimum
 
 # combined.forums <- c(cuts.15, cuts.20, cuts.25) 
-library(stargazer)
+
 stargazer(cuts.15, cuts.20, cuts.25, 
           type="text", 
           column.labels=names(c(cuts.15, cuts.20, cuts.25)))
@@ -773,10 +1123,16 @@ stargazer(combined[c(2,5,8,3,6,9)],
 # WHICH TOPIC RESPONDS ANALYSIS #
 #######################################
 
+
+
 transitionMatrixPlot <- function(th.doc.topics, doc.topics.unsmooth, 
-                                 topic.prev, jam.list=c("values","world"), color, title) {  
+                                 topic.prev, jam.list=c("values","world"), 
+                                 color, title,
+                                 controls=c(), interaction.terms = c()) {  
   parent.dtp <- data.frame(doc.topics.unsmooth > topic.prev)
   names(parent.dtp) <- paste0("parent_topic_", 1:30)
+  coef.names <- paste0("parent_topic_", 1:30, "TRUE")
+  
   parent.dtp$id <- th.doc.topics$id
   
   parent.child.topic.coef <- data.frame(matrix(NA,30,30))
@@ -789,19 +1145,23 @@ transitionMatrixPlot <- function(th.doc.topics, doc.topics.unsmooth,
   
     glm.df <- th.doc.topics %>%  
       filter(jam %in% jam.list) %>%
-      select(parent, focal.topic) %>%
+      select_(.dots=c("parent", "focal.topic", controls)) %>%
+      #select(parent, focal.topic) %>%
       inner_join(parent.dtp, by=c("parent"="id")) %>%
       select(-parent)
-    fit <- glm(focal.topic ~ . , data=glm.df)
-    parent.child.topic.sig[, focal.topic] <- summary(fit)$coef[-1,3]
-    parent.child.topic.coef[, focal.topic] <- summary(fit)$coef[-1,1]
+
+    formula.text <- paste(c("focal.topic ~ . ", interaction.terms), collapse = " + ")
+    formula <- as.formula(formula.text)
+    fit <- glm(formula, data=glm.df)
+    parent.child.topic.sig[, focal.topic] <- summary(fit)$coef[coef.names, 3]
+    parent.child.topic.coef[, focal.topic] <- summary(fit)$coef[coef.names, 1]
   }
   row.names(parent.child.topic.sig) <- paste0("topic_", 1:30)
   row.names(parent.child.topic.coef) <- paste0("topic_", 1:30)
   dat <- melt(as.matrix(parent.child.topic.sig))
   coefs <- melt(as.matrix(parent.child.topic.coef))
   dat$odds.ratio <- exp(coefs$value)
-  ggplot(dat, aes(as.factor(Var2), Var1, group=Var1)) +
+  gg <- ggplot(dat, aes(as.factor(Var2), Var1, group=Var1)) +
     geom_tile(aes(fill = value)) + 
     geom_text(aes(fill = dat$odds.ratio, 
                   label = round(dat$odds.ratio, 2)),
@@ -813,6 +1173,7 @@ transitionMatrixPlot <- function(th.doc.topics, doc.topics.unsmooth,
     ylab("Parent Topic") +
     ggtitle(title) +
     theme(axis.text.x=element_text(angle=45, hjust=1))
+  return(list(chart=gg, matrix=as.matrix(parent.child.topic.coef)))
 }
 val.trans.mat <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth, 
                      topic.prev=0.2, jam="values", color="red",
@@ -823,9 +1184,44 @@ world.trans.mat <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth,
                      title="World Jam Estimated Topic Transition Matrix: 
                      Odds Ratio of Child Topic in Response Given Parent Topic in Posting")
 ggsave("outputs/estimated topic transitions - values.png", 
-       plot=val.trans.mat, width=10, height=8)
+       plot=val.trans.mat$chart, width=10, height=8)
 ggsave("outputs/estimated topic transitions - world.png", 
-       world.trans.mat, width=10, height=8)
+       world.trans.mat$chart, width=10, height=8)
+
+# With Controls
+controls <- c("is.manager", "is.exec", "gender", 
+           "u.s.time.", "continent2", "last.period",
+           "log.length", "focus", #"solo.topic",
+           "is.first.comment","missing.parent","exp.excite.10","log.sec.since.parent", 
+           "forum")
+interaction.terms <-  c("log.length : focus")
+
+val.trans.mat.c <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth, 
+                                      topic.prev=0.2, jam="values", color="red",
+                                      title="Values Jam Estimated Topic Transition Matrix: 
+                                      Odds Ratio of Child Topic in Response Given Parent Topic in Posting
+                                      with Controls",
+                                      controls=controls, interaction.terms = interaction.terms)
+world.trans.mat.c <- transitionMatrixPlot(th.doc.topics, doc.topics.unsmooth, 
+                                        topic.prev=0.2, jam="world", color="green",
+                                        title="World Jam Estimated Topic Transition Matrix: 
+                                        Odds Ratio of Child Topic in Response Given Parent Topic in Posting
+                                        with Controls",
+                                        controls=controls, interaction.terms = interaction.terms)
+ggsave("outputs/estimated topic transitions - values controls.png", 
+       plot=val.trans.mat.c$chart, width=10, height=8)
+ggsave("outputs/estimated topic transitions - world controls.png", 
+       world.trans.mat.c$chart, width=10, height=8)
+
+# Transition maps? 
+topic.prve <- 0.2
+topic.base.prop <- colSums(doc.topics.unsmooth>=topic.prev) / nrow(doc.topics.unnormal)
+mm <- exp(val.trans.mat.c$matrix) 
+a <- t(t(mm) * topic.base.prop)
+a %*% a
+
+ggsave("outputs/test-1.png", 
+       plot=val.trans.mat, width=10, height=8)
 #######################################
 # CONVERSATION Temporal focus #
 #######################################
@@ -1062,49 +1458,98 @@ graphConvTop(5, "world")
 graphConvTop(10, "world")
 
 # co-occurence within conversations, compared to documents
-doc.corr.mat <- topic.co.occur(topic.model, correlationMinProportion=0.2)
-corr.heatmap(doc.corr.mat$corr.matrix)
-
-# and conversations
-smooth <- 0.00000001
-conv.top <- conv.topics[,3:32]
-normal.conv.top <- (smooth + conv.top) / rowSums(conv.top + smooth)
-conv.corr.mat <- topic.co.occur(doc.topics.1=normal.conv.top,
-                                unnormal.doc.topics=conv.top, correlationMinProportion=0.2)
-corr.heatmap(conv.corr.mat$corr.matrix)
-
-# this isn't quite right though -- this has a prevelence cut-off 
-#    of 20% of the CONVERSATION.  What we'd prefer is to count is if a document
-#    within the conversation was above that threshold
-correlationMinProportion <- 0.20
-correlationMinTokens <- 8
-
-doc.topics.1 <- mallet.doc.topics(topic.model, smoothed=T, normalized=T)
-n.topics <- topic.model$getNumTopics()
-unnormal.doc.topics <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
-doc.len.1 <- rowSums(unnormal.doc.topics)
-
-num.topic.tokens.1 <- doc.topics.1 * doc.len.1
-topic.occur.1 <- doc.topics.1 > correlationMinProportion &
-  num.topic.tokens.1 >= correlationMinTokens
-conv.topic.occur <- combineConvDT(threaded.docs, topic.occur.1)
-# basic correlation
-corr.mat <- cor(conv.topic.occur[,3:32])
-corr.heatmap(corr.mat)
-# kl covariance
-
-topic.counts <- colSums(conv.topic.occur[3:32])
-co.occur.count <- matrix(0, n.topics, n.topics)
-corr.matrix <- matrix(0, n.topics, n.topics)
-for (topic.i in 1 : (n.topics)) {
-  for (topic.j in  1 : (n.topics)) {
-    co.occurs <- sum(conv.topic.occur[,topic.i+2] & conv.topic.occur[,topic.j+2])
-    co.occur.count[topic.i, topic.j] <- co.occurs
-    corr.matrix[topic.i, topic.j] <- log(nrow(conv.topic.occur) * co.occurs / (topic.counts[topic.i] * topic.counts[topic.j]))
-  }
+documentCoOccur <- function(jams, min.v=-1, max.v=1) {
+  filter <- threaded.docs$jam %in% jams 
+  doc.corr.mat <- topic.co.occur(doc.topics.1=doc.topics[filter,],
+                                   unnormal.doc.topics = doc.topics.unnormal[filter,], 
+                                   correlationMinProportion=0.2)
+  cor.mat <- doc.corr.mat$corr.matrix
+  rownames(cor.mat) <- paste0("topic_", 1:30)
+  colnames(cor.mat) <- paste0("topic_", 1:30)
+  corr.heatmap(cor.mat, min=min.v, max=max.v) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
 }
 
-corr.mat <- corr.matrix
+documentCoOccur(c("values","world"))
+
+documentCoOccur("world", NULL, NULL)
+
+ggsave("outputs/topic doc co-occur - values-n-n.png", 
+       plot=documentCoOccur("values", NULL, NULL), width=10, height=8)
+ggsave("outputs/topic doc co-occur - values-2-2.png", 
+       plot=documentCoOccur("values", -2, 2), width=10, height=8)
+ggsave("outputs/topic doc co-occur - values-1-1.png", 
+       plot=documentCoOccur("values", -1, 1), width=10, height=8)
+ggsave("outputs/topic doc co-occur - world-n-n.png", 
+       plot=documentCoOccur("world", NULL, NULL), width=10, height=8)
+ggsave("outputs/topic doc co-occur - world-2-2.png", 
+       plot=documentCoOccur("world", -2, 2), width=10, height=8)
+ggsave("outputs/topic doc co-occur - world-1-1.png", 
+       plot=documentCoOccur("world", -1, 1), width=10, height=8)
+
+#What we'd prefer is to count is if at least one document
+#    within the conversation was above the threshold
+conversationCooccurHeat <- function(
+                          correlationMinProportion = 0.20,
+                          correlationMinTokens = 8,
+                          min.convo.len = 5,
+                          jams = c("values","world")) {
+
+  doc.topics.1 <- mallet.doc.topics(topic.model, smoothed=F, normalized=T)
+  n.topics <- topic.model$getNumTopics()
+  unnormal.doc.topics <- mallet.doc.topics(topic.model, smoothed=F, normalized=F)
+  doc.len.1 <- rowSums(unnormal.doc.topics)
+  
+  num.topic.tokens.1 <- doc.topics.1 * doc.len.1
+  topic.occur.1 <- doc.topics.1 > correlationMinProportion &
+    num.topic.tokens.1 >= correlationMinTokens
+  
+  conv.dt <- combineConvDT(threaded.docs, topic.occur.1)
+  
+  filter <- conv.dt$jam %in% jams & conv.dt$n >= min.convo.len
+  # filter <- rep(TRUE, nrow(conv.topic.occur))
+  conv.topic.occur <- conv.dt[filter, 3:32]
+  
+  # kl covariance
+  topic.counts <- colSums(conv.topic.occur>0)
+  co.occur.count <- matrix(0, n.topics, n.topics)
+  corr.matrix <- matrix(0, n.topics, n.topics)
+  for (topic.i in 1 : (n.topics)) {
+    for (topic.j in  1 : (n.topics)) {
+      if (topic.counts[topic.i] >0 & topic.counts[topic.j] > 0) {
+        co.occurs <- sum(conv.topic.occur[,topic.i] & conv.topic.occur[,topic.j])
+        co.occur.count[topic.i, topic.j] <- co.occurs
+        corr.matrix[topic.i, topic.j] <- log(nrow(conv.topic.occur) * co.occurs / (topic.counts[topic.i] * topic.counts[topic.j]))
+      }
+    }
+  }
+  
+  corr.mat <- corr.matrix
+  
+  rownames(corr.mat) <- paste0("topic_", 1:30)
+  colnames(corr.mat) <- paste0("topic_", 1:30)
+  hm <- corr.heatmap(corr.mat, min=-1, max=1) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+  return(list(chart = hm, corr.mat = corr.mat))
+}
+
+
+# correlationMinProportion <- 0.20
+# correlationMinTokens <- 8
+# min.convo.len <- 5
+
+conv.hm.w <- conversationCooccurHeat(jams="world")
+ggsave("outputs/topic conversation co-occur - world.png", 
+       plot=conv.hm.w$chart, width=10, height=8)
+
+conv.hm.v <- conversationCooccurHeat(jams="values")
+ggsave("outputs/topic conversation co-occur - values.png", 
+       plot=conv.hm.v$chart, width=10, height=8)
+
+
+
+
+# Compare to Document level
 correlates <- melt(corr.mat)
 #drop everything on or below the diagonal
 corr.triangle <- correlates[correlates$Var1 < correlates$Var2,]
