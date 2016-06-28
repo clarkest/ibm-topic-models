@@ -111,4 +111,5 @@ index.html <- paste0(index.html, "
   </html>")
 write(index.html, paste0("outputs/", model.label, "/vocab_by_jam/index.html"))
 
+source("400-other-analyses/toLDAvis.R")
 toLDAvis(stm.fit.30, prepped.docs$documents)

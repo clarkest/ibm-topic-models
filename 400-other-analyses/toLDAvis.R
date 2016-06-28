@@ -99,15 +99,6 @@ getSmoothedPhi <- function(logbeta) {
   }
   return(phi)
 }
-  
-mod <- stm.fit.30
-str(mod$beta$logbeta)
-mod$settings$dim$A
-table(mod$settings$covariates$betaindex)
-
-# TODO confirm with Brandon re: location of utility functions 
-
-
 
 # extension of LDAvis::servis that can also take a named list of json objects as an input and create a cross-linked set of pages
 serVis <- function(json.list, out.dir = tempfile(), open.browser = interactive(), 
