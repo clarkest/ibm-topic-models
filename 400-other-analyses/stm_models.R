@@ -110,3 +110,5 @@ index.html <- paste0(index.html, "
   </body>
   </html>")
 write(index.html, paste0("outputs/", model.label, "/vocab_by_jam/index.html"))
+
+toLDAvis(stm.fit.30, prepped.docs$documents)
