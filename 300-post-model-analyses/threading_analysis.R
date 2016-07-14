@@ -6,6 +6,8 @@ library(stargazer)
 library(xtable)
 library(digest)
 library(stringr)
+library(pscl)
+library(MASS)
 detach("package:dplyr", unload=TRUE)
 library(dplyr)
 
@@ -652,8 +654,10 @@ time.window.names <- data.frame(u.s.time.window.4=as.character(0:5),
                                 u.s.time.=c("00-04 PDT", "04-08 PDT", "08-12 PDT", "12-16 PDT", "16-20 PDT", "20-24 PDT"))
 th.doc.topics <- left_join(th.doc.topics, time.window.names, by="u.s.time.window.4")
 # allow Americas to be omitted continent
+# get the proper continent
+th.doc.topics <- left_join(select(th.doc.topics, -continent), select(documents, id, continent))
 th.doc.topics$continent2 <- ifelse(th.doc.topics$continent=="Americas", "AAmericas", th.doc.topics$continent)
-
+#th.doc.topics$continent2 <- ifelse(is.na(th.doc.topics$continent2), "unknown", th.doc.topics$continent2)
 
 ##################
 # I, we, and ibm #
@@ -667,6 +671,8 @@ th.doc.topics %>% group_by(jam) %>%
                    we = mean(docs.have.we),
                    i = mean(docs.have.i))
 
+save(th.doc.topics, file="th_doc_topics.Rdata")
+# load("th_doc_topics.Rdata")
 
 # they're all related to each other
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
@@ -742,19 +748,28 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
                    data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -n.children),
                    family="binomial")
   
-  poisson.world <- glm(p.formula,
-                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam),
-                       family=poisson())
   
-  poisson.value <- glm(p.formula,
-                       data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam),
-                       family=poisson())
-  ret.val <- list(values=fit.value.cut, world=fit.world.cut, p.world=poisson.world, p.val = poisson.value)
+  hurdle.world <- hurdle(p.formula, 
+                        data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam, -responded),
+                        dist = "negbin")
+  hurdle.value <- hurdle(p.formula, 
+                         data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -responded),
+                         dist = "negbin")
+  # the poisson versions of the same model have a ~30% lower log-likelihood 
+  #hpos.world <- hurdle(p.formula, 
+  #                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam, -responded),
+  #                       dist = "poisson")
+  #hpos.value <- hurdle(p.formula, 
+  #                       data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -responded),
+  #                       dist = "poisson")
+  
+  ret.val <- list(values=fit.value.cut, world=fit.world.cut, 
+                  hurdle.world=hurdle.world, hurdle.val = hurdle.value)
   return(ret.val)
 }
 
 
-
+# base models for exploring
 
 cuts.15 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
 cuts.20 <- cutModels(0.20, controls=c("is.manager", "is.exec", "gender"))
@@ -763,12 +778,7 @@ cuts.20.forum <-
   cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum"))
 stargazer(cuts.15, cuts.15.a, type="text")
 
-cuts.20.times <- 
-  cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum", "last.period", "u.s.time.window"))
 
-
-cuts.20.times.4 <- 
-  cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum", "last.period", "u.s.time."))
 
 # with focus
 #cuts.15.c <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", "focus"))
@@ -793,6 +803,9 @@ cuts.20.ac.int <- cutModels(0.2,
 # stargazer(cuts.20.ac, cuts.20.ac.int, type="text")
 stargazer(cuts.20.ac, cuts.20.ac.time, type="text")
 
+########
+# Main Paper Set
+########
 
 # Nested models for World and Values
 # 1	occupation, gender, time and region
@@ -823,84 +836,13 @@ cuts.20.3.int <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender",
                                        "is.first.comment","missing.parent","log.sec.since.parent", 
                                        "forum"),
                        interaction.terms = c("log.length : focus"))
-cuts.20.3.exc60 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                           "u.s.time.", "continent2", "last.period",
-                                           "log.length", "focus", #"solo.topic",
-                                           "is.first.comment","missing.parent", "excitement.60",#"log.sec.since.parent", 
-                                           "forum"),
-                           interaction.terms = c("log.length : focus"))
-cuts.20.3.exc30 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                           "u.s.time.", "continent2", "last.period",
-                                           "log.length", "focus", #"solo.topic",
-                                           "is.first.comment","missing.parent", "excitement.30",#"log.sec.since.parent", 
-                                           "forum"),
-                           interaction.terms = c("log.length : focus"))
-cuts.20.3.exc15 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                             "u.s.time.", "continent2", "last.period",
-                                             "log.length", "focus", #"solo.topic",
-                                             "is.first.comment","missing.parent", "excitement.15",#"log.sec.since.parent", 
-                                             "forum"),
-                             interaction.terms = c("log.length : focus"))
-cuts.20.3.exc120 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                             "u.s.time.", "continent2", "last.period",
-                                             "log.length", "focus", #"solo.topic",
-                                             "is.first.comment","missing.parent", "excitement.120",#"log.sec.since.parent", 
-                                             "forum"),
-                             interaction.terms = c("log.length : focus"))
-cuts.20.3.exc180 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                             "u.s.time.", "continent2", "last.period",
-                                             "log.length", "focus", #"solo.topic",
-                                             "is.first.comment","missing.parent", "excitement.180",#"log.sec.since.parent", 
-                                             "forum"),
-                             interaction.terms = c("log.length : focus"))
-cuts.20.3.exc240 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                             "u.s.time.", "continent2", "last.period",
-                                             "log.length", "focus", #"solo.topic",
-                                             "is.first.comment","missing.parent", "excitement.240",#"log.sec.since.parent", 
-                                             "forum"),
-                             interaction.terms = c("log.length : focus"))
-cuts.20.3.exc <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                              "u.s.time.", "continent2", "last.period",
-                                              "log.length", "focus", #"solo.topic",
-                                              "is.first.comment","missing.parent",#"log.sec.since.parent", 
-                                              "excitement.240", "excitement.120", "excitement.60", "excitement.15",
-                                              "forum"),
-                              interaction.terms = c("log.length : focus"))
 
-
-cuts.20.3.exp5 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                              "u.s.time.", "continent2", "last.period",
-                                              "log.length", "focus", #"solo.topic",
-                                              "is.first.comment","missing.parent", "exp.excite.5","log.sec.since.parent", 
-                                              "forum"),
-                              interaction.terms = c("log.length : focus"))
 cuts.20.3.exp10 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
                                             "u.s.time.", "continent2", "last.period",
                                             "log.length", "focus", #"solo.topic",
                                             "is.first.comment","missing.parent","exp.excite.10","log.sec.since.parent", 
                                             "forum"),
                             interaction.terms = c("log.length : focus"))
-cuts.20.3.exp20 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                            "u.s.time.", "continent2", "last.period",
-                                            "log.length", "focus", #"solo.topic",
-                                            "is.first.comment","missing.parent", "exp.excite.20","log.sec.since.parent", 
-                                            "forum"),
-                            interaction.terms = c("log.length : focus"))
-cuts.20.3.exp30 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                            "u.s.time.", "continent2", "last.period",
-                                            "log.length", "focus", #"solo.topic",
-                                            "is.first.comment","missing.parent", "exp.excite.30","log.sec.since.parent", 
-                                            "forum"),
-                            interaction.terms = c("log.length : focus"))
-cuts.20.3.exp60 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                            "u.s.time.", "continent2", "last.period",
-                                            "log.length", "focus", #"solo.topic",
-                                            "is.first.comment","missing.parent", "exp.excite.60","log.sec.since.parent", 
-                                            "forum"),
-                            interaction.terms = c("log.length : focus"))
-
-
-
 
 
 cuts.20.3.we <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
@@ -931,34 +873,7 @@ stargazer(cuts.20.3$values, cuts.20.3.we$values, cuts.20.3$world, cuts.20.3.we$w
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
 
 
-# Excitation Models
-stargazer(cuts.20.3.int$world, cuts.20.3.exc15$world, 
-          cuts.20.3.exc30$world, cuts.20.3.exc60$world,
-          cuts.20.3.exc120$world, cuts.20.3.exc180$world,
-          cuts.20.3.exc240$world, cuts.20.3.exc$world,
-          type='text',
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
-          out="outputs/excite_linear_world.txt")
-stargazer(cuts.20.3.int$values, cuts.20.3.exc15$values, 
-          cuts.20.3.exc30$values, cuts.20.3.exc60$values,
-          cuts.20.3.exc120$values, cuts.20.3.exc180$values,
-          cuts.20.3.exc240$values, cuts.20.3.exc$values,
-          type='text',
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
-          out="outputs/excite_linear_values.txt")
 
-stargazer(cuts.20.3.int$world, cuts.20.3.exp5$world, 
-          cuts.20.3.exp10$world, cuts.20.3.exp20$world,
-          cuts.20.3.exp30$world, cuts.20.3.exp60$world,
-          type='text',
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
-          out="outputs/excite_exp_world.txt")
-stargazer(cuts.20.3.int$values, cuts.20.3.exp5$values, 
-          cuts.20.3.exp10$values, cuts.20.3.exp20$values,
-          cuts.20.3.exp30$values, cuts.20.3.exp60$values,
-          type='text',
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
-          out="outputs/excite_exp_values.txt")
 
 
 #  INTERACTION BETWEEN FOCUS AND LENGTH   #
@@ -1800,3 +1715,59 @@ a <- cbind(select(documents,jam), dtu) %>%
   select(2:31) %>% t() %>% round(3) 
 colnames(a) <- c("   values","   world")
 a
+
+
+
+
+
+
+
+##########################
+# Who changes the topic? #
+##########################
+
+## cut points for topics
+cutModels <- function(prev.thresh=NULL, 
+                      controls, 
+                      topic.interaction="", 
+                      interaction.terms = c()) {
+  if (is.null(prev.thresh)) {
+    thread.dt.cuts <- select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls))
+  } else {
+    d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
+    colnames(d.tps) <- paste0("t", 1:30)
+    thread.dt.cuts <- 
+      cbind(select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls)),
+            d.tps)
+  }
+  if (topic.interaction != "") {
+    d.tps.inter <- th.doc.topics[,topic.interaction] * d.tps
+    colnames(d.tps.inter) <- paste0("t-",topic.interaction,"-", 1:30)
+    thread.dt.cuts <- cbind(thread.dt.cuts, d.tps.inter)
+  }
+  
+  formula.text <- paste(c("responded ~ . ", interaction.terms), collapse = " + ")
+  formula <- as.formula(formula.text)
+  p.formula.text <- paste(c("n.children ~ . ", interaction.terms), collapse = " + ")
+  p.formula <- as.formula(p.formula.text)
+  
+  fit.world.cut <- glm(formula,
+                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam,-n.children),
+                       family="binomial")
+  
+  fit.value.cut <- glm(formula,
+                       data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -n.children),
+                       family="binomial")
+
+  
+  poisson.world <- glm(p.formula,
+                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam),
+                       family=poisson())
+  
+  poisson.value <- glm(p.formula,
+                       data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam),
+                       family=poisson())
+  ret.val <- list(values=fit.value.cut, world=fit.world.cut, p.world=poisson.world, p.val = poisson.value)
+  return(ret.val)
+}
+

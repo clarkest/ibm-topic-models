@@ -4,10 +4,17 @@
 wd <-  "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
+library(tidyr)
 
 model.name <- "anchor_ngram"
 n.topics <- 30
 model.num <- 9
+
+model.name <- "anchor_world_ngram"
+model.name <- "anchor_values_ngram"
+n.topics <- 30
+model.num <- 1
+
 
 #model.object <- load.model.for.analysis(n.topics, model.name, model.num, regex.name="old_punctuation") 
 model.object <- load.model.for.analysis(n.topics, model.name, model.num) 
@@ -108,7 +115,9 @@ plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "g
 # managers and jam
 col.keeps <- c("new.mgr", "continent", "jam", "DateWindow")
 by.vars <- c("new.mgr", "jam")
-plot.all.topic.shares(model.object, col.keeps, by.vars, file.path(output.dir, "new_manager_prev/"))
+plot.all.topic.shares(model.object, col.keeps, by.vars, 
+                      file.path(output.dir, "new_manager_prev/"), 
+                      ylim=c(0,0.13))
 
 #diagnostic tool for seeing a particular topic's raw numbers
 #View(avg.topic.rate <- aggregate(doc.topics.data[2], by=doc.topics.data[,aggregate.set], mean))
@@ -271,12 +280,8 @@ corr.heatmap(ret.1$corr.matrix, min=-2, max=2)
 # Individual Word Freq
 ########################
 
-word <- "ibm"
-prev.thresh <- 0.2
-# word <- " i "
-# word <- " we "
 
-graphTopicWords <- function(word, prev.thres = 0.2) {
+graphTopicWords <- function(word, by.var = "jam", filter.func=F, prev.thresh = 0.2, title.postpend) {
   # which docs have the word?
   documents[,"docs.have.word"] <- grepl(word, documents$text, ignore.case=T)
   
@@ -292,22 +297,30 @@ graphTopicWords <- function(word, prev.thres = 0.2) {
   
   # topic.word.freq <- colMeans(d.tps * documents$docs.have.word) / colMeans(d.tps)
   
-  df <- data.frame(
-    topic = sprintf("topic_%02d", 1:30),
-    val.freq = colMeans(d.tps * documents$docs.have.word * (documents$jam=="values")) / colMeans(d.tps * (documents$jam=="values")),
-    world.freq = colMeans(d.tps * documents$docs.have.word * (documents$jam=="world")) / colMeans(d.tps * (documents$jam=="world")),
-    stringsAsFactors = F
-  )
-  val.overall <- mean(documents$docs.have.word * (documents$jam=="values")) / mean(documents$jam=="values")
-  world.overall <- mean(documents$docs.have.word * (documents$jam=="world")) / mean(documents$jam=="world")
+  d.tps.d <- cbind(documents, d.tps) 
+  if (is.function(filter.func)) {
+    d.tps.d <- filter.func(d.tps.d) 
+  }  
+  d.tps.d <- d.tps.d %>%
+    select_(.dots=c(by.var, "docs.have.word", colnames(d.tps))) %>%
+    #gather(topic, appears, -docs.have.word, -jam)
+    gather_("topic", "has.topic", paste0("topic_", 1:30)) %>%
+    rename_(.dots=c("by.var" = by.var)) %>%
+    group_by(by.var, topic) %>%
+    summarise(doc.share=mean(has.topic * docs.have.word) / mean(has.topic))
   
-  df <- rbind(df, list("OVERALL", val.overall, world.overall))
+  overall <- documents %>%
+    group_by_(by.var) %>%
+    summarise(doc.share = mean(docs.have.word)) %>%
+    rename_(.dots=c("by.var" = by.var)) %>%
+    cbind(data.frame(topic="OVERALL"))
   
-  ggplot(data=df, aes(y=topic)) +
-    geom_point(aes(x=val.freq, color="Values Jam"), size=2) +
-    geom_point(aes(x=world.freq, color="World Jam"), size=2) +
+  d.tps.d <- rbind(d.tps.d, overall)
+  
+  ggplot(data=d.tps.d, aes(y=topic)) +
+    geom_point(aes(x=doc.share, color=by.var), size=2) +
     xlim(0,1) + xlab(sprintf("Share of Documents Containing Word '%s'", word)) +
-    ggtitle(sprintf("Share of Documents Containing '%s'", word)) +
+    ggtitle(sprintf("Share of Documents Containing '%s'%s", word, title.postpend)) +
     thm
 }
 
@@ -316,31 +329,36 @@ getFilePath <- function(file.name) {
 }
 library(grid)
 
-# “I” “We” “IBM”
-g1 <- graphTopicWords(" I ")
-g2 <- graphTopicWords(" we ")
-g3 <- graphTopicWords("ibm")
-png(filename=getFilePath("we_i_ibm"), width=600, height=1800)
-  grid.newpage()
-  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), size = "last"))
-dev.off()
+jam.filter = function(jam.value) {function(data){filter(data, jam==jam.value)}}
 
-# “Customer”, “client”, “solution”
-g1 <- graphTopicWords("customer")
-g2 <- graphTopicWords("client")
-g3 <- graphTopicWords("solution")
-png(filename=getFilePath("customer_client_solution"), width=600, height=1800)
-  grid.newpage()
-  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), size = "last"))
-dev.off()
+graphTopicWords(" I ", "new.mgr", jam.filter("values"), title.postpend=" - Values Jam")
+graphTopicWords(" I ", "new.mgr", jam.filter("world"), title.postpend=" - World Jam")
+graphTopicWords("ibm", "new.mgr", jam.filter("values"))
+graphTopicWords("ibm", "new.mgr", jam.filter("world"))
+graphTopicWords(" we ", "new.mgr", jam.filter("values"))
+graphTopicWords(" we ", "new.mgr", jam.filter("world"))
 
-# “manager”, “Decision”, “empowerment”, “authority”,”mentoring”
-g1 <- graphTopicWords("manager")
-g2 <- graphTopicWords("decision")
-g3 <- graphTopicWords("empowerment")
-g4 <- graphTopicWords("authority")
-g5 <- graphTopicWords("mentor")
-png(filename=getFilePath("manager_empowerment"), width=600, height=2400)
-  grid.newpage()
-  grid.draw(rbind(ggplotGrob(g1), ggplotGrob(g2), ggplotGrob(g3), ggplotGrob(g4), ggplotGrob(g5), size = "last"))
-dev.off()
+gridWordGraph <- function(word.list, by.var, out.file.name) {
+  gset <- list()
+  for (word in word.list) {
+    gset[[length(gset) + 1]] <- cbind(
+      ggplotGrob(graphTopicWords(word, by.var, jam.filter("values"), title.postpend=" - Values Jam")),
+      ggplotGrob(graphTopicWords(word, by.var, jam.filter("world"), title.postpend=" - World Jam")),
+      size="last"
+    )
+  }
+  png(filename=getFilePath(out.file.name), width=1200, height=600 * length(word.list))
+    grid.newpage()
+    grid.draw(do.call("rbind", c(gset, size="last")))
+  dev.off()
+}
+
+gridWordGraph(c(" I ", " we ", "ibm"), "new.mgr", "we_i_ibm")
+gridWordGraph(c("customer", "client", "solution"), "new.mgr", "customer_client_solution")
+
+gridWordGraph(c("manager", "decision", "empowerment", "authority", "mentor"), 
+              "new.mgr", "manager_empowerment")
+
+
+
+

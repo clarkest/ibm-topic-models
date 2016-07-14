@@ -63,6 +63,7 @@ rbind(
                                               values$CreationTime), '%m/%d/%Y %I:%M:%S %p', tz="US/Pacific"),
                    manager = values$manager, stringsAsFactors=F,
                    continent = countrycode(values$Country, "country.name", "continent"),
+                   country = values$Country,
                    parent = as.character(values$Parent),
                    forum = as.character(values$Forum),
                    user = as.character(values$AuthorEmail),
@@ -77,6 +78,7 @@ rbind(
                                         world$creation_time), '%m/%d/%Y %H:%M:%S', tz="US/Pacific"),
              manager = world$manager, stringsAsFactors=F,
              continent = countrycode(world$country, "country.name", "continent"), 
+             country = world$country,
              parent = as.character(world$parent),
              forum = as.character(world$forum),
              user = as.character(world$author_email),
@@ -99,6 +101,8 @@ documents$manager <- factor(documents$manager)
 documents$jam <- factor(documents$jam)
 documents$forum <- factor(documents$forum)
 
+documents$continent <- ifelse(documents$country == "Taiwan", "Asia", documents$continent)
+documents$continent <- ifelse(documents$country == "N/A", "unknown", documents$continent)
 
 ##################################
 #    Mallet Topic Model Loading  #
