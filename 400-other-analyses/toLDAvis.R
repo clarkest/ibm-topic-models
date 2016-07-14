@@ -1,3 +1,5 @@
+library(LDAvis)
+library(dplyr)
 toLDAvis <- function(mod,docs,R=30,plot.opts=list(xlab ="PC1", ylab = "PC2"),
                    lambda.step=.1,out.dir=tempfile(),open.browser=interactive(),as.gist=FALSE){
   if(!requireNamespace("LDAvis",quietly=TRUE)) 
@@ -13,7 +15,12 @@ toLDAvis <- function(mod,docs,R=30,plot.opts=list(xlab ="PC1", ylab = "PC2"),
   if(length(mod$beta$logbeta) == 1) { 
     logbeta <- mod$beta$logbeta[[1]]
     phi <- getSmoothedPhi(logbeta)
-    f <- LDAvis::createJSON(phi=phi,theta=theta,doc.length=doc.length,vocab=vocab,term.frequency=term.frequency,lambda.step = lambda.step)
+    f <- LDAvis::createJSON(phi=phi,theta=theta,
+                            doc.length=doc.length,
+                            vocab=vocab,
+                            term.frequency=term.frequency,
+                            lambda.step = lambda.step,
+                            reorder.topics=F)
     LDAvis::serVis(f,out.dir=out.dir,open.browser=open.browser,as.gist=as.gist)
   
   } else {
@@ -29,13 +36,13 @@ toLDAvis <- function(mod,docs,R=30,plot.opts=list(xlab ="PC1", ylab = "PC2"),
     # marg.phi <- getSmoothedPhi(marg.log.beta)
     marg.phi <- exp(marg.log.beta)
     # note the addition of "sort.topics=F" which will preserve topic numbering in the json
-    marginal.vis <- LDAvis::createJSON(phi=marg.phi, 
+    marginal.vis <- createJSON(phi=marg.phi, 
                                        theta=theta,
                                        doc.length=doc.length,
                                        vocab=vocab,
                                        term.frequency=term.frequency,
                                        lambda.step = lambda.step,
-                                       sort.topics=FALSE)
+                                       reorder.topics=FALSE)
     json.list <- list("OVERALL" = marginal.vis)
     covar.idx <- mod$settings$covariates$betaindex
     for (i in 1:length(log.betas)) {
@@ -60,7 +67,7 @@ toLDAvis <- function(mod,docs,R=30,plot.opts=list(xlab ="PC1", ylab = "PC2"),
                             vocab=vocab,
                             term.frequency=term.frequency,
                             lambda.step = lambda.step,
-                            sort.topics=FALSE)
+                            reorder.topics=FALSE)
       
       json.list[[covar.labels[i]]] <- this.vis
       

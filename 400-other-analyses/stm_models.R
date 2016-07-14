@@ -111,5 +111,13 @@ index.html <- paste0(index.html, "
   </html>")
 write(index.html, paste0("outputs/", model.label, "/vocab_by_jam/index.html"))
 
+
+
+########################
+# LDAvis for content covars
+########################
+library(devtools)
+install_github("cpsievert/LDAvis") 
 source("400-other-analyses/toLDAvis.R")
-toLDAvis(stm.fit.30, prepped.docs$documents)
+out.dir <- "~/sandbox/STM LDAvis"
+toLDAvis(stm.fit.30, prepped.docs$documents, out.dir = out.dir)
