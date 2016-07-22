@@ -52,6 +52,18 @@ documents$new.mgr <- new.mgr
 model.object$documents <- documents
 table(new.mgr)
 
+# add in genders
+load("place_docs_here/genders_by_id.Rdata")
+documents <- inner_join(documents, doc.genders)
+
+documents %>% filter(is.na(job) | job=="") %>% summarise(count = n_distinct(user))
+documents %>% group_by(new.mgr) %>% summarise(count = n_distinct(user))
+documents %>% group_by(continent) %>% summarise(count = n_distinct(user))
+documents %>% group_by(gender) %>% summarise(count = n_distinct(user))
+a <- documents %>% filter(jam=="world" & DateWindow != "2004-10-26 0" & DateWindow != "2004-10-26 1") %>% 
+  group_by(forum) %>% filter(Timestamp==min(Timestamp)) %>% select(jam, forum, Timestamp, text)
+write.csv(a, file="~/world_text.csv")
+
 # make sure the outpus directory for this model exists
 output.dir <- file.path("outputs", model.label) 
 dir.create(output.dir, showWarnings = FALSE)
@@ -290,41 +302,45 @@ graphTopicWords <- function(word, by.var = "jam", filter.func=F, prev.thresh = 0
   
   # quick view at topics
   d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
-  colnames(d.tps) <- paste0("topic_", 1:30)
+  topic.names <- sprintf("topic_%02d", 1:30)
+  colnames(d.tps) <- topic.names
   
   #topic.word.rates <- colMeans(d.tps * documents$docs.have.word) / colMeans(d.tps) / mean(documents$docs.have.word)
   # round(topic.word.rates-1,2)
   
   # topic.word.freq <- colMeans(d.tps * documents$docs.have.word) / colMeans(d.tps)
   
-  d.tps.d <- cbind(documents, d.tps) 
+  d.tps.d.raw <- cbind(documents, d.tps) 
   if (is.function(filter.func)) {
-    d.tps.d <- filter.func(d.tps.d) 
+    d.tps.d.raw <- filter.func(d.tps.d.raw) 
   }  
-  d.tps.d <- d.tps.d %>%
+  d.tps.d <- d.tps.d.raw %>%
     select_(.dots=c(by.var, "docs.have.word", colnames(d.tps))) %>%
     #gather(topic, appears, -docs.have.word, -jam)
-    gather_("topic", "has.topic", paste0("topic_", 1:30)) %>%
+    gather_("topic", "has.topic", topic.names) %>%
     rename_(.dots=c("by.var" = by.var)) %>%
     group_by(by.var, topic) %>%
-    summarise(doc.share=mean(has.topic * docs.have.word) / mean(has.topic))
+    summarise(doc.share=mean(has.topic * docs.have.word) / mean(has.topic),
+              total.docs=sum(has.topic))
   
-  overall <- documents %>%
+  overall <- d.tps.d.raw %>%
     group_by_(by.var) %>%
-    summarise(doc.share = mean(docs.have.word)) %>%
+    summarise(doc.share = mean(docs.have.word),
+              total.docs = n()) %>%
     rename_(.dots=c("by.var" = by.var)) %>%
     cbind(data.frame(topic="OVERALL"))
   
-  d.tps.d <- rbind(d.tps.d, overall)
+  d.tps.d <- bind_rows(d.tps.d, overall)
   
+  #log(total.docs)
   ggplot(data=d.tps.d, aes(y=topic)) +
-    geom_point(aes(x=doc.share, color=by.var), size=2) +
+    geom_point(aes(x=doc.share, color=by.var, size=sqrt(total.docs)/10), alpha=0.8) +
     xlim(0,1) + xlab(sprintf("Share of Documents Containing Word '%s'", word)) +
     ggtitle(sprintf("Share of Documents Containing '%s'%s", word, title.postpend)) +
     thm
 }
 
-getFilePath <- function(file.name) {
+wordCompareFilePath <- function(file.name) {
   sprintf("%s/word_compare/%s.png", output.dir, file.name)
 }
 library(grid)
@@ -347,18 +363,65 @@ gridWordGraph <- function(word.list, by.var, out.file.name) {
       size="last"
     )
   }
-  png(filename=getFilePath(out.file.name), width=1200, height=600 * length(word.list))
+  png(filename=wordCompareFilePath(out.file.name), width=1200, height=600 * length(word.list))
     grid.newpage()
     grid.draw(do.call("rbind", c(gset, size="last")))
   dev.off()
 }
 
-gridWordGraph(c(" I ", " we ", "ibm"), "new.mgr", "we_i_ibm")
+gridWordGraph(c(" I ", " we ", "ibm |ibm_", "ibmer"), "new.mgr", "we_i_ibm_ibmer")
 gridWordGraph(c("customer", "client", "solution"), "new.mgr", "customer_client_solution")
 
 gridWordGraph(c("manager", "decision", "empowerment", "authority", "mentor"), 
               "new.mgr", "manager_empowerment")
 
+gridWordGraph(c("pension", "retirement", "salary"), "new.mgr", "pension_retirement")
 
 
+
+wordTimeFilePath <- function(file.name) {
+  sprintf("%s/word_over_time/%s_over_time.png", output.dir, file.name)
+}
+wordOverTime <- function(word, by.var, plot.share=F) {
+# filter first values period, first two world and last two world  
+  documents[,"docs.have.word"] <- grepl(word, documents$text, ignore.case=T)
+  by.var.jam <- paste0('sprintf("%s:%s", jam,',by.var,')')
+  plot.df <- documents %>%
+    group_by_("DateWindow", by.var, "jam") %>%
+    summarise(doc.share = sum(docs.have.word) / n(), 
+              total.docs=n(),
+              word.use=sum(docs.have.word)) %>%
+    mutate_(.dots=setNames(by.var.jam, "jam.mgr"))
+  if (plot.share) {
+    y.var <- "doc.share"
+    first.word <- "Share"
+  } else {
+    y.var <- "word.use"
+    first.word <- "Count"
+  }
+  g1 <- ggplot(plot.df, aes_string(x="DateWindow", y=y.var, color=by.var, group="jam.mgr")) +
+      geom_point(aes(size=sqrt(total.docs))) + geom_line() +
+      thm +  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+      ggtitle(sprintf("%s of Documents Containing '%s'", first.word, word))
+  ggsave(g1, file=wordTimeFilePath(sprintf("%s_%s", word, first.word)))
+}
+
+# That's fun -- it's not at all that   
+wordOverTime("pension", "new.mgr")
+wordOverTime("pension", "new.mgr", T)
+wordOverTime("retirement", "new.mgr")
+wordOverTime("retirement", "new.mgr", T)
+
+wordOverTime("lawsuit", "new.mgr", T)
+wordOverTime("customer", "new.mgr", T)
+
+ggsave(wordOverTime("retirement", "new.mgr"), file=wordTimeFilePath("retirement"))
+wordOverTime("salary", "new.mgr")
+
+wordOverTime(" I ", "new.mgr", T)
+wordOverTime(" we ", "new.mgr", T)
+wordOverTime("ibm |ibm_", "new.mgr", T)
+wordOverTime("ibm_", "new.mgr", T)
+wordOverTime("ibm", "new.mgr", T)
+wordOverTime("ibmer", "new.mgr", T)
 

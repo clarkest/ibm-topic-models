@@ -532,6 +532,7 @@ a <- select(threaded.docs, id, Timestamp) %>%
   right_join(select(threaded.docs, parent, Timestamp), 
              by=c("id"="parent") )
 time.since.parent <- as.numeric(a$Timestamp.y- a$Timestamp.x, units="secs")
+th.doc.topics$sec.since.parent <- time.since.parent
 th.doc.topics$log.sec.since.parent <- ifelse(th.doc.topics$generation > 1 & !th.doc.topics$missing.parent,
                                           log(time.since.parent),
                                           0)
@@ -544,101 +545,86 @@ th.doc.topics$log.sec.since.parent.cube <- th.doc.topics$log.sec.since.parent ^ 
 
 # Track how long into a Conversation a comment was made
 
-thread.timing <- 
+thread.family.timing <- 
   select(th.doc.topics, id, root.id, Timestamp) %>%
   left_join(select(by.root, root.id, first.post)) %>%
   mutate(secs.since.thread = as.numeric(Timestamp - first.post, units="secs")) 
-  
-# linear -- find comments in the prior X seconds, count as  (X - t) / X intensity
 
-linear.excitement <- function(X) {
-  tt <- thread.timing %>% 
-    left_join(select(thread.timing, id, root.id, secs.since.thread), by="root.id") %>%
-    filter(secs.since.thread.x - secs.since.thread.y >= 0  & 
-             secs.since.thread.x - secs.since.thread.y < X &
-             id.x != id.y) %>%
-    mutate(secs.ago = secs.since.thread.x - secs.since.thread.y) %>%
-    group_by(id.x) %>%
-    summarize(linear.X = sum((X - secs.ago) / X)) %>%
-    right_join(thread.timing, by=c("id.x" = "id")) %>%
-    select(id.x, linear.X) %>%
-    transmute(id=id.x, 
-               excitement = ifelse(is.na(linear.X), 0, linear.X))
-  return(tt)
-}
 
-linear.15 <- linear.excitement(900)
-linear.30 <- linear.excitement(1800)
-linear.60 <- linear.excitement(3600)
-linear.120 <- linear.excitement(7200)
-linear.180 <- linear.excitement(180 * 60)
-linear.240 <- linear.excitement(240 * 60)
-linear.set <- 
-  merge(linear.15, linear.30, by="id", suffixes=c("", ".30")) %>%
-  merge(linear.60, by="id", suffixes=c("",".60")) %>%
-  merge(linear.120, by="id", suffixes=c("",".120")) %>%
-  merge(linear.180, by="id", suffixes=c("",".180")) %>%
-  merge(linear.240, by="id", suffixes=c(".15",".240")) 
+aa <- th.doc.topics %>% filter(!missing.parent & !is.first.comment & log.sec.since.parent<4.1 & responded==0)
+ans <- unlist(strsplit(aa[3, "ancestor.str"], split=","))
+this.time <- aa[3, "Timestamp"]
+ancestors.times <- filter(th.doc.topics, id %in% ans)$Timestamp
+secs.ago <- as.numeric(this.time - ancestors.times, units="secs")
+secs.ago <- ifelse(secs.ago<0, 0, secs.ago)
+alpha <- exp(log(0.5) / 60)
+sum(alpha ^ secs.ago)
+this.id<-aa[3,"id"]
+filter(th.doc.topics, id==this.id)
 
-th.doc.topics <- left_join(th.doc.topics, linear.set, by="id")
 
-gg <- 
-  th.doc.topics %>%
-    filter(!missing.parent & !is.first.comment) %>%
-    select(excitement.60, excitement.120, excitement.180, excitement.240) %>%
-    gather(window.minutes, excitement) %>%
-    ggplot(aes(excitement, colour=window.minutes)) +
-      geom_density(size=1) +
-      coord_cartesian(xlim=c(0,5), ylim=c(0,1.2)) +
-      theme(text=element_text(size=16))
-ggsave(gg, file="outputs/excitement_linear_decay_densities_hours.png")
-
-# exponential decay
-  # keep a running total score
-  # each comment, reduce running total multiplying by decay.rate ^ seconds.since.prior
-
-exp.excitement <- function(half.life.sec) {
+expExcite <- function(th.doc.topics, half.life.sec) {
+  which.excite <- sprintf("exp.excite.%d", round(half.life.sec/60,1))
+  which.excite.first <- sprintf("exp.excite.%d.1st", round(half.life.sec/60,1))
+  print(which.excite)
+  excite <- rep(0, nrow(th.doc.topics))
+  excite.1st <- rep(0, nrow(th.doc.topics))
   alpha <- exp(log(0.5) / half.life.sec)
-  tt <- thread.timing %>% 
-    left_join(select(thread.timing, id, root.id, secs.since.thread), by="root.id") %>%
-    filter(secs.since.thread.x >= secs.since.thread.y  &
-             id.x != id.y) %>%
-    mutate(secs.ago = secs.since.thread.x - secs.since.thread.y) %>%
-    group_by(id.x) %>%
-    summarize(exp.X = sum(alpha ^ secs.ago)) %>%
-    right_join(thread.timing, by=c("id.x" = "id")) %>%
-    select(id.x, exp.X) %>%
-    transmute(id=id.x, 
-              exp.excite = ifelse(is.na(exp.X), 0, exp.X))
-  return(tt)
+  
+  for (i in 1:nrow(th.doc.topics)) {
+    if (th.doc.topics[i, "generation"] > 1 & !th.doc.topics[i, "missing.parent"]) {
+      this.time <- th.doc.topics[i, "Timestamp"]
+      if(th.doc.topics[i, "generation"] == 2) {
+        ans <- th.doc.topics[i, "parent"] 
+      } else {
+        ans <-  unlist(strsplit(th.doc.topics[i, "ancestor.str"], split=","))
+      }
+      ancestors.times <- th.doc.topics[th.doc.topics$id %in% ans, "Timestamp"]
+      secs.ago <- as.numeric(this.time - ancestors.times, units="secs")
+      secs.ago <- ifelse(secs.ago<0, 0, secs.ago)
+      excite[i] <- sum(alpha ^ secs.ago)
+      # just the first parent portion
+      excite.1st[i] <- alpha ^ min(secs.ago)
+    } 
+    # else keep the defaul zeros
+  }
+  th.doc.topics[,which.excite] <- excite
+  th.doc.topics[, which.excite.first] <- excite.1st
+  return(th.doc.topics)
 }
 
-exp.5 <- exp.excitement(300)
-exp.10 <- exp.excitement(600)
-exp.20 <- exp.excitement(1200)
-exp.30 <- exp.excitement(1800)
-exp.60 <- exp.excitement(3600)
-exp.set <- 
-  merge(exp.5, exp.10, by="id", suffixes=c("", ".10")) %>%
-  merge(exp.20, by="id", suffixes=c("",".20")) %>%
-  merge(exp.30, by="id", suffixes=c("",".30")) %>%
-  merge(exp.60, by="id", suffixes=c(".5",".60")) 
 
-th.doc.topics <- left_join(th.doc.topics, exp.set, by="id")
+
+th.doc.topics <- addExpExcite(th.doc.topics, 60)
+th.doc.topics <- addExpExcite(th.doc.topics, 120)
+th.doc.topics <- addExpExcite(th.doc.topics, 180)
+th.doc.topics <- addExpExcite(th.doc.topics, 300)
+th.doc.topics <- addExpExcite(th.doc.topics, 600)
+th.doc.topics <- addExpExcite(th.doc.topics, 1200)
+th.doc.topics <- addExpExcite(th.doc.topics, 1800)
+th.doc.topics <- addExpExcite(th.doc.topics, 3600)
+th.doc.topics <- addExpExcite(th.doc.topics, 5400)
+th.doc.topics <- addExpExcite(th.doc.topics, 7200)
+th.doc.topics <- addExpExcite(th.doc.topics, 10800)
 
 gg <- 
   th.doc.topics %>%
   filter(!missing.parent & !is.first.comment) %>%
-  select(exp.excite.5, exp.excite.10, exp.excite.20, exp.excite.30, exp.excite.60) %>%
+  select(exp.excite.1, exp.excite.2, exp.excite.5, exp.excite.10, exp.excite.20, exp.excite.30) %>%
   gather(window.minutes, excitement) %>%
   ggplot(aes(excitement, colour=window.minutes)) +
   geom_density(size=1) +
-  coord_cartesian(xlim=c(0,5), ylim=c(0,3)) +
+  coord_cartesian(ylim=c(0,100)) +
   theme(text=element_text(size=16))
 ggsave(gg, file="outputs/excitement_exp_decay_densities.png")
 
-
-
+excite.zero.order <- th.doc.topics %>%
+  filter(generation>1 & !missing.parent) %>%
+  group_by(jam, responded) %>% 
+  summarise(mean(exp.excite.1), mean(exp.excite.2), mean(exp.excite.3),
+            mean(exp.excite.5), mean(exp.excite.10), mean(exp.excite.20), mean(exp.excite.30), mean(exp.excite.60))
+(excite.zero.order[2,-1] - excite.zero.order[1,-1]) / excite.zero.order[1,-1]
+(excite.zero.order[4,-1] - excite.zero.order[3,-1]) / excite.zero.order[3,-1]
 
 # Final Periods
 #    let's add in a flag to control for the last two periods of each jam
@@ -662,14 +648,21 @@ th.doc.topics$continent2 <- ifelse(th.doc.topics$continent=="Americas", "AAmeric
 ##################
 # I, we, and ibm #
 ##################
-th.doc.topics$docs.have.ibm <- grepl("ibm", documents$text, ignore.case=T)
+
 th.doc.topics$docs.have.we <- grepl(" we ", documents$text, ignore.case=T)
 th.doc.topics$docs.have.i <- grepl(" I ", documents$text, ignore.case=T)
+th.doc.topics$docs.have.ibm <- grepl("ibm |ibm_", documents$text, ignore.case=T)
 
-th.doc.topics %>% group_by(jam) %>% 
-  dplyr::summarise(ibm = mean(docs.have.ibm),
-                   we = mean(docs.have.we),
-                   i = mean(docs.have.i))
+
+th.doc.topics$identity_ <- ifelse(th.doc.topics$docs.have.we, "we.", "")
+th.doc.topics$identity_ <- ifelse(th.doc.topics$docs.have.i, 
+                                 paste0(th.doc.topics$identity_,"i."), 
+                                 th.doc.topics$identity_)
+th.doc.topics$identity_ <- ifelse(th.doc.topics$docs.have.ibm, 
+                                 paste0(th.doc.topics$identity_,"ibm"), 
+                                 th.doc.topics$identity_)
+table(th.doc.topics$identity_)
+th.doc.topics$identity_ <- factor(th.doc.topics$identity_)
 
 save(th.doc.topics, file="th_doc_topics.Rdata")
 # load("th_doc_topics.Rdata")
@@ -708,18 +701,47 @@ ibm.we.i.rates.world <- data.frame(
 )
 round(ibm.we.i.rates.world-1,2)
 
+####
+# center the focus and the log.length for the interaction
+th.doc.topics$focus.cent <- th.doc.topics$focus - mean(th.doc.topics$focus)
+th.doc.topics$log.length.cent <- th.doc.topics$log.length - mean(th.doc.topics$log.length)
+th.doc.topics$focus.log.length.cent <- th.doc.topics$focus.cent * th.doc.topics$log.length.cent
 
+th.doc.topics$focus.std <- th.doc.topics$focus.cent / sd(th.doc.topics$focus)
+th.doc.topics$log.length.std <-th.doc.topics$log.length.cent/ sd(th.doc.topics$log.length)
+th.doc.topics$focus.log.length.std <- th.doc.topics$focus.std * th.doc.topics$log.length.std
+
+# center and standardized excitations
+excites <- c("1", "2", "3", "5", "10", "20", "30", "60", "90", "120", "180")
+gen.set <- th.doc.topics %>% filter(!missing.parent & !is.first.comment) 
+
+for (excite in excites) {
+  ex.name <- sprintf("exp.excite.%s", excite)
+  new.name <- sprintf("exp.excite.%s.std", excite)
+  q.name <- sprintf("exp.excite.%s.quan", excite)
+  non.first.comments <- filter(th.doc.topics, generation>1 & !missing.parent) %>% select_(.dots=ex.name)
+  non.missing.comments <- filter(th.doc.topics, generation>1 & !missing.parent) %>% select_(.dots=ex.name)
+  th.doc.topics[, new.name] <- ifelse(th.doc.topics$generation>1 & !th.doc.topics$missing.parent,
+  #th.doc.topics[, new.name] <- ifelse(!th.doc.topics$missing.parent,
+    (th.doc.topics[, ex.name] - mean(non.first.comments[,1])) / sd(non.first.comments[,1]),
+    0
+  )
+  exc.dist <- ecdf(gen.set[, ex.name])
+  th.doc.topics[, q.name] <- exc.dist(th.doc.topics[, ex.name])
+  #old <- th.doc.topics[, ex.name]
+  #th.doc.topics[, new.name] <- (old - mean(old)) / sd(old)
+}
 
 #####################
 # MODEL FUNCTION    #
 #####################
 
 ## cut points for topics
-cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interaction.terms = c()) {
+cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interaction.terms = c(), filter.set=NULL, do.hurdles=T) {
   if (is.null(prev.thresh)) {
     thread.dt.cuts <- select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls))
   } else {
-    d.tps <- ifelse(doc.topics >= prev.thresh, 1, 0)
+    d.tps <- ifelse(doc.topics.unsmooth >= prev.thresh, 1, 0)
     colnames(d.tps) <- paste0("t", 1:30)
     thread.dt.cuts <- 
       cbind(select_(th.doc.topics, .dots=c("n.children", "responded", "jam", controls)),
@@ -731,6 +753,9 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
     thread.dt.cuts <- cbind(thread.dt.cuts, d.tps.inter)
   }
   
+  if (!is.null(filter.set)) {
+    thread.dt.cuts <- thread.dt.cuts[filter.set,]
+  }
   formula.text <- paste(c("responded ~ . ", interaction.terms), collapse = " + ")
   formula <- as.formula(formula.text)
   p.formula.text <- paste(c("n.children ~ . ", interaction.terms), collapse = " + ")
@@ -748,13 +773,17 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
                    data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -n.children),
                    family="binomial")
   
-  
-  hurdle.world <- hurdle(p.formula, 
+  if (do.hurdles) {
+    hurdle.world <- hurdle(p.formula, 
                         data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam, -responded),
                         dist = "negbin")
-  hurdle.value <- hurdle(p.formula, 
+    hurdle.value <- hurdle(p.formula, 
                          data=thread.dt.cuts %>% filter(jam=="values") %>% select(-jam, -responded),
                          dist = "negbin")
+  } else {
+    hurdle.world <- NULL
+    hurdle.value <- NULL
+  }
   # the poisson versions of the same model have a ~30% lower log-likelihood 
   #hpos.world <- hurdle(p.formula, 
   #                       data=thread.dt.cuts %>% filter(jam=="world") %>% select(-jam, -responded),
@@ -769,104 +798,232 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
 }
 
 
-# base models for exploring
 
-cuts.15 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
-cuts.20 <- cutModels(0.20, controls=c("is.manager", "is.exec", "gender"))
-cuts.25 <- cutModels(0.25, controls=c("is.manager", "is.exec", "gender"))
-cuts.20.forum <- 
-  cutModels(0.20, controls=c("is.manager", "is.exec", "gender", "forum"))
-stargazer(cuts.15, cuts.15.a, type="text")
-
-
-
-# with focus
-#cuts.15.c <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", "focus"))
-cuts.15.noac <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender"))
-cuts.15.ac <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", 
-                                         "adj.focus", "solo.topic"))
-cuts.15.ac.2 <- cutModels(0.15, controls=c("is.manager", "is.exec", "gender", 
-                                           "adj.focus", "adj.conc.sq", "solo.topic"))
-
-stargazer(cuts.15.noac, cuts.15.ac, cuts.15.ac.2, type="text")
-
-# both focus and interacting focus with topic
-   # ----  though this isn't taking into account how concentrated the focal topic is 
-cuts.20.ac.time <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.focus", "solo.topic",
-                                         "is.first.comment","missing.parent","log.sec.since.parent", 
-                                         "log.sec.since.parent.sq","u.s.time.", "continent2","last.period"))
-cuts.20.ac <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", "adj.focus", 
-                                        "solo.topic", "u.s.time.", "continent2","last.period"))
-cuts.20.ac.int <- cutModels(0.2, 
-                        controls=c("is.manager", "is.exec", "gender", "adj.focus", "solo.topic"), 
-                        topic.interaction="adj.focus")
-# stargazer(cuts.20.ac, cuts.20.ac.int, type="text")
-stargazer(cuts.20.ac, cuts.20.ac.time, type="text")
 
 ########
 # Main Paper Set
 ########
 
+focal.vars <- c("focus", "log.length",
+                "is.first.comment", "missing.parent", "exp.excite.10",
+                "identity_")
+focal.vars.cent <- c("focus.cent", "log.length.cent", "focus.log.length.cent",
+                "identity_",
+                "is.first.comment", "missing.parent") 
+focal.vars.noexp <- c("focus.std", "log.length.std", "focus.log.length.std", 
+                      "identity_",
+                      "is.first.comment", "missing.parent")
+focal.vars.nofoc <- c("is.first.comment", "missing.parent", 
+                      "identity_")
+focal.vars.notime <- c("focus", "log.length",
+                      "identity_")
+basic.controls <- c("is.manager", "is.exec", "gender", 
+           "u.s.time.", "continent2", "last.period", "forum")
+
 # Nested models for World and Values
-# 1	occupation, gender, time and region
-cuts.20.1 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
-                                       "u.s.time.", "continent2", "last.period"))
-# 2	above + post length, solo topic, concentration, first comment, missing parent, log seconds, and forum
-cuts.20.2 <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
-                                        "u.s.time.", "continent2", "last.period",
-                                        "log.length", "focus",  #"solo.topic",
-                                        "is.first.comment","missing.parent","log.sec.since.parent", 
-                                        "forum"))
-cuts.20.2.int <- cutModels(NULL, controls=c("is.manager", "is.exec", "gender", 
-                                            "u.s.time.", "continent2", "last.period",
-                                            "log.length", "focus",  #"solo.topic",
-                                            "is.first.comment","missing.parent","log.sec.since.parent", 
-                                            "forum"),
-                           interaction.terms = c("log.length : focus"))
+# 1	focal vars
+values.1 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.30.std"), do.hurdles=F)$values
+# 2	focal and control
+values.2 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls), do.hurdles=F)$values
+# 3 focal and topics
+values.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std"), do.hurdles=F)$values
+# 4 focal and controls and topics
+values.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls), do.hurdles=F)$values
+values.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", basic.controls), do.hurdles=F)$values
 
-# 3	above + topics > .20
-cuts.20.3 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                        "u.s.time.", "continent2", "last.period",
-                                        "log.length", "focus", #"solo.topic",
-                                        "is.first.comment","missing.parent","log.sec.since.parent", 
-                                        "forum"))
-cuts.20.3.int <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                       "u.s.time.", "continent2", "last.period",
-                                       "log.length", "focus", #"solo.topic",
-                                       "is.first.comment","missing.parent","log.sec.since.parent", 
-                                       "forum"),
-                       interaction.terms = c("log.length : focus"))
+# 1	focal vars
+world.1 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.20.std"), do.hurdles=F)$world
+# 2	focal and control
+world.2 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
+# 3 focal and topics
+world.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std"), do.hurdles=F)$world
+# 4 focal and controls and topics
+world.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
+world.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", basic.controls), do.hurdles=F)$world
 
-cuts.20.3.exp10 <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                            "u.s.time.", "continent2", "last.period",
-                                            "log.length", "focus", #"solo.topic",
-                                            "is.first.comment","missing.parent","exp.excite.10","log.sec.since.parent", 
-                                            "forum"),
-                            interaction.terms = c("log.length : focus"))
+                       
+library(car)
+vif(world.std)
+vif(values.std)
 
+all.models <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls))
 
-cuts.20.3.we <- cutModels(0.2, controls=c("is.manager", "is.exec", "gender", 
-                                       "u.s.time.", "continent2", "last.period",
-                                       "log.length", "focus", #"solo.topic",
-                                       "is.first.comment","missing.parent", "log.sec.since.parent", 
-                                       "forum", 
-                                       "docs.have.ibm", "docs.have.we", "docs.have.i"))
-# 4 maybe do a model with topic dummies only (to give us baseline descriptive measure)
-cuts.20.4 <- cutModels(0.2, controls=c("last.period", "log.length"))
-
-stargazer(cuts.20.3.int, 
-          type='text', out="outputs/values_prob_response_odds_ratios.txt",
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
 
 # output the tables
-stargazer(cuts.20.1$values, cuts.20.2.int$values, 
-          cuts.20.4$values, cuts.20.3.exp10$values, 
+  # a single table with the full, non standardized models
+stargazer(values.non.stand, world.non.stand, column.labels=c("Values","World"),
+          type='text', out=paste0(output.dir,"/overall_prob_response_odds_ratios.txt"),
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+stargazer(values.1, values.2, values.3, values.4, 
           type='text', out="outputs/values_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
-stargazer(cuts.20.1$world, cuts.20.2.int$world, 
-          cuts.20.4$world, cuts.20.3.exp10$world, 
+stargazer(world.1, world.2, world.3, world.4,
           type='text', out="outputs/world_prob_response_odds_ratios.txt",
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+###
+# ZERO order models
+###
+mod.focus.0 <- cutModels(NULL, controls=c("focus.cent", "log.length.cent", "focus.log.length.cent"), do.hurdles=F)
+mod.ident.0 <- cutModels(NULL, controls=c("identity_"), do.hurdles=F)
+mod.excite.0.val <- cutModels(NULL, controls=c("is.first.comment", "missing.parent",  "exp.excite.30.std"), do.hurdles=F)$values
+mod.excite.0.wor <- cutModels(NULL, controls=c("is.first.comment", "missing.parent",  "exp.excite.20.std"), do.hurdles=F)$world
+stargazer(mod.focus.0$values, mod.ident.0$values, mod.excite.0.val, 
+          mod.focus.0$world, mod.ident.0$world, mod.excite.0.wor,
+          column.labels=c(rep("Values",3),rep("World",3)),
+          type='text', out=paste0(output.dir,"/zero_order_models.txt"),
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+# pairwise significance of identity vars
+
+library(multcomp)
+summary(glht(world.std, mcp(identity_="Tukey")))
+summary(glht(values.std, mcp(identity_="Tukey")))
+
+
+# comparing excitation decays
+cuts.20.4.1 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.1.std", basic.controls), 
+                         do.hurdles=F)
+cuts.20.4.2 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.2.std", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.3.std", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.5 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.5.std", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.10 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.10.std", basic.controls),
+                           do.hurdles=F)
+cuts.20.4.20 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls),
+                           do.hurdles=F)
+cuts.20.4.30 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls),
+                           do.hurdles=F)
+cuts.20.4.60 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.60.std", basic.controls),
+                           do.hurdles=F)
+cuts.20.4.90 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.90.std", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.120 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.120.std", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.180 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.180.std", basic.controls),
+                          do.hurdles=F)
+stargazer(cuts.20.4.1$values, cuts.20.4.2$values, cuts.20.4.3$values, 
+          cuts.20.4.5$values, cuts.20.4.10$values, cuts.20.4.20$values, cuts.20.4.30$values, cuts.20.4.60$values,
+          cuts.20.4.90$values, cuts.20.4.120$values, cuts.20.4.180$values,
+          type='text', 
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(cuts.20.4.1$world, cuts.20.4.2$world, cuts.20.4.3$world, 
+          cuts.20.4.5$world, cuts.20.4.10$world, cuts.20.4.20$world, cuts.20.4.30$world, cuts.20.4.60$world,
+          cuts.20.4.90$world, cuts.20.4.120$world, cuts.20.4.180$world,
+          type='text', 
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+######
+# output graph of coefficients
+######
+excites <- c("1", "2", "3", "5", "10", "20", "30", "60", "90", "120", "180")
+jams <- c("values", "world")
+emp.vec <- rep(NA, length(excites) * length(jams))
+excite.df <- data.frame(
+  jam = emp.vec,
+  half.life = emp.vec,
+  coef = emp.vec,
+  se.vec = emp.vec,
+  stringsAsFactors = F
+)
+i <- 0
+for (excite in excites) {
+  these.models <- get(sprintf("cuts.20.4.%s", excite)) 
+  exp.name <- sprintf("exp.excite.%s.std", excite)
+  for (jam in jams) {
+    i <- i + 1
+    this.model <- these.models[[jam]]
+    coef.set <- summary(this.model)$coef
+    excite.df[i,] <- c(jam, excite, coef.set[exp.name, 1:2])
+  }
+}  
+excite.df$half.life <- as.numeric(excite.df$half.life)
+excite.df$coef <- as.numeric(excite.df$coef)
+excite.df$se.vec <- as.numeric(excite.df$se.vec)
+gg <- ggplot(excite.df, aes(x=half.life, y=coef, color=jam)) +
+  geom_errorbar(aes(ymin=coef - 1.96 * se.vec, ymax=coef + 1.96 * se.vec), 
+                width=.3, position=pd, size=1) +
+  geom_line(position=pd, size=1) +
+  geom_point(position=pd, size=5) + 
+  geom_hline(aes(yintercept=0), size=1.25, linetype="dashed") +
+  theme(text=element_text(size=16)) +
+  ylab("Standardized Coefficient Estimate") +
+  xlab("Half Life of Excitation Variable")
+ggsave(gg, file=paste0(output.dir, "/excitation_coef_by_halflife.png"))
+
+
+# compare excite quans
+# comparing excitation decays
+cuts.20.4.1 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.1.quan", basic.controls), 
+                         do.hurdles=F)
+cuts.20.4.2 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.2.quan", basic.controls),
+                         do.hurdles=F)
+cuts.20.4.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.3.quan", basic.controls),
+                         do.hurdles=F)
+cuts.20.4.5 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.5.quan", basic.controls),
+                         do.hurdles=F)
+cuts.20.4.10 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.10.quan", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.20 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.quan", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.30 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.quan", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.60 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.60.quan", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.90 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.90.quan", basic.controls),
+                          do.hurdles=F)
+cuts.20.4.120 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.120.quan", basic.controls),
+                           do.hurdles=F)
+cuts.20.4.180 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.180.quan", basic.controls),
+                           do.hurdles=F)
+
+# compare excitement half lifes between the first parent and earlier parents
+gen.filter <- th.doc.topics$generation > 2
+cuts.20.4.1.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.1", "exp.excite.1.1st", basic.controls),
+                         interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.2.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.2", "exp.excite.2.1st", basic.controls),
+                         interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.3.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.3", "exp.excite.3.1st", basic.controls),
+                         interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.5.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.5", "exp.excite.5.1st", basic.controls),
+                         interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.10.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.10", "exp.excite.10.1st", basic.controls),
+                          interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.20.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.20", "exp.excite.20.1st", basic.controls),
+                          interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.30.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.30", "exp.excite.30.1st", basic.controls),
+                          interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+cuts.20.4.60.1st <- cutModels(0.2, controls=c(focal.vars.notime, "exp.excite.60", "exp.excite.60.1st", basic.controls),
+                          interaction.terms = c("log.length : focus"), filter.set=gen.filter, do.hurdles=F)
+
+
+stargazer(cuts.20.4.1.1st$values, cuts.20.4.2.1st$values, cuts.20.4.3.1st$values, 
+          cuts.20.4.5.1st$values, cuts.20.4.10.1st$values, cuts.20.4.20.1st$values, cuts.20.4.30.1st$values, cuts.20.4.60.1st$values,
+          type='text', 
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(cuts.20.4.1.1st$world, cuts.20.4.2.1st$world, cuts.20.4.3.1st$world, 
+          cuts.20.4.5.1st$world, cuts.20.4.10.1st$world, cuts.20.4.20.1st$world, cuts.20.4.30.1st$world, cuts.20.4.60.1st$world,
+          type='text', 
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
+
+th.doc.topics %>% 
+  filter(generation>1) %>%
+  select(log.sec.since.parent, exp.excite.5, exp.excite.10, exp.excite.20) %>% cor()
+
+# and the hurdle models
+stargazer(cuts.20.1$values, cuts.20.2.int$values, 
+          cuts.20.4$values, cuts.20.3.exp10$values, 
+          type='text', # out="outputs/values_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+stargazer(cuts.20.1$hurdle.world, cuts.20.2.int$hurdle.world, 
+          cuts.20.4$hurdle.world, cuts.20.3.exp10$hurdle.world, 
+          type='text', out="outputs/world_prob_response_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
+
 
 stargazer(cuts.20.3$values, cuts.20.3.we$values, cuts.20.3$world, cuts.20.3.we$world,
           type='text', out="outputs/we_i_prob_response_odds_ratios.txt",
@@ -949,19 +1106,303 @@ summary(lm(adj.focus ~ log.length, data=th.doc.topics))
 summary(lm(log.length ~ adj.focus + solo.topic, data=th.doc.topics))
 
 
+#############################
+# coefficients output
+#############################
+  
 
-# testing the full models for multicolinearity
-library(car)
-vifv <- vif(cuts.20.2.int$values)
-vifv
-vifw <- vif(cuts.20.2$world)
-vifw
+focalCoefPlot <- function(this.model, excite.half.life, title.lab) {
+  coef <- summary(this.model)$coef
+  foc.vars <- c("focus.std", "focus.log.length.std")
+  foc.int.vcov <- vcov(this.model)[foc.vars,foc.vars]
+  
+  this.focus.se <- sqrt(
+    foc.int.vcov[foc.vars[2], foc.vars[2]] + 
+      foc.int.vcov[foc.vars[1], foc.vars[1]] + 
+      2 * foc.int.vcov[foc.vars[1], foc.vars[2]])
+  
+  sd.log.len <- sd(th.doc.topics$log.length)
+  mn.log.len <- mean(th.doc.topics$log.length)
+  
+  lengths <- c(10, 20, 50, 100, 200)
+  log.lens.std <- (log(lengths) - mn.log.len) / sd.log.len
+  
+  focus.effect <- coef[foc.vars[1],"Estimate"] + coef[foc.vars[2],"Estimate"] * log.lens.std
+  focus.se <- rep(this.focus.se, length(log.lens.std))
+  focus.labels <- sprintf("Focus %d Words", lengths)
+  
+  ident.vars <- c("identity_i.", "identity_we.", "identity_ibm",
+                  "identity_i.ibm", "identity_we.ibm", "identity_we.i.", 
+                  "identity_we.i.ibm"   
+                  )
+  ident.labels <- c("Identity: I", "Identity: We", "Identity: IBM",
+                    "Identity: I & IBM", "Identity: We & IBM", "Identity: We & I", 
+                    "Identity: We & I & IBM"
+                    )
+  ident.effect <- coef[ident.vars, "Estimate"]
+  ident.se <- coef[ident.vars, "Std. Error"]
+  
+  excite.var <- c(sprintf("exp.excite.%d.std", excite.half.life))
+  excite.label <- c(sprintf("Excitation %d Min HL", excite.half.life))
+  excite.effect <- coef[excite.var, "Estimate"]
+  excite.se <- coef[excite.var, "Std. Error"]
+  
+  outputs <- data.frame(labels = c(focus.labels, ident.labels, excite.label),
+              vars = c(focus.effect, ident.effect, excite.effect),
+              se = c(focus.se, ident.se, excite.se))
+  outputs$factor.label <- factor(outputs$labels, levels = outputs$labels)
+  pd <- position_dodge(0.2) 
+  ggplot(outputs, aes(x=factor.label, y=vars)) +
+    geom_errorbar(aes(ymin=vars - 1.96 * se, ymax=vars + 1.96 * se), 
+                  width=.3, position=pd, size=1) +
+    #geom_line(position=pd, size=1) +
+    geom_point(position=pd, size=5) + 
+    geom_hline(aes(yintercept=0), size=1.25, linetype="dashed") +
+    coord_flip() +
+    theme(text=element_text(size=16)) +
+    ylab("Standardized Coefficient Estimate") +
+    ylim(-0.15, 0.5) +
+    ggtitle(title.lab)
+}
 
-vif(cuts.20.3.int$values)
-vif(cuts.20.3.int$world)
+ggsave(focalCoefPlot(values.std, 30, "Values Jam Coefficient Estimates\nwith 95% Confidence Intervals"), 
+       file=paste0(output.dir,"/values_coefs.png"), width=7, height=7)
+ggsave(focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals"), 
+       file=paste0(output.dir,"/world_coefs.png"), width=7, height = 7)
 
-vif(cuts.20.3.exp10$values)
-vif(cuts.20.3.exp10$world)
+
+
+
+
+##################
+# Descriptive Statistics
+##################
+getStatsDf <- function(this.model, excite.half.life, this.jam, num.dig=3, exclude.excite.0s=F) {
+  ident.vars <- c("identity_i.", "identity_we.", "identity_ibm",
+                  "identity_i.ibm", "identity_we.ibm", "identity_we.i.", 
+                  "identity_we.i.ibm"   
+  )
+  ident.labels <- c("Identity: I", "Identity: We", "Identity: IBM",
+                    "Identity: I & IBM", "Identity: We & IBM", "Identity: We & I", 
+                    "Identity: We & I & IBM"
+  )
+  excite.var <- sprintf("exp.excite.%d", excite.half.life)
+  excite.label <- sprintf("Excitation %d Min HL", excite.half.life)
+  focus.var <- "focus"
+  focus.label <- "Topic Focus"
+  
+  mm <- data.frame(model.matrix(this.model))
+  # replace known zeros in excitation with NA
+  if (exclude.excite.0s) mm[mm$is.first.commentTRUE==1 | mm$missing.parentTRUE==1, excite.var] <- NA
+  mm$doc.length <- exp(mm$log.length.cent + mean(th.doc.topics$log.length))
+  mm$is.non.manager <- 1 - rowSums(mm[,c("is.manager","is.exec")])
+  mm$gender.female <- 1 - rowSums(mm[,c("gendermale","genderunknown")])
+  mm$time.00.04 <- 1 - rowSums(mm[,c("u.s.time.04.08.PDT","u.s.time.08.12.PDT","u.s.time.12.16.PDT","u.s.time.16.20.PDT","u.s.time.20.24.PDT")])
+  mm$continent2Americas <- 1 - rowSums(mm[,c("continent2Africa","continent2Asia","continent2Europe","continent2Oceania","continent2unknown")])
+  if ("forumforum.5" %in% colnames(mm)) {
+    forum.var <- c("forumforum.2","forumforum.3","forumforum.4","forumforum.5","forumforum.6")
+    forum.labels <- c("Forum 1", "Forum 2", "Forum 3", "Forum 4", "Forum 5", "Forum 6")
+  } else {
+    forum.var <- c("forumforum.2","forumforum.3","forumforum.4")
+    forum.labels <- c("Forum 1", "Forum 2", "Forum 3", "Forum 4")
+  }
+  mm$forum1 <- 1 - rowSums(mm[,forum.var])
+  mm$identity__ <- 1 - rowSums(mm[,ident.vars])
+  mm$focus <- mm$focus.cent + mean(th.doc.topics$focus)
+  
+  quantiles <- t(apply(mm, 2, function(x) {round(quantile(x, na.rm=T), num.dig)}))
+  colnames(quantiles) <- c("Min", "Quant.25", "Median", "Quant.75", "Max")
+  sum.stats <- data.frame(
+    Mean = round(colMeans(mm, na.rm=T),num.dig),
+    StDev = round(apply(mm, 2, sd, na.rm=T),num.dig),
+    stringsAsFactors = F
+  )
+  sum.stats <- cbind(sum.stats, data.frame(quantiles, stringsAsFactors = F))
+  rownames(sum.stats) <- colnames(mm)
+  
+  sum.stats$StDev <- ifelse(apply(mm, 2, function(x){sum(x==1, na.rm=T) == sum(x, na.rm=T)}), NA, sum.stats$StDev)
+  
+  
+  control.vars <-
+    c("is.non.manager","is.manager","is.exec",
+      "gender.female","gendermale","genderunknown",
+      "time.00.04","u.s.time.04.08.PDT","u.s.time.08.12.PDT","u.s.time.12.16.PDT","u.s.time.16.20.PDT","u.s.time.20.24.PDT",
+      "continent2Americas", "continent2Africa","continent2Asia","continent2Europe","continent2Oceania","continent2unknown",
+      "last.period",
+      "forum1", forum.var)
+  
+  control.labels <-
+    c("Non Manager", "Manager", "Executive",
+      "Female", "Male", "Unknown Gender",
+      "00:00-04:00 PDT", "04:00-08:00 PDT", "08:00-12:00 PDT", "12:00-16:00 PDT", "16:00-20:00 PDT", "20:00-24:00 PDT",
+      "Americas", "Africa", "Asia", "Europe", "Oceania", "Unknown Continent",
+      "Last 8 Hours of Jam",
+      forum.labels)
+  
+
+  
+  
+  var.set <- c("doc.length", focus.var, "identity__", ident.vars, excite.var, control.vars)
+  stats.df <- data.frame(
+    Variable.Name = c("Post Length (words)", focus.label, "Identity: None", ident.labels, excite.label, control.labels),
+    sum.stats[var.set,],
+    stringsAsFactors = F
+  )
+  ###
+  # other variables
+  ###
+  doctopics.data <- filter(th.doc.topics, jam==this.jam)
+    
+    stats.prepend <- data.frame()
+    # number of posters
+    # posts per poster
+    # % who post more than once
+    posts.by.user <- doctopics.data %>% group_by(user) %>%
+      summarise(posts=n()) 
+    stats.df["num.posts",] <- c("Number of Posts", nrow(doctopics.data), rep(NA, 6))            
+    stats.df["posters",] <- c("Number of Posters", nrow(posts.by.user), rep(NA, 6))            
+    stats.df["posts.per.poster",] <- c("Posts per Poster", 
+                                       round(mean(posts.by.user$posts), num.dig),
+                                       round(sd(posts.by.user$posts), num.dig),  
+                                       round(quantile(posts.by.user$posts), num.dig))
+    stats.df["multi.posters",] <- c("Precent Posting More Than Once", 
+                                    round(sum(posts.by.user$posts > 1) / nrow(posts.by.user), num.dig), 
+                                    rep(NA,6))
+  
+    # thread length
+    #   count threads from their terminal leaves 
+    aa <- doctopics.data %>% 
+      # get all terminal posts
+      filter((!id %in% unique(th.doc.topics$parent))) 
+    # and generation becomes our guide  
+    stats.df["thread.length",] <- c("Length of Thread", 
+                                    round(mean(aa$generation),num.dig), 
+                                    round(sd(aa$generation), num.dig), 
+                                    round(quantile(aa$generation)),num.dig)
+    
+    # missing parents
+    stats.df["missing.parent",] <- c("Share Postings Missing Parent", 
+                                    round(sum(doctopics.data$missing.parent)/nrow(doctopics.data), num.dig), 
+                                    rep(NA,6))
+    
+    # duration between posts
+    sec.since.par <- 
+      doctopics.data %>% filter(!is.na(sec.since.parent)) %>%
+      mutate(rev.min = ifelse(sec.since.parent<0, 0, sec.since.parent) / 60) %>%
+      select(rev.min)
+    stats.df["duration",] <- c("Duration Between Posts (minutes)", 
+                               round(mean(sec.since.par$rev.min),num.dig), 
+                               round(sd(sec.since.par$rev.min),num.dig), 
+                               round(quantile(sec.since.par$rev.min),num.dig))
+  
+  
+  topic.labels <- sprintf("Topic %2d",1:30)
+  
+  df.len <- nrow(stats.df)    
+  return(stats.df[c((df.len - 6):df.len, 1:(df.len - 7)),])
+}
+
+
+library(ReporteRs)
+library(magrittr)
+
+val.stats <- getStatsDf(values.non.stand, 30, "values", 2)
+# val.stats <- getStatsDf(values.non.stand, 30, "values", 2, T)
+world.stats <- getStatsDf(world.non.stand, 20, "world", 2)
+# world.stats <- getStatsDf(world.non.stand, 20, "world", 2, T)
+all.thread.stats <- rbind(
+  c("VALUES JAM", rep(NA, 7)),
+  val.stats[1:8,],
+  c("WORLD JAM", rep(NA, 7)),
+  world.stats[1:8,] 
+)
+
+val.focal <- val.stats[9:18, ] 
+val.focal[2:9, 3:8] <- NA
+world.focal <- world.stats[9:18, ] 
+world.focal[2:9, 3:8] <- NA
+all.focal <- rbind(
+  c("VALUES JAM", rep(NA, 7)),
+  val.focal,
+  c("WORLD JAM", rep(NA, 7)),
+  world.focal
+)
+
+all.controls <- right_join(val.stats[19:nrow(val.stats), 1:2], 
+                           world.stats[19:nrow(world.stats), 1:2], 
+                           by="Variable.Name")
+names(all.controls) <- c("Variable", "Share Values Jam", "Share World Jam")
+
+# topics table 
+jams <- c("values", "world")
+num.dig <- 3
+topic.stats <- NULL
+for (this.jam in jams) {
+  filter.set <- documents$jam==this.jam
+  t.prev <- round(colSums(doc.topics.unnormal[filter.set,]) / sum(doc.topics.unnormal[filter.set,]), num.dig)  
+  if (is.null(topic.stats)) {topic.stats <- data.frame(a=t.prev)} else {topic.stats <- cbind(topic.stats, t.prev)}
+  t.thresh <- round(colSums(doc.topics.unsmooth[filter.set,] >= prev.thresh) / nrow(doc.topics.unsmooth[filter.set,]), num.dig)
+  topic.stats <- cbind(topic.stats, t.thresh)
+}
+names(topic.stats) <- c("Values\nPrevalence", 
+                        "Values Share\nOver 0.2",
+                        "World\nPrevalence", 
+                        "World Share\nOver 0.2")
+row.names(topic.stats) <- sprintf("Topic %s", 1:30)
+
+docx() %>% 
+  addTitle("Thread Characteristics by Jam", level=2) %>%
+  addFlexTable(all.thread.stats %>%
+                  FlexTable( header.text.props = textProperties(font.weight="bold", font.size = 8 ),
+                             body.text.props = textProperties( font.size = 8 ),
+                             add.rownames = FALSE ) %>%
+                  setFlexTableWidths(widths=c(1.5,rep(0.6,7)))
+                )  %>%
+  addPageBreak() %>%
+  addTitle("Focal Variables Summary Statistics, by Jam", level=2) %>%
+  addFlexTable( all.focal %>%
+                  FlexTable( header.text.props = textProperties(font.weight="bold", font.size = 8 ),
+                             body.text.props = textProperties( font.size = 8 ),
+                             add.rownames = FALSE ) %>%
+                  setFlexTableWidths(widths=c(1.5,rep(0.6,7)))
+                )  %>%
+  addPageBreak() %>%
+  addTitle("Control Variables Summary Statistics, by Jam", level=2) %>%
+  addFlexTable( all.controls %>%
+                  FlexTable( header.text.props = textProperties(font.weight="bold", font.size = 8 ),
+                             body.text.props = textProperties( font.size = 8 ),
+                             add.rownames = FALSE ) %>%
+                  setFlexTableWidths(widths=c(1.2, 0.8, 0.8))
+              ) %>%
+  addTitle("Topic Model Summary Statistics, by Jam", level=2) %>%
+  addFlexTable( topic.stats %>%
+                  FlexTable( header.text.props = textProperties(font.weight="bold", font.size = 8 ),
+                             body.text.props = textProperties( font.size = 8 ),
+                             add.rownames = T ) %>%
+                  setFlexTableWidths(widths=c(0.8, 0.8, 0.8, 0.8, 0.8))
+  ) %>%
+  writeDoc( file = paste0(output.dir, "/summary stats.docx" ))
+  
+
+
+
+
+
+
+
+
+library(xtable)
+print(xtable(focal.stats, digits=2))
+
+
+
+
+  
+
+
+
+
+
 
 
 
@@ -1770,4 +2211,210 @@ cutModels <- function(prev.thresh=NULL,
   ret.val <- list(values=fit.value.cut, world=fit.world.cut, p.world=poisson.world, p.val = poisson.value)
   return(ret.val)
 }
+
+
+
+######################################
+# response length by parent/child title
+######################################
+
+
+child.len <- select(th.doc.topics, jam, parent, length, log.length, new.mgr) %>%
+  inner_join(select(th.doc.topics, id, new.mgr), by=c("parent"="id"), suffix=c(".child", ".parent")) %>%
+  mutate(parent.child.mgr = sprintf("%s-%s", new.mgr.parent, new.mgr.child))
+
+
+ggplot(child.len, aes(log.length, color=new.mgr.parent)) +
+  geom_density() +
+  thm
+
+ggplot(child.len, aes(log.length, color=parent.child.mgr)) +
+  geom_density() +
+  thm
+
+child.len %>% group_by(new.mgr.parent, new.mgr.child) %>%
+  summarise(mean_log_len_child = mean(log.length),
+            se = sd(log.length)/sqrt(n()),
+            geom_mean = exp(mean_log_len_child),
+            arith_mean_len = mean(length))
+# executives leave the shortest responses on average
+child.len %>% group_by(new.mgr.child) %>%
+  summarise(mean_log_len_child = mean(log.length),
+            se = sd(log.length)/sqrt(n()),
+            geom_mean = exp(mean_log_len_child),
+            arith_mean_len = mean(length))
+# people respond with longer resposnes to executive postings than to non-executives, but the difference in average length is only a few words
+child.len %>% group_by(new.mgr.parent) %>%
+  summarise(mean_log_len_child = mean(log.length),
+            se = sd(log.length)/sqrt(n()),
+            geom_mean = exp(mean_log_len_child),
+            arith_mean_len = mean(length))
+
+# compare values and world jam
+child.len %>% group_by(jam, new.mgr.parent, new.mgr.child) %>%
+  summarize(mean_log_len = mean(log.length),
+            sd_log_len = sd(log.length),
+            mean_sd = sd(log.length)/sqrt(n()))
+# world jam has longer responses over all, but cross-category proportions are roughly the same
+
+# do topics from parent appear in child by mgr-mgr type?
+topic.prev <- 0.3
+d.tps <- doc.topics.unsmooth >= topic.prev
+colnames(d.tps) <- paste0("topic.", 1:30)
+d.tp.count <- doc.topics.unnormal
+colnames(d.tp.count) <- paste0("topic.", 1:30, ".words")
+
+parent.child.set <- select(th.doc.topics, jam, id, parent, length, log.length, new.mgr) %>%
+  cbind(d.tps) %>%
+  cbind(d.tp.count)
+# count the number of topics in parent and the number of overlapping topics
+overlap.form <- paste(sprintf("topic.%d.child * topic.%d.parent", 1:30, 1:30), collapse = "+")
+#overlap.words <- paste(sprintf("topic.%d.words.child * topic.%d.words.parent", 1:30, 1:30), collapse = "+")
+parent.topic.count <- paste(sprintf("topic.%d.parent", 1:30), collapse = "+")
+child.topic.count <- paste(sprintf("topic.%d.child", 1:30), collapse = "+")
+#parent.word.count <- paste(sprintf("topic.%d.words.parent", 1:30), collapse = "+")
+#child.word.count <- paste(sprintf("topic.%d.words.child", 1:30), collapse = "+")
+child.tps <-  select(parent.child.set, -id) %>%
+  inner_join(select(parent.child.set, -parent, -jam), by=c("parent"="id"), suffix=c(".child", ".parent")) %>%
+  mutate(parent.child.mgr = sprintf("%s-%s", new.mgr.parent, new.mgr.child)) %>% 
+  mutate_(.dots=setNames(c(overlap.form, parent.topic.count, child.topic.count
+                           #,overlap.words, parent.word.count, child.word.count
+                           ),
+          c("overlap.topics", "num.parent.topics", "num.child.topics"
+            #,"overlap.words", "parent.words", "child.words"
+            ))) %>%
+  mutate(jaccard.thresh = ifelse(num.parent.topics + num.child.topics == 0, 
+                                 0,
+                                 overlap.topics / (num.parent.topics + num.child.topics - overlap.topics))
+         #,jaccard.words = overlap.words / (parent.words + child.words - overlap.words)
+         )
+
+
+child.tps %>% group_by(jam, new.mgr.parent, new.mgr.child) %>%
+  summarise(echo.share = sum(overlap.topics > 0)/n(),
+            echo.share.1 = sum(overlap.topics[num.parent.topics==1] > 0)/sum(num.parent.topics==1),
+            echo.share.2 = sum(overlap.topics[num.parent.topics==2] > 0)/sum(num.parent.topics==2),
+            echo.share.3 = sum(overlap.topics[num.parent.topics==3] > 0)/sum(num.parent.topics==3),
+            avg.echo.rate = sum(overlap.topics)/sum(num.parent.topics),
+            # Jaccard Index: intersection divided by the union
+              # based on thesholds
+            jaccard.mean = mean(jaccard.thresh)
+  )
+
+child.tps %>% group_by(jam, new.mgr.parent) %>%
+  summarise(echo.share = sum(overlap.topics > 0)/n(),
+            echo.share.1 = sum(overlap.topics[num.parent.topics==1] > 0)/sum(num.parent.topics==1),
+            echo.share.2 = sum(overlap.topics[num.parent.topics==2] > 0)/sum(num.parent.topics==2),
+            echo.share.3 = sum(overlap.topics[num.parent.topics==3] > 0)/sum(num.parent.topics==3),
+            avg.echo.rate = sum(overlap.topics)/sum(num.parent.topics),
+            # Jaccard Index: intersection divided by the union
+            # based on thesholds
+            jaccard.mean = mean(jaccard.thresh)
+  )
+
+
+
+#####
+# Response rates across classes
+#####
+
+child.map <- select(th.doc.topics, jam, parent, length, log.length, new.mgr, missing.parent) %>%
+  left_join(select(th.doc.topics, id, new.mgr), by=c("parent"="id"), suffix=c(".child", ".parent")) %>%
+  mutate(parent.child.mgr = sprintf("%s-%s", new.mgr.parent, new.mgr.child),
+         parent.mgr = ifelse(missing.parent, "missing", 
+                             ifelse(is.na(new.mgr.parent), "top-level", new.mgr.parent)))
+table(child.map$parent.mgr)
+
+
+
+
+
+responseGraph <- function(which.jam="Values", this.root.id=NULL) {
+  if (!is.null(root.id)) {
+    subset <- filter(th.doc.topics, root.id==this.root.id)
+    this.child.map <- select(subset, jam, parent, length, log.length, new.mgr, missing.parent) %>%
+      left_join(select(subset, id, new.mgr), by=c("parent"="id"), suffix=c(".child", ".parent")) %>%
+      mutate(parent.child.mgr = sprintf("%s-%s", new.mgr.parent, new.mgr.child),
+             parent.mgr = ifelse(missing.parent, "missing", 
+                                 ifelse(is.na(new.mgr.parent), "top-level", new.mgr.parent)))
+    this.df <- this.child.map %>%
+      filter(parent.mgr != "missing") %>%
+      group_by(new.mgr.child, parent.mgr) %>%
+      summarise(n=n()) %>%
+      group_by(new.mgr.child) %>%
+      mutate(share = n / sum(n))
+    gtitle <- sprintf("Who Responded to Whom in %s Thread", root.id)
+  } else {
+    source.df <- child.map %>%
+      filter(parent.mgr != "missing") %>%
+      group_by(jam, new.mgr.child, parent.mgr) %>%
+      summarise(n=n()) %>%
+      group_by(jam, new.mgr.child) %>%
+      mutate(share = n / sum(n))
+    this.df <- filter(source.df, jam==tolower(which.jam))
+    gtitle <- sprintf("Who Responded to Whom in %s Jam", which.jam)
+  }
+    
+  ggplot(this.df, aes(x=parent.mgr, fill=new.mgr.child, y=share)) +
+    geom_bar(stat="identity", position=position_dodge()) +
+    ggtitle(gtitle) +
+    thm +
+    xlab("Title of Parent Poster") +
+    ylab("Share of Comments Made to Each Parent Type") +
+    scale_fill_hue(name="Title of Poster")
+}
+
+ggsave(responseGraph(which.jam="world"), file=paste0(output.dir, "/Responding By Title/response_rates_by_title_world.png"))
+ggsave(responseGraph("values"), file=paste0(output.dir, "/Responding By Title/response_rates_by_title_values.png"))
+
+responseGraph(this.root.id="ffd5ff79c8.692b9ae5.break_down_the_silos")
+responseGraph(this.root.id="<f6aed0dda9.fcabf807.VALUESJAM@w3prime1.sby.ibm.com>")
+
+receive.df <- child.map %>%
+  filter(parent.mgr != "missing") %>%
+  group_by(jam, new.mgr.child, parent.mgr) %>%
+  summarise(n=n()) %>%
+  group_by(jam, parent.mgr) %>%
+  mutate(share = n / sum(n))
+
+
+responderGraph <- function(which.jam) {
+  ggplot(filter(receive.df, jam==tolower(which.jam)), aes(fill=parent.mgr, x=new.mgr.child, y=share)) +
+    geom_bar(stat="identity", position=position_dodge()) +
+    ggtitle(sprintf("Who Participants Responded to in %s Jam", which.jam)) +
+    ylim(0, 0.8) + thm +
+    xlab("Title of Poster") +
+    ylab("Share of Parent-Type from Each Child Type") +
+    scale_fill_hue(name="Title of Parent Poster")
+}
+
+ggsave(responderGraph("world"), file=paste0(output.dir, "/Responding By Title/responder_rates_by_title_world.png"))
+ggsave(responderGraph("values"), file=paste0(output.dir, "/Responding By Title/responder_rates_by_title_values.png"))
+
+
+
+
+threaded.docs %>% group_by(jam) %>% summarise(sum(missing.ancestor))
+th.doc.topics %>% filter(generation<=10) %>%
+  group_by(generation, jam) %>% summarise(resp.rate=mean(responded), n=n()) %>%
+  ggplot(aes(x=generation, y=resp.rate, color=jam)) + geom_line(size=1.5) + geom_point(size=5) + thm
+
+
+th.doc.topics %>% filter(n.children==0) %>%
+  group_by(generation, jam) %>% summarise(n())
+
+
+th.doc.topics %>% filter(!missing.parent & !is.first.comment) %>%
+  ggplot(aes(x=exp.excite.60.1st, y=responded, color=jam)) + geom_smooth()
+
+gen.set <- th.doc.topics %>% filter(!missing.parent & !is.first.comment) 
+exc.dist <- ecdf(gen.set$exp.excite.30)
+th.doc.topics %>% filter(!missing.parent & !is.first.comment) %>%
+  ggplot(aes(x=exc.dist(exp.excite.30), y=responded, color=jam)) + geom_smooth()
+th.doc.topics %>% filter(!missing.parent & !is.first.comment) %>%
+  ggplot(aes(x=exp.excite.30.quan, y=responded, color=jam)) + geom_smooth()
+
+
+
+
 

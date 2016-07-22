@@ -201,6 +201,9 @@ for (i in 3:10) {
 file.name <- paste0(paste(model.dir, model.name, sep="/"), "-docs.Rdata")
 load(file.name)
 
+#doc.genders <- select(threaded.docs, id, gender)
+#save(doc.genders, file="place_docs_here/genders_by_id.Rdata")
+
 # backup the old file in case we mess things up
 save(documents, file=paste0(file.name , ".bkup"))
 
