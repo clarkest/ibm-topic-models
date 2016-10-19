@@ -1,4 +1,4 @@
-charles.coded <- read.csv("place_docs_here/VJ-WJ with CH types recovered (edited).csv")
+charles.coded <- read.csv("place_docs_here/VJ-WJ with CH types recovered (edited).csv", stringsAsFactors = F)
 
 names(charles.coded)
 table(charles.coded$TYPE)
@@ -27,6 +27,7 @@ coded.docs %>% select(-ancestors) %>%
   write.csv(file="place_docs_here/threaded_docs_coded.csv")
 # coded.docs <- read.csv("place_docs_here/threaded_docs_coded.csv", stringsAsFactors=F)
 
+
 mgr.types <- table(coded.docs$new.mgr, coded.docs$TYPE)[,-1] 
 mgr.types
 round(mgr.types / rowSums(mgr.types),3)
@@ -40,7 +41,7 @@ round(mgr.types / rowSums(mgr.types),3)
 library(quanteda)
 library(dplyr)
 coded.docs[coded.docs$TYPE == "0", "TYPE"] <- "neither"
-coded.docs$was.coded <- coded.docs$TYPE !=""
+coded.docs$was.coded <- coded.docs$TYPE != ""
 corpus <- corpus(coded.docs$text, 
                  docnames=coded.docs$id, 
                  docvars=select(coded.docs, TYPE, was.coded, new.mgr))
@@ -60,14 +61,15 @@ sub.dtm.outcome <- cbind(sub.df, y = factor(sub.corpus$documents$TYPE))
 
 
 ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5, 
+                     repeats = 10, 
                      number = 10)
 
 registerDoParallel(24, cores=24)
 fit.svm <- train(y ~ ., 
                  data = sub.dtm.outcome, 
-                 method = 'svmLinear',
-                 trControl = ctrl)
+                 method = 'svmLinearWeights',
+                 trControl = ctrl,
+                 preprocess="scale")
 fit.rf <- train(y ~ ., 
                  data = sub.dtm.outcome, 
                  method = 'rf',
@@ -84,6 +86,12 @@ fit.rngr <- train(y ~ .,
                 data = sub.dtm.outcome, 
                 method = 'ranger',
                 trControl = ctrl)
+fit.rngr.mid <- train(y ~ ., 
+                  data = sub.dtm.outcome, 
+                  method = 'ranger',
+                  trControl = ctrl,
+                  tuneGrid = rf.mid.grid,
+                  verbose=T)
 fit.knn <- train(y ~ ., 
                  data = sub.dtm.outcome, 
                  method = 'knn',
@@ -92,7 +100,15 @@ fit.dp <- train(y ~ .,
                  data = sub.dtm.outcome, 
                  method = 'deepboost',
                  trControl = ctrl)
-
+fit.nnet <- train(y ~ ., 
+                data = sub.dtm.outcome, 
+                 method = 'nnet',
+                 trControl = ctrl, MaxNWts=30000)
+fit.brnn <- train(y ~ ., 
+                  data = sub.dtm.outcome, 
+                  method = 'brnn',
+                  trControl = ctrl,
+                  verbose=T)
 
 stopImplicitCluster()
 fit.svm
@@ -116,11 +132,20 @@ coef(mnir.fit)[2, order(coefs[2, ])[1:10]]
 coef(mnir.fit)[2, -order(coefs[2, ])[1:10]]
 
 
+confusionMatrix(fit.nb)
+confusionMatrix(fit.svm)
+confusionMatrix(fit.knn)
+confusionMatrix(fit.nnet)
+confusionMatrix(fit.rngr)
+confusionMatrix(fit.rngr.mid)
+confusionMatrix(fit.rngr.mid)
+confusionMatrix(fit.rngr.mid, "average")
+confusionMatrix(fit.rngr.mid, "none")
 
 
+#  how do the topics split by the trad/collab catergories?
 
-
-
+doc.topics.unsmooth
 
 
 #######
