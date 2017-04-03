@@ -2806,3 +2806,71 @@ temp.th.doc <- th.doc.topics
 th.doc.topics$responded <- th.doc.topics$generation==2 & th.doc.topics$n.children==0
 who.resp.model <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", basic.controls),
                                do.hurdles=F)
+
+
+
+#####
+#  Generate a csv with the focal topics in it
+#####
+# need the word length
+documents$length <- rowSums(doc.topics.unnormal)
+focal.topics <- c(12,22,29,16,28,6,8,26)
+max.docs <- 20000
+min.length <- 15
+cut.off <- 0.65
+out.set <- NULL
+for (ft in focal.topics) {
+  these.idx <- doc.topics.unsmooth[,ft] >= cut.off & documents$length>=min.length
+  these.docs <- documents[these.idx,  c("id","text")]  
+  if (sum(these.idx) > max.docs) {
+    these.docs <- sample_n(these.docs, max.docs)
+  }
+  print(sprintf("Topic %d has %d docs",ft,nrow(these.docs)))
+  if (is.null(out.set)) {
+    out.set <- these.docs
+  } else {
+    out.set <- rbind(out.set, these.docs)
+  }
+}
+out.set$highly.positive <- ""
+out.set$highly.negative <- ""
+out.set$neither <- ""
+write.csv(out.set, file="outputs/docs_for_coding.csv", 
+          row.names=F)
+
+
+# and for jean, we want a csv with Doc ID, Topic #, Prevalence
+
+docs.for.jean <- cbind(documents$id, documents$title,substring(documents$text,0,50), data.frame(doc.topics.unsmooth))
+names(docs.for.jean) <- c("id", "title", "short.text", sprintf("Topic_%02d", 1:30))
+write.csv(docs.for.jean, file="outputs/doc_topics_for_jean.csv", 
+          row.names=F)
+
+
+# words by topic data 
+# TODO -- would be great if this could handle multiple factors
+words <- mallet.word.freqs(topic.model)
+# turns out the counts in this function are buggy, they include zeros -- sum directly from the topics counts
+words$term.freq <- colSums(mallet.topic.words(topic.model, normalized=F), na.rm=TRUE)
+
+wbf <- mallet.subset.topic.words(topic.model, 
+                                 rep(T,nrow(docs)), 
+                                 normalized=T, smoothed=F)
+wbf <- t(wbf)
+
+rs <- rowSums(wbf)
+words.for.jean <- cbind(words, data.frame(wbf))
+names(words.for.jean) <- c("term", "term.freq", "n.docs", sprintf("Topic_%02d", 1:30))
+write.csv(words.for.jean, file="outputs/topic_words_for_jean.csv", 
+          row.names=F)
+
+
+ids.for.jean <- world[,c("commentid","new.commentid")]
+write.csv(ids.for.jean, file="outputs/ids_for_jean.csv", 
+          row.names=F)
+
+
+threaded.docs %>% group_by(user, new.mgr, jam) %>%
+  summarise(n.posts=n()) %>%
+  group_by(jam, new.mgr) %>%
+  summarise(n=n(), avg.posts=mean(n.posts), se.posts=sd(n.posts)/sqrt(n-1))

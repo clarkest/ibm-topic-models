@@ -11,14 +11,14 @@ doc.set <- threaded.docs
 
 vocabulary <- mallet.word.freqs(topic.model)$words
 factor.top.words <- 
-  mallet.subset.topic.words(topic.model, doc.set[,by.var] %in% by.var.vals, normalized=T)
+  mallet.subset.topic.words(topic.model, doc.set[,by.var] %in% by.var.vals, normalized=T, smoothed = T)
 other.top.words <- 
-  mallet.subset.topic.words(topic.model, !doc.set[,by.var] %in% by.var.vals, normalized=T)
+  mallet.subset.topic.words(topic.model, !doc.set[,by.var] %in% by.var.vals, normalized=T, smoothed = T)
 
 values.top.words <- 
-  mallet.subset.topic.words(topic.model, doc.set$jam == "values", normalized=T)
+  mallet.subset.topic.words(topic.model, doc.set$jam == "values", normalized=T, smoothed = T)
 world.top.words <- 
-  mallet.subset.topic.words(topic.model, doc.set$jam == "world", normalized=T)
+  mallet.subset.topic.words(topic.model, doc.set$jam == "world", normalized=T, smoothed = T)
 
 for (topic in 1:n.topics) {
   ## Top words
@@ -50,20 +50,20 @@ for (rep in 1:20) {
   factor.top.words <- 
     mallet.subset.topic.words(topic.model, 
                               sample(doc.set[,by.var] %in% by.var.vals, nrow(doc.set)),  
-                              normalized=T)
+                              normalized=T, smoothed = T)
   other.top.words <- 
     mallet.subset.topic.words(topic.model, 
                               sample(!doc.set[,by.var] %in% by.var.vals, nrow(doc.set)),  
-                              normalized=T)
+                              normalized=T, smoothed = T)
   
   values.top.words <- 
     mallet.subset.topic.words(topic.model, 
                               sample(doc.set$jam == "values", nrow(doc.set)),  
-                              normalized=T)
+                              normalized=T, smoothed = T)
   world.top.words <- 
     mallet.subset.topic.words(topic.model, 
                               sample(doc.set$jam == "world", nrow(doc.set)),  
-                              normalized=T)
+                              normalized=T, smoothed = T)
     
   for (topic in 1:n.topics) {
     union.indices <- topic.union.indices[[topic]]
