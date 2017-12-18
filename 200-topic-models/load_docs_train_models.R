@@ -48,7 +48,7 @@ world$parent_comment_id <- ifelse(world$parent_comment_id=='null','null',
                                         sep=".")
                             ) 
 
-
+#   write.table(world, file="place_docs_here/world_with_fixed_ids.tsv", sep="\t", row.names=F)
 #removing these outright to not affect the 8-hr blocks
 #world[world$CreationDate == "10/29/2004",]$CreationDate <- "10/28/2004"
 #world = world[!world$CreationDate == "10/29/2004",]

@@ -43,17 +43,17 @@ sub l1_diff {
     
     my $difference = 0;
     foreach my $w (keys %{$left}) {
-	if (defined $right->{$w}) {
-	    $difference += abs($right->{$w} - $left->{$w});
-	}
-	else {
-	    $difference += $left->{$w};
-	}
+    	if (defined $right->{$w}) {
+    	    $difference += abs($right->{$w} - $left->{$w});
+    	}
+    	else {
+    	    $difference += $left->{$w};
+    	}
     }
     foreach my $w (keys %{$right}) {
-	if (! defined $left->{$w}) {
-	    $difference += $right->{$w};
-	}
+    	if (! defined $left->{$w}) {
+    	    $difference += $right->{$w};
+    	}
     }
 
     return $difference;

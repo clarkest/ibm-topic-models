@@ -16,6 +16,7 @@ library(dplyr)
 # wd <-  "/media/sf_ibm-topic-model"
 wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
 setwd(wd)
+output.dir <- "outputs"
 source("300-post-model-analyses/mallet_analyses.R")
 source("300-post-model-analyses/thread_functions.R")
 model.name <- "anchor_ngram"
@@ -544,8 +545,8 @@ th.doc.topics$log.sec.since.parent.sq <- th.doc.topics$log.sec.since.parent ^ 2
 th.doc.topics$log.sec.since.parent.cube <- th.doc.topics$log.sec.since.parent ^ 3
 
 # jaccard similarity from way way below
-
-th.doc.topics <- left_join(select(th.doc.topics, -jaccard.thresh, -focus.js, -focus.cos, -focus.kld), 
+# th.doc.topics <- left_join(select(th.doc.topics, -jaccard.thresh, -focus.js, -focus.cos, -focus.kld), 
+th.doc.topics <- left_join(th.doc.topics, 
                            select(child.tps, id, jaccard.thresh, focus.js, focus.cos, focus.kld), by ="id") %>%
   mutate(simil.to.parent = ifelse(is.na(jaccard.thresh), 0, jaccard.thresh),
          simil.to.parent.cent = ifelse(is.na(jaccard.thresh) | generation==1, 0,
@@ -729,9 +730,12 @@ th.doc.topics$identity.full_ <- factor(th.doc.topics$identity.full_)
 
 # We'll use the MID set
 th.doc.topics$identity_  <- th.doc.topics$identity.mid_ 
+th.doc.topics$identity.i_ <- ifelse(th.doc.topics$identity_=="i.", " ",
+                                    ifelse(th.doc.topics$identity_=="", "none", as.character(th.doc.topics$identity_)))
 
-save(th.doc.topics, file="th_doc_topics.Rdata")
-# load("th_doc_topics.Rdata")
+
+save(th.doc.topics, file="place_docs_here/th_doc_topics.Rdata")
+# load("place_docs_here/th_doc_topics.Rdata")
 
 # they're all related to each other
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
@@ -872,6 +876,13 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
 ########
 # Main Paper Set
 ########
+
+# add question marks
+th.doc.topics$anyQ <- grepl("\\?", ignore.case=T, th.doc.topics$text)
+# terminal ?
+th.doc.topics$terminalQ <- "?" == substr(th.doc.topics$text,nchar(th.doc.topics$text),nchar(th.doc.topics$text)+1)
+
+
 focal.vars.nofoc <-  c("log.length.cent",
                        "identity.i_",
                        "is.first.comment", "missing.parent") 
@@ -883,12 +894,14 @@ focal.vars.noid <- c("focus.js.cent", "focus.cent", "log.length.cent", "focus.lo
 focal.vars.noexp <- c("focus.js.std", "focus.std", "log.length.std", "focus.log.length.std", 
                       "identity.i_",
                       "is.first.comment", "missing.parent")
-focal.vars.nofoc <- c("is.first.comment", "missing.parent", 
+focal.vars.nofoc <- c("focus.js.std", "is.first.comment", "missing.parent", 
                       "identity.i_")
 focal.vars.notime <- c("focus.cent", "log.length.cent", "focus.log.length.cent",
                       "identity.i_")
 basic.controls <- c("is.manager", "is.exec", "gender", 
            "u.s.time.", "continent2", "last.period", "forum")
+Q.controls <- c("is.manager", "is.exec", "gender", 
+                    "u.s.time.", "continent2", "last.period", "forum", "anyQ", "terminalQ")
 
 th.doc.topics$inv.js.dist <- -th.doc.topics$focus.js.cent
 
@@ -902,6 +915,7 @@ values.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std"), do
 # 4 focal and controls and topics
 values.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls), do.hurdles=F)$values
 values.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", basic.controls), do.hurdles=F)$values
+values.non.stand.q <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", Q.controls), do.hurdles=F)$values
 values.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30.1st", basic.controls), do.hurdles=F)$values
 values.non.stand.2 <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", "simil.to.parent.cent", 
                                               basic.controls), do.hurdles=F)$values
@@ -916,8 +930,10 @@ world.2 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.20.std", bas
 world.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std"), do.hurdles=F)$world
 # 4 focal and controls and topics
 world.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
+world.nofoc <- cutModels(0.2, controls=c(focal.vars.nofoc, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
 
 world.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", basic.controls), do.hurdles=F)$world
+world.non.stand.q <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", Q.controls), do.hurdles=F)$world
 world.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20.1st", basic.controls), do.hurdles=F)$world
 world.non.stand.2 <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", "simil.to.parent.cent", 
                                              basic.controls), do.hurdles=F)$world
@@ -937,6 +953,13 @@ all.models <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", b
 
 stargazer(values.non.stand, world.non.stand, column.labels=c("Values","World"),
           type='text', out=paste0(output.dir,"/overall_prob_response_odds_ratios.txt"),
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          star.cutoffs=c(0.05, 0.01, 0.001))
+
+stargazer(values.non.stand, values.non.stand.q, 
+          world.non.stand, world.non.stand.q,
+          column.labels=c("Values", "Values", "World", "World"),
+          type='text', out=paste0(output.dir,"/overall_prob_response_odds_ratios_withQ.txt"),
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
           star.cutoffs=c(0.05, 0.01, 0.001))
 
@@ -1007,8 +1030,6 @@ stargazer(cut.just.focus$world,
 mod.focus.0 <- cutModels(NULL, controls=c("focus.cent", "log.length.cent", "focus.log.length.cent"), do.hurdles=F)
 mod.inter.focus.0 <- cutModels(NULL, controls=c("focus.js.cent", "is.first.comment", "missing.parent"), do.hurdles=F)
 mod.ident.0 <- cutModels(NULL, controls=c("identity_"), do.hurdles=F)
-th.doc.topics$identity.i_ <- ifelse(th.doc.topics$identity_=="i.", " ",
-                                    ifelse(th.doc.topics$identity_=="", "none", as.character(th.doc.topics$identity_)))
 mod.ident.i.0 <- cutModels(NULL, controls=c("identity.i_"), do.hurdles=F)
 mod.excite.0.val <- cutModels(NULL, controls=c("is.first.comment", "missing.parent",  "exp.excite.30.std"), do.hurdles=F)$values
 mod.excite.0.wor <- cutModels(NULL, controls=c("is.first.comment", "missing.parent",  "exp.excite.20.std"), do.hurdles=F)$world
@@ -1285,9 +1306,9 @@ summary(lm(log.length ~ adj.focus + solo.topic, data=th.doc.topics))
 #############################
   
 
-focalCoefPlot <- function(this.model, excite.half.life, title.lab) {
+focalCoefPlot <- function(this.model, excite.half.life, title.lab, ylim=c(-0.4,0.42), identities=T) {
   coef <- summary(this.model)$coef
-  inter.foc.var <- "focus.js.std"
+  inter.foc.var <- "focus.cos.std"
   inter.foc.label <- "Interpost Topic Focus\n(JS Similarity)"
   inter.foc.effect <- coef[inter.foc.var, "Estimate"]
   inter.foc.se <- coef[inter.foc.var, "Std. Error"]
@@ -1311,27 +1332,33 @@ focalCoefPlot <- function(this.model, excite.half.life, title.lab) {
   focus.se <- rep(this.focus.se, length(log.lens.std))
   focus.labels <- sprintf("Intrapost Focus %d Words", lengths)
   # order (with "I" excluded) will be:  
-  #  no identity term; we/our only; IBM only; We/our and I/my; 
-  #  I/my and IBM; We/our and IBM; We/our, I/my and IBM
-  ident.vars <- c("identity.i_none", "identity.i_we.", "identity.i_ibm",
-                  "identity.i_we.i.", "identity.i_i.ibm", "identity.i_we.ibm", 
-                  "identity.i_we.i.ibm"   
-                  )
-  ident.labels <- c("Identity: None", "Identity: We/Our", "Identity: IBM",
-                    "Identity: We/Our & I/My", "Identity: I/My & IBM", "Identity: We/Our & IBM", 
-                    "Identity: We/Our & I/My & IBM"
+  if (identities) {  #  no identity term; we/our only; IBM only; We/our and I/my; 
+    #  I/my and IBM; We/our and IBM; We/our, I/my and IBM
+    ident.vars <- c("identity.i_none", "identity.i_we.", "identity.i_ibm",
+                    "identity.i_we.i.", "identity.i_i.ibm", "identity.i_we.ibm", 
+                    "identity.i_we.i.ibm"   
                     )
-  ident.effect <- coef[ident.vars, "Estimate"]
-  ident.se <- coef[ident.vars, "Std. Error"]
-  
+    ident.labels <- c("Identity: None", "Identity: We/Our", "Identity: IBM",
+                      "Identity: We/Our & I/My", "Identity: I/My & IBM", "Identity: We/Our & IBM", 
+                      "Identity: We/Our & I/My & IBM"
+                      )
+    ident.effect <- coef[ident.vars, "Estimate"]
+    ident.se <- coef[ident.vars, "Std. Error"]
+  }
   excite.var <- c(sprintf("exp.excite.%d.std", excite.half.life))
   excite.label <- c(sprintf("Excitation %d Min HL", excite.half.life))
   excite.effect <- coef[excite.var, "Estimate"]
   excite.se <- coef[excite.var, "Std. Error"]
   
-  outputs <- data.frame(labels = c(inter.foc.label, focus.labels, ident.labels, excite.label),
-              vars = c(inter.foc.effect, focus.effect, ident.effect, excite.effect),
-              se = c(inter.foc.se, focus.se, ident.se, excite.se))
+  if (identities) {
+    outputs <- data.frame(labels = c(inter.foc.label, focus.labels, ident.labels, excite.label),
+                          vars = c(inter.foc.effect, focus.effect, ident.effect, excite.effect),
+                          se = c(inter.foc.se, focus.se, ident.se, excite.se))
+  } else {
+    outputs <- data.frame(labels = c(inter.foc.label, focus.labels, excite.label),
+                          vars = c(inter.foc.effect, focus.effect, excite.effect),
+                          se = c(inter.foc.se, focus.se, excite.se))
+  }
   # reverse the order
   outputs <- outputs[nrow(outputs):1,]
   outputs$factor.label <- factor(outputs$labels, levels = outputs$labels)
@@ -1342,7 +1369,7 @@ focalCoefPlot <- function(this.model, excite.half.life, title.lab) {
     #geom_line(position=pd, size=1) +
     geom_point(position=pd, size=5) + 
     geom_hline(aes(yintercept=0), size=1.25, linetype="dashed") +
-    ylim(-0.4, 0.42) +
+    ylim(ylim) +
     coord_flip() +
     theme(text=element_text(size=16)) +
     ylab("Standardized Coefficient Estimate") +
@@ -1354,7 +1381,7 @@ ggsave(focalCoefPlot(values.std, 30, "Values Jam Coefficient Estimates\nwith 95%
 ggsave(focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals"), 
        file=paste0(output.dir,"/world_coefs.png"), width=7, height = 7)
 
-
+focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals")
 
 
 
@@ -2868,9 +2895,56 @@ write.csv(words.for.jean, file="outputs/topic_words_for_jean.csv",
 ids.for.jean <- world[,c("commentid","new.commentid")]
 write.csv(ids.for.jean, file="outputs/ids_for_jean.csv", 
           row.names=F)
-
+ids <- read.csv(file="/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model/outputs/ids_for_jean.csv",
+                stringsAsFactors = F)
+aa <- ids %>% group_by(commentid) %>% summarise(n=n()) %>% filter(n>1)
+ids %>% filter(commentid %in% aa[1,"commentid"])
 
 threaded.docs %>% group_by(user, new.mgr, jam) %>%
   summarise(n.posts=n()) %>%
   group_by(jam, new.mgr) %>%
   summarise(n=n(), avg.posts=mean(n.posts), se.posts=sd(n.posts)/sqrt(n-1))
+
+
+
+
+
+############################
+# Output top words by topic
+############################
+words <- mallet.word.freqs(topic.model)
+term.freq <- words$term.freq
+p.w <- term.freq / sum(term.freq)
+p.w.t <- mallet.topic.words(topic.model, smoothed=F, normalized=T)
+n.w.t <- mallet.topic.words(topic.model, smoothed=F, normalized=F)
+
+# 2. relevance(term w | topic t) = λ * log(p(w | t) (+ (1 - λ) * log(p(w | t)/p(w))
+lambda <- 0.6
+n <- 500
+emp.vec <- rep(NA, n * 30)
+out.words <- data.frame(topic = emp.vec,
+                        word = emp.vec,
+                        n.occurences = emp.vec,
+                        p.w.t = emp.vec,
+                        normed.relevance = emp.vec,
+                        stringsAsFactors = F)
+for (topic in 1:30) {
+  pwt <- p.w.t[topic, ]
+  relevance <- lambda * log(pwt) + (1-lambda) * log(pwt / p.w)
+  topN <- order(-relevance)[1:n]
+  top.n.words <- as.character(words[topN, "words"])
+  indexes <- (1 + (topic - 1) * n) : (topic * n)
+  out.words[indexes, ] <- cbind(rep(topic, n),
+                                top.n.words,
+                                n.w.t[topic, topN],
+                                p.w.t[topic, topN],
+                                relevance[topN]
+                                )
+}
+
+write.csv(out.words, file="outputs/top500words_by_topic_lambda_0_6.csv", 
+          row.names=F, quote=F)
+
+
+
+
