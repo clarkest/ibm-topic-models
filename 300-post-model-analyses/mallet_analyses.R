@@ -395,7 +395,7 @@ newDateWindows <- function(documents, hours.per.window) {
     paste(strftime(documents$Timestamp,"%Y-%m-%d"),
           trunc(as.numeric(strftime(documents$Timestamp,"%H"))/hours.per.window)
     )
-  return(factor(DateWindow))
+  return(DateWindow)
 }
 
 

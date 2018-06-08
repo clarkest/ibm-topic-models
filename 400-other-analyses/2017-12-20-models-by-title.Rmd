@@ -1,0 +1,211 @@
+---
+title: "Successful Threads Memo 2017-12-26 -- Execs and Topics"
+output: pdf_document
+fontsize: 11pt
+#output: md_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message=F, warning=F, eval=T, size='small')
+
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+
+# setwd("/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model")
+library(dplyr)
+library(ggplot2)
+library(stargazer)
+
+load("../place_docs_here/quoted_comments_with_stats.Rdata")
+load("../place_docs_here/world_stm_30.Rdata")
+model <- stm.fit.30
+focal.vars.noid <- c("focus.cos", "focus",  "log.length", 
+                     "novelty.max", "solo.topic", "no.topic", "is.first.comment", "missing.parent") 
+
+Q.controls <- c("is.manager", "is.exec", "gender", "has.ibm",
+                "u.s.time.", "continent2", "last.period", "forum", "anyQ", "terminalQ")
+
+controls <- c(focal.vars.noid, "exp.excite.20", Q.controls)
+cutQuoteModel <- function(prev.thresh=NULL, controls, topic.interaction="", 
+                          interaction.terms = c(), filter.set=NULL, do.hurdles=T) {
+  if (is.null(prev.thresh)) {
+    thread.dt.cuts <- select_(analysis.set, .dots=c("n.children", "responded", "quoted", controls))
+    #thread.dt.cuts <- select_(analysis.set, .dots=c( "responded", controls))
+  } else {
+    d.tps <- ifelse(model$theta >= prev.thresh, 1, 0)
+    colnames(d.tps) <- paste0("t", 1:30)
+    thread.dt.cuts <- 
+      cbind(select_(analysis.set, .dots=c("n.children", "responded", "quoted", controls)),
+            #cbind(select_(analysis.set, .dots=c( "responded", controls)),
+            d.tps)
+  }
+  if (topic.interaction != "") {
+    d.tps.inter <- analysis.set[,topic.interaction] * d.tps
+    colnames(d.tps.inter) <- paste0("t-",topic.interaction,"-", 1:30)
+    thread.dt.cuts <- cbind(thread.dt.cuts, d.tps.inter)
+  }
+  
+  if (!is.null(filter.set)) {
+    thread.dt.cuts <- thread.dt.cuts[filter.set,]
+  }
+  interaction.terms <-  c() 
+  formula.text <- paste(c("quoted ~ . ", interaction.terms), collapse = " + ")
+  #formula.text <- paste(c("responded ~ . ", interaction.terms), collapse = " + ")
+  formula <- as.formula(formula.text)
+  
+  fit.cut <- glm(formula,
+                 data=thread.dt.cuts,
+                 family="binomial")
+  return(fit.cut)
+}  
+```
+## Notes
+
+1. all modesl are now fit using only comments of 10 words or more
+2. the four successful topics are:
+  * Topic 3:  budgeting approval processes
+  * Topic 16: innovation and invention
+  * Topic 27: mentorship and training
+  * Topic 28: measurement and goals
+3. the "unsuccessful" topic is:
+  * Topic 18: software tools/linux (nerd topic!)
+
+
+## Exec Titles
+
+The logic for identifying titles works as follows:
+If the job title contains any of the following words, "president", "ceo", "cfo", "vp", "vice president", "dir", "director", "treasurer", then the person is determined to be an executive.  If the title contains "mgr", "manager", "manages", or "mngr" and contains neither "program" nor "project," then the person is labeled as a manager.  Everyone else is deemed a non-manager.
+
+In the prior paper, we had included the words "executive" and "exec" in the list of executive title words.  When I manually checked the titles, I found that this was including a lot of titles like "executive communication" and "executive assistant" and capturing no titles that actually indicated executives.  I've removed them from the set of execs.
+
+
+## Revisiting Regression Results
+
+The results change somewhat with the exec set limited to a more accurate group of people.  However, I'm starting to see more of story now.  On the left in the first table are the results of our standard logistic model without the topics included.  On the right is the same model with topic dummies for comments in which each topic occurs with a 0.15 or greater prevalence.  Note that the manager and exec terms without the topics are significant and nearly significant (respectively), but when including the topics drives, they are still quoted more often, but it is no longer statistically significantly from non-managers.  Conditional on what they're talking about, execs and managers are not more quoted than non-managers. 
+
+### Logistic Models of Which Comments are Successful
+```{r overall, eval=T,  size='small'}
+quote.fit.notop <- cutQuoteModel(prev.thresh=NULL, controls, filter.set = which(analysis.set$length>=10))
+quote.fit.15.noshort <- cutQuoteModel(prev.thresh=0.15, controls, 
+                              filter.set = which(analysis.set$length>=10))
+
+stargazer(quote.fit.notop, quote.fit.15.noshort,
+          type='text', font.size="small", no.space=T,
+          column.labels = c("Base","Topics 0.15"),
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          star.cutoffs=c(0.05, 0.01, 0.001))
+```
+
+## Separate models for each group
+
+One question is whether the topics for which each group is quoted are different from one another or from the overall model.  This would indicate that it is, for instance, only execs talking about budgeting approval processes (topic 3) that tend to be quoted.  Of course, that would leave open whether that's because execs tend to talk the most about that topic or because when they do they are most likely to be referenced after the Jam.  0.000000 entries are interesting as they flag topics which, got the combination of title/topics are never quoted.  
+
+Topics more likely to be quoted: 3, 16, 27, 28
+Topics less likely to be quoted: 18 
+
+Breakdown of who's quoted by topic:
+3: Managers, Non-managers
+16: Managers
+27: Execs (but high variance), Non-managers
+28: Execs (large coefficient), Non-managers
+
+Less quoted:
+18: Non-managers mentioning it, less likely to be quoted
+
+So, it looks like among the four major quoted themes, different topics come from different groups.  Non-managers talk about software tools (topic 18) but are rarely quoted for it.  Execs and non-managers are quoted for mentorship and training (Topic 27) and measurement and goals (Topic 28).  It's interesting that managers, who we'd expect to have good ideas about mentorship do not appear to.  Managers are, however, highly quoted for innovation and invention (topic 16).  Non-execs are quoted for their comments of budget approval and empowerment.  
+
+Also, interestingly, mentioning "IBM," which has no significance overall, is a significant predictor of success for one group: non-managers.  If you don't already have the validation of a title, then signalling corporate membership helps to get your comment recognized.  Or, they were selecting from non-manager posts that mentioned IBM because they wanted to show people that their peers were thinking about the company.
+
+### Regression Results, Topic Threshold = 0.15
+```{r fit15}
+quote.fit.15.noshort <- cutQuoteModel(prev.thresh=0.15, controls, 
+                              filter.set = which(analysis.set$length>=10))
+quote.fit.15.exec <- cutQuoteModel(prev.thresh=0.15, controls[c(-10,-11)], 
+                                      filter.set = which(analysis.set$newer.mgr=="executive" &
+                                                           analysis.set$length>=10))
+quote.fit.15.mgr <- cutQuoteModel(prev.thresh=0.15, controls[c(-10,-11)], 
+                                      filter.set = which(analysis.set$newer.mgr=="manager" &
+                                                           analysis.set$length>=10))
+quote.fit.15.nonmgr <- cutQuoteModel(prev.thresh=0.15, controls[c(-10,-11)], 
+                                      filter.set = which(analysis.set$newer.mgr=="other" &
+                                                           analysis.set$length>=10))
+stargazer(quote.fit.15.noshort, quote.fit.15.exec, quote.fit.15.mgr, quote.fit.15.nonmgr,
+          column.labels = c("Overall","Execs","Managers","Non-Managers"),
+          type='text', no.space=T,
+          #out="outputs/overall_prob_quoted_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          star.cutoffs=c(0.05, 0.01, 0.001))
+```
+
+
+Disconcertingly, the topic-level results are fairly sensitive to the threshold we use as a cut-off.  In the last paper, this was less of a concern because we were using the topics as control variables for measures of interest.  If we want to be able to interpret these results as "when managers talk about Topic X they are more likely to be quoted," 
+
+Here are the results in a simpler form (* mark a change):
+
+Topics more likely to be quoted: 3, 27, 28 (* no longer: 16)
+Topics less likely to be quoted: 18 
+
+Breakdown of who's quoted by topic:
+3: Non-managers (* no longer managers)
+27: * no within-group models are significant
+28: Execs (large coefficient), Non-managers
+ 
+
+### Regression Results, Topic Threshold = 0.12
+```{r fit12}
+quote.fit.12.noshort <- cutQuoteModel(prev.thresh=0.12, controls, 
+                                      filter.set = which(analysis.set$length>=10))
+quote.fit.12.exec <- cutQuoteModel(prev.thresh=0.12, controls[c(-10,-11)], 
+                                   filter.set = which(analysis.set$newer.mgr=="executive" &
+                                                        analysis.set$length>=10))
+quote.fit.12.mgr <- cutQuoteModel(prev.thresh=0.12, controls[c(-10,-11)], 
+                                  filter.set = which(analysis.set$newer.mgr=="manager" &
+                                                       analysis.set$length>=10))
+quote.fit.12.nonmgr <- cutQuoteModel(prev.thresh=0.12, controls[c(-10,-11)], 
+                                     filter.set = which(analysis.set$newer.mgr=="other" &
+                                                          analysis.set$length>=10))
+stargazer(quote.fit.12.noshort, quote.fit.12.exec, quote.fit.12.mgr, quote.fit.12.nonmgr,
+          column.labels = c("Overall","Execs","Managers","Non-Managers"),
+          type='text', no.space=T,
+          #out="outputs/overall_prob_quoted_odds_ratios.txt",
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          star.cutoffs=c(0.05, 0.01, 0.001))
+```
+
+## Models by Quoted Topics
+
+We discuessed running models for only the successful topics to explore a theoretical model that says 'execs in charge were looking for things talking about X, Y, and Z; given that a comment is talking about X, Y, or Z, what drives its success relative to other comments about that topic?"
+
+One thing that pops out to me in this set of results is that topic 28 (measurement and goals) has different dynamics than the other three.  In particular, comments from execs are more likely to be quoted as are comments mentioning ibm.  I included a fifth model which interacts has.ibm with the is.exec and is.manager dummies, which confirms that mentioning IBM is highly significant in increasing a non-manager's probability of being quotes but has no effect for execs and dubious effects for managers.
+
+### Models for each of the four 'successful' topics
+```{r byTopics}
+# model for each of the highly quoted topics (p>0.15)
+hq.thresh <- 0.15
+quote.fit.t3 <- cutQuoteModel(prev.thresh=NULL, controls[c(-5, -6, -14, -15, -17)], 
+                              filter.set = which(model$theta[,3] >= 0.15 &
+                                                   analysis.set$length>=10))
+quote.fit.t16 <- cutQuoteModel(prev.thresh=NULL, controls[c(-5, -6, -14, -15, -17)], 
+                              filter.set = which(model$theta[,16] >= 0.15 &
+                                                   analysis.set$length>=10))
+quote.fit.t27 <- cutQuoteModel(prev.thresh=NULL, controls[c(-5, -6, -14, -15, -17)], 
+                              filter.set = which(model$theta[,27] >= 0.15 &
+                                                   analysis.set$length>=10))
+quote.fit.t28 <- cutQuoteModel(prev.thresh=NULL, controls[c(-5, -6, -14, -15, -17)], 
+                              filter.set = which(model$theta[,28] >= 0.15 &
+                                                   analysis.set$length>=10))
+controls.ibm <- c(controls[c(-5, -6, -14, -15, -17)] , 'has.ibm.exec', 'has.ibm.mgr')
+quote.fit.t28.ibm <- cutQuoteModel(prev.thresh=NULL, controls.ibm, 
+                              filter.set = which(model$theta[,28] >= 0.15 &
+                                                   analysis.set$length>=10))
+
+stargazer(quote.fit.t3, quote.fit.t16, quote.fit.t27, quote.fit.t28, quote.fit.t28.ibm,
+          column.labels = c("Topic 3", "Topic 16", "Topic 27", "Topic 28", "T28 IBM Interaction"),
+          type='text', no.space=T,
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          star.cutoffs=c(0.05, 0.01, 0.001))
+```

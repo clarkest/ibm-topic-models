@@ -505,8 +505,36 @@ load("place_docs_here/threaded_docs.Rdata")
 load("place_docs_here/by_root.Rdata")
 th.doc.topics <- threaded.docs
 th.doc.topics$responded <- ifelse(th.doc.topics$n.children==0, 0, 1)
-th.doc.topics$is.exec <- ifelse(th.doc.topics$new.mgr=="executive", 1, 0)
-th.doc.topics$is.manager <- ifelse(th.doc.topics$new.mgr=="manager", 1, 0)
+
+# fix the exec labels
+exec.words <- c("president","ceo","cfo","vp","vice president","dir","director","treasurer")
+# new manager labels
+mng.words <- c("mgr","manager","manages","mngr")
+non.mgr.words <- c("program", "project")
+client.words <- c("customer", "client", "consult", "consulting", "consultant")
+clean.titles <- CleanTitles(th.doc.topics$job)
+# the replacing function
+LabelTitles <- function(titles, word.list, new.label, old.labels) {
+  for (word in word.list) {
+    regex <- paste0("\\b",word,"\\b")
+    old.labels[grepl(regex, titles)] <- new.label
+  } 
+  return(old.labels)
+}
+
+th.doc.topics$newer.mgr <- "other"
+new.mgr <- th.doc.topics$newer.mgr
+# manager words first
+new.mgr <- LabelTitles(clean.titles, mng.words, "manager", new.mgr)
+# exec words bump those up
+new.mgr <- LabelTitles(clean.titles, exec.words, "executive", new.mgr)
+# non manager words trump both though
+new.mgr <- LabelTitles(clean.titles, non.mgr.words, "other", new.mgr)
+#slap them back into the data frame and the model.object
+th.doc.topics$newer.mgr <- new.mgr
+th.doc.topics$is.exec <- ifelse(th.doc.topics$newer.mgr=="executive", 1, 0)
+th.doc.topics$is.manager <- ifelse(th.doc.topics$newer.mgr=="manager", 1, 0)
+
 th.doc.topics$ancestors <- th.doc.topics$generation - 1
 th.doc.topics$length <- rowSums(doc.topics.unnormal)
 th.doc.topics$length.sq <- rowSums(doc.topics.unnormal)^2
@@ -545,6 +573,67 @@ th.doc.topics$log.sec.since.parent.sq <- th.doc.topics$log.sec.since.parent ^ 2
 th.doc.topics$log.sec.since.parent.cube <- th.doc.topics$log.sec.since.parent ^ 3
 
 # jaccard similarity from way way below
+# do topics from parent appear in child by mgr-mgr type?
+topic.prev <- 0.3
+d.tps <- doc.topics.unsmooth >= topic.prev
+colnames(d.tps) <- paste0("topic.", 1:30)
+d.tp.count <- doc.topics.unnormal
+colnames(d.tp.count) <- paste0("topic.", 1:30, ".words")
+smooth.val <- 0.0000001
+d.tps.u <- (doc.topics.unsmooth + smooth.val) / rowSums(smooth.val + doc.topics.unsmooth)
+colnames(d.tps.u) <- paste0("topic.", 1:30, ".prev")
+
+parent.child.set <- select(th.doc.topics, jam, id, parent, length, log.length, new.mgr) %>%
+  cbind(d.tps) %>%
+  cbind(d.tp.count) %>%
+  cbind(d.tps.u) 
+
+# count the number of topics in parent and the number of overlapping topics
+overlap.form <- paste(sprintf("topic.%d.child * topic.%d.parent", 1:30, 1:30), collapse = "+")
+#overlap.words <- paste(sprintf("topic.%d.words.child * topic.%d.words.parent", 1:30, 1:30), collapse = "+")
+parent.topic.count <- paste(sprintf("topic.%d.parent", 1:30), collapse = "+")
+child.topic.count <- paste(sprintf("topic.%d.child", 1:30), collapse = "+")
+#parent.word.count <- paste(sprintf("topic.%d.words.parent", 1:30), collapse = "+")
+#child.word.count <- paste(sprintf("topic.%d.words.child", 1:30), collapse = "+")
+
+
+
+child.tps <-  parent.child.set %>%
+  inner_join(select(parent.child.set, -parent, -jam), by=c("parent"="id"), suffix=c(".child", ".parent")) %>%
+  mutate(parent.child.mgr = sprintf("%s-%s", new.mgr.parent, new.mgr.child)) %>% 
+  mutate_(.dots=setNames(c(overlap.form, 
+                           parent.topic.count, 
+                           child.topic.count),
+                         c("overlap.topics", 
+                           "num.parent.topics", 
+                           "num.child.topics"))) %>%
+  mutate(jaccard.thresh = ifelse(num.parent.topics + num.child.topics == 0, 
+                                 0,
+                                 overlap.topics / (num.parent.topics + num.child.topics - overlap.topics))
+         #,jaccard.words = overlap.words / (parent.words + child.words - overlap.words)
+  )
+
+jensenShannon <- function(x, y) {
+  m <- 0.5*(x + y)
+  0.5*sum(x*log(x/m)) + 0.5*sum(y*log(y/m))
+}
+KLD <- function(x,y) sum(x * log(x/y))
+symKLD <- function(x,y) (0.5 * KLD(x, y)) + (0.5 * KLD(y, x))
+cosSimil <- function(x,y) sum(x * y) / (sqrt(sum(x^2)) * sqrt(sum(y^2)))
+
+child.tps$focus.js <- NA
+child.tps$focus.cos <- NA
+child.tps$focus.kld <- NA
+for (row in 1:nrow(child.tps)) {
+  child.t <- child.tps[row, sprintf("topic.%d.prev.child", 1:30)]
+  parent.t <- child.tps[row, sprintf("topic.%d.prev.parent", 1:30)]
+  child.tps[row, "focus.js"] <- jensenShannon(child.t, parent.t)
+  child.tps[row, "focus.cos"] <- cosSimil(child.t, parent.t)
+  child.tps[row, "focus.kld"] <- symKLD(child.t, parent.t)
+}
+# flip JS dist to JS similarity
+child.tps$focus.js <- log(2) - child.tps$focus.js
+
 # th.doc.topics <- left_join(select(th.doc.topics, -jaccard.thresh, -focus.js, -focus.cos, -focus.kld), 
 th.doc.topics <- left_join(th.doc.topics, 
                            select(child.tps, id, jaccard.thresh, focus.js, focus.cos, focus.kld), by ="id") %>%
@@ -637,6 +726,7 @@ th.doc.topics <- addExpExcite(th.doc.topics, 120)
 th.doc.topics <- addExpExcite(th.doc.topics, 180)
 th.doc.topics <- addExpExcite(th.doc.topics, 300)
 th.doc.topics <- addExpExcite(th.doc.topics, 600)
+th.doc.topics <- addExpExcite(th.doc.topics, 900)
 th.doc.topics <- addExpExcite(th.doc.topics, 1200)
 th.doc.topics <- addExpExcite(th.doc.topics, 1800)
 th.doc.topics <- addExpExcite(th.doc.topics, 3600)
@@ -675,8 +765,10 @@ th.doc.topics$u.s.time.window <- substr(th.doc.topics$DateWindow,12,13)
 # 4-hour windows?
 th.doc.topics$date.window.4 <- newDateWindows(th.doc.topics, 4)
 th.doc.topics$u.s.time.window.4 <- substr(th.doc.topics$date.window.4,12,13)
+# DESPITE THEIR LABELS, THE TIMESTAMPS ARE DEFINITELY GMT -- 
 time.window.names <- data.frame(u.s.time.window.4=as.character(0:5), 
-                                u.s.time.=c("00-04 GMT", "04-08 GMT", "08-12 GMT", "12-16 GMT", "16-20 GMT", "20-24 GMT"))
+                                u.s.time.=c("00-04 GMT", "04-08 GMT", "08-12 GMT", "12-16 GMT", "16-20 GMT", "20-24 GMT"),
+                                stringsAsFactors = F)
 th.doc.topics <- left_join(th.doc.topics, time.window.names, by="u.s.time.window.4")
 # allow Americas to be omitted continent
 # get the proper continent
@@ -734,8 +826,8 @@ th.doc.topics$identity.i_ <- ifelse(th.doc.topics$identity_=="i.", " ",
                                     ifelse(th.doc.topics$identity_=="", "none", as.character(th.doc.topics$identity_)))
 
 
-save(th.doc.topics, file="place_docs_here/th_doc_topics.Rdata")
-# load("place_docs_here/th_doc_topics.Rdata")
+save(th.doc.topics, file="place_docs_here/th_doc_topics_NEW.Rdata")
+# load("place_docs_here/th_doc_topics_NEW.Rdata")
 
 # they're all related to each other
 chisq.test(th.doc.topics$docs.have.ibm, th.doc.topics$docs.have.we)
@@ -782,10 +874,12 @@ th.doc.topics$log.length.std <-th.doc.topics$log.length.cent/ sd(th.doc.topics$l
 th.doc.topics$focus.log.length.std <- th.doc.topics$focus.std * th.doc.topics$log.length.std
 
 # center and standardized excitations
-excites <- c("1", "2", "3", "5", "10", "20", "30", "60", "90", "120", "180")
+excites <- c("1", "2", "3", "5", "10", "15", "20", "30", "60", "90", "120", "180")
+excites <- c("20", "30")
 gen.set <- th.doc.topics %>% filter(!missing.parent & !is.first.comment) 
 
 for (excite in excites) {
+  print(excite)
   ex.name <- sprintf("exp.excite.%s", excite)
   new.name <- sprintf("exp.excite.%s.std", excite)
   q.name <- sprintf("exp.excite.%s.quan", excite)
@@ -793,8 +887,8 @@ for (excite in excites) {
   name.1st <- sprintf("exp.excite.%s.1st", excite)
   non.first.comments <- filter(th.doc.topics, generation>1 & !missing.parent) %>% select_(.dots=ex.name)
   non.missing.comments <- filter(th.doc.topics, generation>1 & !missing.parent) %>% select_(.dots=ex.name)
-  th.doc.topics[, new.name] <- ifelse(th.doc.topics$generation>1 & !th.doc.topics$missing.parent,
   #th.doc.topics[, new.name] <- ifelse(!th.doc.topics$missing.parent,
+  th.doc.topics[, new.name] <- ifelse(th.doc.topics$generation>1 & !th.doc.topics$missing.parent,
     (th.doc.topics[, ex.name] - mean(non.first.comments[,1])) / sd(non.first.comments[,1]),
     0
   )
@@ -876,19 +970,42 @@ cutModels <- function(prev.thresh=NULL, controls, topic.interaction="", interact
 ########
 # Main Paper Set
 ########
-
+th.doc.topics$responded <- ifelse(th.doc.topics$n.children==0, 0, 1)
 # add question marks
 th.doc.topics$anyQ <- grepl("\\?", ignore.case=T, th.doc.topics$text)
 # terminal ?
 th.doc.topics$terminalQ <- "?" == substr(th.doc.topics$text,nchar(th.doc.topics$text),nchar(th.doc.topics$text)+1)
+# summary stats for Q AND new exec/managers
+a <- th.doc.topics %>%
+  group_by(jam) %>%
+  summarise(anyQ = mean(anyQ),
+            terminalQ = mean(terminalQ),
+            is.exec = mean(is.exec),
+            is.manager = mean(is.manager),
+            is.other = 1-(mean(is.exec + is.manager)))
+t(a)
+wrld <- filter(th.doc.topics, jam=="world")
+val <- filter(th.doc.topics, jam=="values")
+table(wrld$u.s.time.)/nrow(wrld)
+table(val$u.s.time.)/nrow(val)
+
+# drop js with short comments
+th.doc.topics$adj.js.cent <- ifelse(th.doc.topics$length>10, th.doc.topics$focus.js.cent, 0)
+th.doc.topics$shorty <- ifelse(th.doc.topics$length>10, 0, 1)
+
 
 
 focal.vars.nofoc <-  c("log.length.cent",
                        "identity.i_",
                        "is.first.comment", "missing.parent") 
-focal.vars.cent <- c("focus.js.cent", "focus.cent", "log.length.cent", "focus.log.length.cent", 
+focal.adj.cent <- c("adj.js.cent", "shorty", "focus.cent", "log.length.cent", "focus.log.length.cent", 
                 "identity.i_",
                 "is.first.comment", "missing.parent") 
+focal.vars.cent <- c("focus.js.cent", "focus.cent", "log.length.cent", "focus.log.length.cent", 
+                     "identity.i_",
+                     "is.first.comment", "missing.parent") 
+
+
 focal.vars.noid <- c("focus.js.cent", "focus.cent", "log.length.cent", "focus.log.length.cent",
                      "is.first.comment", "missing.parent") 
 focal.vars.noexp <- c("focus.js.std", "focus.std", "log.length.std", "focus.log.length.std", 
@@ -913,14 +1030,15 @@ values.2 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.30.std", ba
 # 3 focal and topics
 values.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std"), do.hurdles=F)$values
 # 4 focal and controls and topics
-values.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls), do.hurdles=F)$values
-values.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", basic.controls), do.hurdles=F)$values
+values.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", Q.controls), do.hurdles=F)$values
+values.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", Q.controls), do.hurdles=F)$values
+# values.non.stand <- cutModels(0.2, controls=c(focal.adj.cent, "exp.excite.30", Q.controls), do.hurdles=F)$values
 values.non.stand.q <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", Q.controls), do.hurdles=F)$values
-values.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30.1st", basic.controls), do.hurdles=F)$values
+values.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30.1st", Q.controls), do.hurdles=F)$values
 values.non.stand.2 <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.30", "simil.to.parent.cent", 
-                                              basic.controls), do.hurdles=F)$values
-values.mid <- cutModels(0.2, controls=c(focal.vars.noid, "identity.mid_", "exp.excite.30", basic.controls), do.hurdles=F)$values
-values.full <- cutModels(0.2, controls=c(focal.vars.noid, "identity.full_", "exp.excite.30", basic.controls), do.hurdles=F)$values
+                                                Q.controls), do.hurdles=F)$values
+values.mid <- cutModels(0.2, controls=c(focal.vars.noid, "identity.mid_", "exp.excite.30", Q.controls), do.hurdles=F)$values
+values.full <- cutModels(0.2, controls=c(focal.vars.noid, "identity.full_", "exp.excite.30", Q.controls), do.hurdles=F)$values
 
 # 1	focal vars
 world.1 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.20.std"), do.hurdles=F)$world
@@ -929,23 +1047,24 @@ world.2 <- cutModels(NULL, controls=c(focal.vars.noexp, "exp.excite.20.std", bas
 # 3 focal and topics
 world.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std"), do.hurdles=F)$world
 # 4 focal and controls and topics
-world.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
-world.nofoc <- cutModels(0.2, controls=c(focal.vars.nofoc, "exp.excite.20.std", basic.controls), do.hurdles=F)$world
+world.std <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", Q.controls), do.hurdles=F)$world
+world.nofoc <- cutModels(0.2, controls=c(focal.vars.nofoc, "exp.excite.20.std", Q.controls), do.hurdles=F)$world
 
-world.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", basic.controls), do.hurdles=F)$world
+world.non.stand <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", Q.controls), do.hurdles=F)$world
+#world.non.stand <- cutModels(0.2, controls=c(focal.adj.cent, "exp.excite.20", Q.controls), do.hurdles=F)$world
 world.non.stand.q <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", Q.controls), do.hurdles=F)$world
-world.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20.1st", basic.controls), do.hurdles=F)$world
+world.non.stand.1st <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20.1st", Q.controls), do.hurdles=F)$world
 world.non.stand.2 <- cutModels(0.2, controls=c(focal.vars.cent, "exp.excite.20", "simil.to.parent.cent", 
-                                             basic.controls), do.hurdles=F)$world
+                                               Q.controls), do.hurdles=F)$world
 
-world.mid <- cutModels(0.2, controls=c(focal.vars.noid, "identity.mid_", "exp.excite.20", basic.controls), do.hurdles=F)$world
-world.full <- cutModels(0.2, controls=c(focal.vars.noid, "identity.full_", "exp.excite.20", basic.controls), do.hurdles=F)$world
+world.mid <- cutModels(0.2, controls=c(focal.vars.noid, "identity.mid_", "exp.excite.20", Q.controls), do.hurdles=F)$world
+world.full <- cutModels(0.2, controls=c(focal.vars.noid, "identity.full_", "exp.excite.20", Q.controls), do.hurdles=F)$world
                        
 library(car)
 vif(world.std)
 vif(values.std)
 
-all.models <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls))
+all.models <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", Q.controls))
 
 
 # output the tables
@@ -953,7 +1072,7 @@ all.models <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", b
 
 stargazer(values.non.stand, world.non.stand, column.labels=c("Values","World"),
           type='text', out=paste0(output.dir,"/overall_prob_response_odds_ratios.txt"),
-          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp,
+          report = "vct*", t.auto=F, p.auto=F, apply.coef=exp, no.space=T,
           star.cutoffs=c(0.05, 0.01, 0.001))
 
 stargazer(values.non.stand, values.non.stand.q, 
@@ -1029,6 +1148,7 @@ stargazer(cut.just.focus$world,
 ###
 mod.focus.0 <- cutModels(NULL, controls=c("focus.cent", "log.length.cent", "focus.log.length.cent"), do.hurdles=F)
 mod.inter.focus.0 <- cutModels(NULL, controls=c("focus.js.cent", "is.first.comment", "missing.parent"), do.hurdles=F)
+mod.inter.cos.focus.0 <- cutModels(NULL, controls=c("focus.cos.cent", "is.first.comment", "missing.parent"), do.hurdles=F)
 mod.ident.0 <- cutModels(NULL, controls=c("identity_"), do.hurdles=F)
 mod.ident.i.0 <- cutModels(NULL, controls=c("identity.i_"), do.hurdles=F)
 mod.excite.0.val <- cutModels(NULL, controls=c("is.first.comment", "missing.parent",  "exp.excite.30.std"), do.hurdles=F)$values
@@ -1052,35 +1172,37 @@ summary(glht(world.full, mcp(identity.full_="Tukey")))
 summary(glht(values.full, mcp(identity.full_="Tukey")))
 
 # comparing excitation decays
-cuts.20.4.1 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.1.std", basic.controls), 
+cuts.20.4.1 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.1.std", Q.controls), 
                          do.hurdles=F)
-cuts.20.4.2 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.2.std", basic.controls),
+cuts.20.4.2 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.2.std", Q.controls),
                           do.hurdles=F)
-cuts.20.4.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.3.std", basic.controls),
+cuts.20.4.3 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.3.std", Q.controls),
                           do.hurdles=F)
-cuts.20.4.5 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.5.std", basic.controls),
+cuts.20.4.5 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.5.std", Q.controls),
                           do.hurdles=F)
-cuts.20.4.10 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.10.std", basic.controls),
+cuts.20.4.10 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.10.std", Q.controls),
                            do.hurdles=F)
-cuts.20.4.20 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", basic.controls),
-                           do.hurdles=F)
-cuts.20.4.30 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", basic.controls),
-                           do.hurdles=F)
-cuts.20.4.60 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.60.std", basic.controls),
-                           do.hurdles=F)
-cuts.20.4.90 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.90.std", basic.controls),
+cuts.20.4.15 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.15.std", Q.controls),
                           do.hurdles=F)
-cuts.20.4.120 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.120.std", basic.controls),
+cuts.20.4.20 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.20.std", Q.controls),
+                           do.hurdles=F)
+cuts.20.4.30 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.30.std", Q.controls),
+                           do.hurdles=F)
+cuts.20.4.60 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.60.std", Q.controls),
+                           do.hurdles=F)
+cuts.20.4.90 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.90.std", Q.controls),
                           do.hurdles=F)
-cuts.20.4.180 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.180.std", basic.controls),
+cuts.20.4.120 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.120.std", Q.controls),
+                          do.hurdles=F)
+cuts.20.4.180 <- cutModels(0.2, controls=c(focal.vars.noexp, "exp.excite.180.std", Q.controls),
                           do.hurdles=F)
 stargazer(cuts.20.4.1$values, cuts.20.4.2$values, cuts.20.4.3$values, 
-          cuts.20.4.5$values, cuts.20.4.10$values, cuts.20.4.20$values, cuts.20.4.30$values, cuts.20.4.60$values,
+          cuts.20.4.5$values, cuts.20.4.10$values, cuts.20.4.15$values, cuts.20.4.20$values, cuts.20.4.30$values, cuts.20.4.60$values,
           cuts.20.4.90$values, cuts.20.4.120$values, cuts.20.4.180$values,
           type='text', 
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
 stargazer(cuts.20.4.1$world, cuts.20.4.2$world, cuts.20.4.3$world, 
-          cuts.20.4.5$world, cuts.20.4.10$world, cuts.20.4.20$world, cuts.20.4.30$world, cuts.20.4.60$world,
+          cuts.20.4.5$world, cuts.20.4.10$world, cuts.20.4.15$world, cuts.20.4.20$world, cuts.20.4.30$world, cuts.20.4.60$world,
           cuts.20.4.90$world, cuts.20.4.120$world, cuts.20.4.180$world,
           type='text', 
           report = "vct*", t.auto=F, p.auto=F, apply.coef=exp)
@@ -1306,9 +1428,12 @@ summary(lm(log.length ~ adj.focus + solo.topic, data=th.doc.topics))
 #############################
   
 
-focalCoefPlot <- function(this.model, excite.half.life, title.lab, ylim=c(-0.4,0.42), identities=T) {
+focalCoefPlot <- function(this.model, excite.half.life, 
+                          title.lab, ylim=c(-0.4,0.42), 
+                          identities=T,
+                          inter.foc.var = "focus.js.std") {
   coef <- summary(this.model)$coef
-  inter.foc.var <- "focus.cos.std"
+  
   inter.foc.label <- "Interpost Topic Focus\n(JS Similarity)"
   inter.foc.effect <- coef[inter.foc.var, "Estimate"]
   inter.foc.se <- coef[inter.foc.var, "Std. Error"]
@@ -1376,12 +1501,20 @@ focalCoefPlot <- function(this.model, excite.half.life, title.lab, ylim=c(-0.4,0
     ggtitle(title.lab)
 }
 
-ggsave(focalCoefPlot(values.std, 30, "Values Jam Coefficient Estimates\nwith 95% Confidence Intervals"), 
+ggsave(focalCoefPlot(values.std, 30, 
+                     "Values Jam Coefficient Estimates\nwith 95% Confidence Intervals",
+                     inter.foc.var = "focus.js.std", ylim=c(-.425,0.42)), 
        file=paste0(output.dir,"/values_coefs.png"), width=7, height=7)
-ggsave(focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals"), 
+ggsave(focalCoefPlot(world.std, 20, 
+                     "World Jam Coefficient Estimates\nwith 95% Confidence Intervals",
+                     inter.foc.var = "focus.js.std"), 
        file=paste0(output.dir,"/world_coefs.png"), width=7, height = 7)
 
-focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals")
+focalCoefPlot(values.std, 30, "Values Jam Coefficient Estimates\nwith 95% Confidence Intervals",
+              inter.foc.var = "focus.js.std", ylim=c(-.412,0.42))
+
+focalCoefPlot(world.std, 20, "World Jam Coefficient Estimates\nwith 95% Confidence Intervals",
+              inter.foc.var = "focus.js.std")
 
 
 
@@ -2944,6 +3077,7 @@ for (topic in 1:30) {
 
 write.csv(out.words, file="outputs/top500words_by_topic_lambda_0_6.csv", 
           row.names=F, quote=F)
+
 
 
 

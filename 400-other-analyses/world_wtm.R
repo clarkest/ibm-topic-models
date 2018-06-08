@@ -5,7 +5,7 @@ library(R2HTML)
 source("400-other-analyses/toLDAvis.R")
 
 # wd <- "/Users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
-wd <-  "/users/clarkbernier/Dropbox/IBM Local/ibm-topic-model"
+wd <-  "/Users/clarkbernier/Box Sync/IBM Local/ibm-topic-model"
 setwd(wd)
 source("300-post-model-analyses/mallet_analyses.R")
 
