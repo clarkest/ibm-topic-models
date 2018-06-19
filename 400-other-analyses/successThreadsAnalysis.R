@@ -57,8 +57,6 @@ filter.set <- which(analysis.set$length>10 &
 full.fit.10 <- cutQuoteModel(prev.thresh=0.1, full.set, filter.set = filter.set, remove.topics = 30)
 full.fit.15 <- cutQuoteModel(prev.thresh=0.15, full.set, filter.set = filter.set, remove.topics = 30)
 full.fit.20 <- cutQuoteModel(prev.thresh=0.2, full.set, filter.set = filter.set, remove.topics = 30)
-summary(full.fit.10)
-
 
 starMe(full.fit.10, full.fit.15, full.fit.20, 
        column.labels=c("Threshold=0.10","Threshold=0.15","Threshold=0.20"),
@@ -721,7 +719,7 @@ test.fit <- cutQuoteModel(prev.thresh=NULL,
 summary(test.fit)
 
 ###########
-# H14: LIWC MATTERS
+# H14/15: LIWC MATTERS
 ###########
 
 # see success_liwc_work.R file
@@ -729,9 +727,435 @@ summary(test.fit)
 
 
 
+###########
+# H16/17: FAMILY LEVEL
+###########
+load("place_docs_here/analysis_set_june2018.Rdata")
+which.dtdf <- token.weighted.dt
+#which.dtdf <- dtdf
+
+med.focus <- median(analysis.set$focus)
+med.focus.cos <- median(analysis.set[analysis.set$generation>1,]$focus.cos)
+
+families <- analysis.set %>%
+  group_by(root.id) %>%
+  summarise(n = n(),
+            num.quoted = sum(quoted),
+            n.focused = sum(focus > med.focus),
+            avg.interpost = mean(focus.cos[generation>1]),
+            n.interpost.high = sum(focus.cos[generation>1] > med.focus.cos)) %>%
+  #filter(n>1) %>%
+  mutate(perc.focused = n.focused / n,
+         perc.high.inter = n.interpost.high / n,
+         any.quoted = ifelse(num.quoted>0, 1, 0)) %>%
+  arrange(root.id)
+
+family.focus <- analysis.set %>%
+  select(root.id) %>%
+  cbind(which.dtdf) %>%
+  group_by(root.id) %>%
+  summarise_all(sum) %>%
+  arrange(root.id) %>%
+  select(-root.id)
+
+overall.focus <- rowSums((family.focus / rowSums(family.focus))^2)
+families$overall.focus <- overall.focus
+families <- filter(families, n>1)
+
+# how do their sizes compare?
+table(filter(families, any.quoted==1)$n)
+table(filter(families, any.quoted==0)$n) / sum(families$any.quoted==0)
+
+
+family.size.plt <- filter(families, n>2) %>% ggplot() +
+  geom_density(aes(x=n, color=factor(any.quoted))) +
+  ggtitle("Distribution of Family Size, Familes Over 2 Posts") +
+  xlab("Number of Posts") +
+  ylab("Density") +
+  labs(color = "Any Selected Posts") +
+  theme(legend.position = "bottom")
+ggsave(family.size.plt, file=outFile("family_sizes"))
+
+
+# check out the large families
+filter(families, n>90)
+
+# middle range of families
+res <- filter(families, n>8 & n<91) %>%
+  group_by(any.quoted) %>%
+  summarise(mn.perc.focused = mean(perc.focused),
+            se.perc.focused = sd(perc.focused)/sqrt(n()-1),
+            mn.overall.focus = mean(overall.focus),
+            se.overall.focus = sd(overall.focus)/sqrt(n()-1),
+            mn.perc.high.inter = mean(perc.high.inter),
+            se.perc.high.inter = sd(perc.high.inter)/sqrt(n()-1),
+            mn.avg.interpost = mean(avg.interpost),
+            se.avg.interpost = sd(avg.interpost)/sqrt(n()-1))
+vars <- c("perc.focused", "overall.focus", "perc.high.inter", "avg.interpost")
+m.vars <- sprintf("mn.%s", vars)
+se.vars <- sprintf("se.%s", vars)
+
+mns <- res[res$any.quoted==1, m.vars] - res[res$any.quoted==0, m.vars]
+ses <- 1.96 * sqrt(res[res$any.quoted==1, se.vars]^2 + res[res$any.quoted==0, se.vars]^2)
+mns - ses
+mns + ses
+       
+# we really would prefer to weight them by their relative frequency
+# so that it is as if the two groups have the same distribution over n
+families <- families %>%
+  mutate(adj.n = ifelse(n<=20, n, 
+                        ifelse(n>=60, 60, floor(n/10)*10))) 
+
+fam.size <- families %>%
+  filter(n<90) %>%
+  group_by(any.quoted, adj.n) %>%
+  summarise(n.n = n())
+fam.size.q <- filter(fam.size, any.quoted==1)
+fam.size.nq <- filter(fam.size, any.quoted==0)
+
+families.2 <- inner_join(fam.size.q, fam.size.nq, by=c("adj.n"), suffix=c(".q",".nq")) %>%
+  ungroup() %>%
+  mutate(n.weight = n.n.q / n.n.nq) %>%
+  select(adj.n, n.weight) %>%
+  right_join(families, by="adj.n") %>%
+  mutate(n.weight = ifelse(any.quoted==1, 1, ifelse(is.na(n.weight), 0, n.weight)))
+
+library(SDMTools) 
+
+weighted.res <-
+  filter(families.2, n>2 & n<90) %>%
+  group_by(any.quoted) %>%
+  summarise(mn.perc.focused = wt.mean(perc.focused, n.weight),
+            se.perc.focused = wt.sd(perc.focused, n.weight)/sqrt(sum(n.weight)-1),
+            mn.overall.focus = wt.mean(overall.focus, n.weight),
+            se.overall.focus = wt.sd(overall.focus, n.weight)/sqrt(sum(n.weight)-1),
+            mn.perc.high.inter = wt.mean(perc.high.inter, n.weight),
+            se.perc.high.inter = wt.sd(perc.high.inter, n.weight)/sqrt(sum(n.weight)-1),
+            mn.avg.interpost = wt.mean(avg.interpost, n.weight),
+            se.avg.interpost = wt.sd(avg.interpost, n.weight)/sqrt(sum(n.weight)-1))
+
+vars <- c("perc.focused", "overall.focus", "perc.high.inter", "avg.interpost")
+m.vars <- sprintf("mn.%s", vars)
+se.vars <- sprintf("se.%s", vars)
+
+mns <- weighted.res[weighted.res$any.quoted==1, m.vars] - weighted.res[weighted.res$any.quoted==0, m.vars]
+ses <- 1.96 * sqrt(weighted.res[weighted.res$any.quoted==1, se.vars]^2 + weighted.res[weighted.res$any.quoted==0, se.vars]^2)
+mns - ses
+mns + ses
 
 
 
+View(families.2 %>% group_by(any.quoted, n) %>% summarise(sum(n.weight)))
+
+family.size.plt <- filter(families.2, n>2 & n<90) %>% ggplot() +
+  geom_density(aes(x=n, color=factor(any.quoted), weight=n.weight)) +
+  ggtitle("Distribution of Family Size, Familes Over 2 Posts") +
+  xlab("Number of Posts") +
+  ylab("Density") +
+  labs(color = "Any Selected Posts") +
+  theme(legend.position = "bottom")
+ggsave(family.size.plt, file=outFile("family_sizes"))
+ 
+
+filter(families, n<5) %>%
+  ggplot() + geom_smooth(aes(x=perc.focused, y=any.quoted), method="loess") 
+
+filter(families, n>5) %>%
+  ggplot() + geom_smooth(aes(x=perc.focused, y=any.quoted), method="loess") 
+filter(families, n>10) %>%
+  ggplot() + geom_smooth(aes(x=perc.high.inter, y=any.quoted), method="loess") 
+filter(families, n>5) %>%
+  ggplot() + geom_smooth(aes(x=avg.interpost, y=any.quoted), method="loess") 
+
+
+
+
+
+
+
+
+hist(filter(families, any.quoted==1 & n>8)$n, breaks=50)
+hist(filter(families, any.quoted==0 & n>8)$n, breaks=50)
+
+
+############
+# FORUM GRAPHS
+#############
+
+load("place_docs_here/analysis_set_june2018.Rdata")
+remove.topics <- c(30)
+
+# first -- a forum model
+analysis.set$forum.2 <- ifelse(analysis.set$forum=="forum 5", "__f2", analysis.set$forum)
+
+forums.alone <- cutQuoteModel(prev.thresh=NULL, 
+                              c("forum"),
+                              filter.set = filter.set, 
+                              remove.topics = remove.topics)
+forums.w.ko <- cutQuoteModel(prev.thresh=NULL, 
+              c("forum", "has.kickoff.topic", full.set),
+              filter.set = filter.set, 
+              remove.topics = remove.topics)
+forums.w.topics <- cutQuoteModel(prev.thresh=0.1, 
+                             c("forum", "has.kickoff.topic", full.set),
+                             filter.set = filter.set, 
+                             remove.topics = remove.topics)
+starMe(forums.alone, forums.w.ko, forums.w.topics,
+       column.labels=c("Forums", "Forums and Covariates", "Forums, Covariates, Topics"),
+       type="html",
+       out="outputs/success_threads_2018/model_forums.htm")
+starMe(forums.alone, forums.w.ko, forums.w.topics,
+       column.labels=c("Forums", "Forums and Covariates", "Forums, Covariates, Topics"), 
+       type="text",
+       out="outputs/success_threads_2018/model_forums.txt")
+
+summary(forums.w.ko)
+summary(forums.w.topics)
+
+
+analysis.set$jam.time.asia <- as.factor(ifelse(analysis.set$asia==1, analysis.set$jam.time.window, 0))
+analysis.set$jam.day <- as.factor(floor((as.numeric(analysis.set$jam.time.window))/2))
+analysis.set$jam.wind <- as.numeric(analysis.set$jam.time.window)
+table(analysis.set$jam.day, analysis.set$jam.time.window)
+table(analysis.set$jam.day, analysis.set$CreationDate)
+summary(cutQuoteModel(prev.thresh=0.1, 
+                     c("jam.wind", "full.set"),
+                     filter.set = filter.set, 
+                     remove.topics = remove.topics))
+
+this.df <- analysis.set[filter.set,] %>%
+  select_(.dots=c(neigh.names, topic.novel.names, full.set, "forum", "quoted", "focus")) %>%
+  mutate(us = ifelse(non.us.continent=="__USA", 1, 0),
+         asia = ifelse(non.us.continent=="Asia", 1, 0),
+         europe = ifelse(non.us.continent=="Europe", 1, 0),
+         female = ifelse(gender=="female", 1, 0),
+         male = ifelse(gender=="male", 1, 0),
+         unk.gender = ifelse(gender=="unknown", 1, 0),
+         last.period = ifelse(jam.time.window==5, 1,0)
+  )
+         
+
+var.list <- c("neighbors_within_0.15_below_150", "neighbors_within_0.15_above_150",
+              "topic.novelty.below.0.475", "topic.novelty.above.0.475",
+              "is.exec", "is.manager",
+              "log.length", "log.sec.since.parent", 
+              "responded", "n.children",
+              "us", "asia", "europe",
+              "female", "male", "unk.gender",
+              "last.period", "focus")
+
+title.list <- c("Neighbors Within 0.15, 150 or less", "Neighbors Within 0.15, Above 150",
+                "Topic Novelty, 0.475 or less", "Topic Novelty, Above 0.475",
+                "Is Exec", "Is Manager", 
+                "Log Comment Length", "Log Seconds Since Parent",
+                "Any Children","Number Children",
+                "US", "Asia", "Europe",
+                "Female", "Male" , "Unkown Gender",
+                "Post in Last Period", "Intrapost Focus")
+
+for (v in 1:length(var.list)) {
+  fil.nam <- outFile(sprintf("Forum Vars/forum_%s", title.list[v]))
+  ggsave(filename = fil.nam,
+         plot = topicPrevForum(this.df, var.list[v], title.list[v], always.ci = T), 
+         width = 8,
+         height = 6)
+}
+
+# and topic graphs by forum
+prev <- 0.1
+theta.set <- model$theta >= prev
+colnames(theta.set) <- sprintf("t%02s", 1:ncol(theta.set))
+rf.dset <- cbind(select_(analysis.set, .dots=c("quoted", "forum")),
+                 theta.set)
+this.df <- rf.dset[filter.set, ]
+tpc.labels <- apply(labelTopics(model)$frex,1,function(x){paste(x,collapse=":")})
+
+# add in the kickoffs
+early.posts <- analysis.set %>% arrange(Timestamp) %>% filter(parent=="null") %>% slice(1:17) %>% select(id, forum, title, text)
+early.tps <- data.frame(id=analysis.set$id, theta.set>=prev) %>%
+  right_join(early.posts, by="id")
+forum.kickoff.topics <- early.tps %>% 
+  select(-id, -title, -text) %>%
+  group_by(forum) %>%
+  summarise_all(.funs=max) %>%
+  data.frame()
+
+
+for (tp in 1:ncol(theta.set)) {
+  fil.nam <- outFile(sprintf("topics_above_10/forum_topic_above_10_%02s", tp))
+  kicked.off.forums <-
+    as.character(forum.kickoff.topics$forum[which(forum.kickoff.topics[,sprintf("t%02s", tp)]==1)])
+  ggsave(filename = fil.nam,
+         plot = topicPrevForum(this.df, tp, thresh=0.1, forums.with.kickoff=kicked.off.forums), #, forum.set.to.add = forum.kickoff.topics 
+         width = 8,
+         height = 6)
+}
+
+
+
+
+
+###########
+# By Forum Analyses
+###########
+
+focal.vars <- list(c("is.exec", "is.manager"),
+                   neigh.names,
+                   topic.novel.names,
+                   c("focus"),
+                   c("log.sec.since.parent", "no.parent"))
+focal.titles <- c("Occupation Groups",
+                  "Topic-Space Neighbors",
+                  "Topic Novelty",
+                  "Intracomment Focus",
+                  "Log Sec Since Parent")
+                   
+                    
+controls <- c("log.length", "responded", "n.children", "asia")
+forum.list <- as.character(unique(analysis.set$forum))
+focal.topics <- list()
+focal.topics[["forum 1"]] <- c(3, 5, 28)
+focal.topics[["forum 2"]] <- c(25, 27, 28)
+focal.topics[["forum 3"]] <- c(7, 9, 21, 16)
+focal.topics[["forum 4"]] <- c(3, 12, 16)
+focal.topics[["forum 5"]] <- c(3, 26)
+focal.topics[["forum 6"]] <- c(10, 19, 22, 23)
+
+topicName <- function(t.num) {sprintf("t%02s", t.num)}
+prev <- 0.1
+theta.set <- model$theta >= prev
+colnames(theta.set) <- topicName(1:ncol(theta.set))
+analysis.set$asia <- ifelse(analysis.set$non.us.continent=="Asia", 1, 0)
+rf.dset <- cbind(select_(analysis.set, .dots=c("quoted", "forum", unlist(focal.vars), controls)),
+                 theta.set)
+this.df <- rf.dset[filter.set, ]
+library(logistf)
+emp.vec <- rep(NA, length(forum.list) * length(unlist(focal.vars)))
+out.df <- data.frame(forum = rep("",length(emp.vec)),
+                     var.name = rep("",length(emp.vec)),
+                     coef = emp.vec,
+                     lower = emp.vec,
+                     upper = emp.vec,
+                     p.val = emp.vec,
+                     stringsAsFactors = F)
+full.mods <- list()
+pStars <- function(p.val) {ifelse(p.val<0.001, "***", 
+                                  ifelse(p.val<0.01, "**",
+                                         ifelse(p.val<0.05, "*", "")))}
+
+skip.topics <- T
+rw <- 0
+sink("~/Downloads/penalized_forum_models.txt")
+for (f.vars in focal.vars) {
+  for (f in forum.list) {
+    if (skip.topics) {topics<-c() } else { topics<-topicName(focal.topics[[f]])}
+    f.str <- paste0("quoted ~ ", paste(c(f.vars, controls, topics), collapse="+"))  
+    # this.mod <- glm(as.formula(f.str),data=this.df, family="binomial")
+    pen.mod <- logistf(as.formula(f.str), data=this.df[this.df$forum==f,])
+    for (f.var in f.vars) {
+      rw <- rw + 1
+      out.df[rw,] <- 
+        c(f, f.var, 
+          pen.mod$coefficients[f.var], pen.mod$ci.lower[f.var], pen.mod$ci.upper[f.var], pen.mod$prob[f.var])
+    }
+    print(sprintf("Forum: %s   Focal Variables: %s", f, paste(f.vars, collapse=",")))
+    exp.coef <- exp(pen.mod$coefficients)
+    p.vals <- pen.mod$prob
+    stars <- pStars(p.vals)
+    print(data.frame(exp.coef, p.vals, stars))
+    print("\n")
+  }
+}
+sink()
+pd <- position_dodge(0.5)
+
+
+writeLines(unlist(full.mods))
+sink()
+lapply(full.mods, write, "~/Downloads/penalized_forum_models.csv", append=TRUE)
+
+
+for (i in 1:length(focal.vars)) {
+  plt <- out.df %>%
+    filter(var.name %in% focal.vars[[i]] & var.name != "no.parent") %>%
+    group_by(var.name, forum) %>%
+    ggplot() +
+    geom_point(aes(x=var.name, y=as.numeric(coef), color=as.factor(forum)), position=pd) +
+    geom_errorbar(aes(x=var.name, ymin=as.numeric(lower), ymax=as.numeric(upper), 
+                      color=as.factor(forum)), position=pd) +
+    geom_hline(aes(yintercept=0)) +
+    labs(title=sprintf("Regression Coefficients by Forum for %s", focal.titles[i]),
+         # subtitle=sprintf(subtitle, ylabel),
+         colour = "Forum") +
+    theme(legend.position="bottom") +
+    ylab(focal.titles[i]) +
+    xlab("Variable")
+    
+  
+  fil.nam <- outFile(sprintf("by forum results/by_forum_%s", focal.titles[i]))
+  ggsave(filename = fil.nam,
+         plot = plt,
+         width = 8,
+         height = 6)
+}
+
+out.df %>% filter(forum %in% c("forum 3", "forum 5") & var.name == "focus")
+
+
+#######
+# Topic Expression and Selection Rates by Forum
+#######
+
+prev <- 0.1
+theta.set <- model$theta >= prev
+colnames(theta.set) <- sprintf("Topic %02s", 1:ncol(theta.set))
+
+working.set <- analysis.set %>%
+  select(forum, quoted) %>%
+  cbind(theta.set) 
+
+# we really want to compare Overall to Selected
+working.set <- 
+  working.set[filter.set, ] %>%
+  mutate(set = "Overall")
+
+quote.set <- working.set %>%
+  filter(quoted==1) %>%
+  mutate(set = "Selected")
+
+working.set <- rbind(working.set, quote.set) %>%
+  select(-quoted)
+
+summary.set <- working.set %>%
+  group_by(forum, set) %>%
+  summarise_all(mean)
+
+n.set <- working.set %>%
+  group_by(forum, set) %>%
+  summarise(n=n())
+
+library(formattable)
+out.set <- t(summary.set[,colnames(theta.set) ])
+# out.set <- data.frame(round(out.set,3))
+out.set <- data.frame(as.character(percent(out.set,1)), stringsAsFactors = F)
+out.set <- rbind(summary.set$set,
+                 N = n.set$n,
+                 out.set)
+
+names(out.set) <- summary.set$forum 
+
+sink("~/Downloads/forum_selected_topic_table.txt")
+print(out.set)
+sink()
+
+# and as a csv
+out.set <- t(summary.set[,colnames(theta.set) ])
+out.set <- data.frame(round(out.set,3))
+out.set <- rbind(Group = summary.set$set,
+                 N = n.set$n,
+                 out.set)
+names(out.set) <- summary.set$forum 
+write.csv(out.set, file="~/Downloads/forum_selected_topics.csv", row.names=T)
 
 ###
 # Detritus
@@ -814,7 +1238,5 @@ nov.d <- ecdf(analysis.set$novelty.max)
 analysis.set$novelty.quart <- as.factor(ceiling(nov.d(analysis.set$novelty.max)/.25))
 
 hist(analysis.set$novelty.avg, breaks=100)
-
-
 
 

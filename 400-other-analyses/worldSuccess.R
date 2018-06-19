@@ -1047,66 +1047,7 @@ tpc.labels <- apply(labelTopics(model)$frex,1,function(x){paste(x,collapse=":")}
 
 tpc <- 3
 
-forumLabels <- function(forum.vec) {
-  forum.name <- rep("", length(forum.vec))
-  forum.name[forum.vec=="forum 1"] <- "For Clients"
-  forum.name[forum.vec=="forum 2"] <- "Delivery"
-  forum.name[forum.vec=="forum 3"] <- "For World"
-  forum.name[forum.vec=="forum 4"] <- "For IBM"
-  forum.name[forum.vec=="forum 5"] <- "Managers"
-  forum.name[forum.vec=="forum 6"] <- "Every IBMer"
-  ret.val <- paste(forum.vec, forum.name, sep="\n")
-}
 
-
-
-topicPrevForum <- function(this.df, var.or.tpc, title="", forum.set.to.add=NULL) {
-subtitle <- "Point estimate is the mean %s by forum for selected (blue) 
-and non-selected (red) comments.  Error bars represent the 25th and 
-75th percentile value for selected and non-selected comments."
-  if (is.numeric(var.or.tpc)) {
-    t.name <- sprintf("t%02s",var.or.tpc)
-    this.df$focal.var <- this.df[,t.name]
-    this.df <- select(this.df, focal.var, forum, quoted)
-    title <- sprintf("Topic %d: %s", var.or.tpc, tpc.labels[var.or.tpc])
-    ylabel <- "Topic Prevalence"
-    if (!is.null(forum.set.to.add)) {
-      forum.set.to.add$focal.var <- forum.set.to.add[,t.name]
-      forum.set.to.add$quoted <- 2
-      this.df <- select(forum.set.to.add, forum, focal.var, quoted) %>%
-        rbind(this.df)
-      subtitle <- "Point estimate is the mean %s by forum for selected (green), 
-non-selected (red), and Kickoff (blue) comments.  Error bars represent the 25th and 
-75th percentile value for selected and non-selected comments."
-      
-    }
-  } else {
-    this.df$focal.var <- this.df[,var.or.tpc]
-    if (title == "") {
-      title <- var.or.tpc
-    } 
-    ylabel <- title
-  }
-  
-  
-  this.df$forum.lbl <- forumLabels(this.df$forum)
-  pd <- position_dodge(0.5)
-  this.df %>%
-    group_by(forum.lbl, quoted) %>%
-    summarise(mn.prev = mean(focal.var),
-              q25 = quantile(focal.var, probs=0.25),
-              q75 = quantile(focal.var, probs=0.75)) %>%
-    ggplot() +
-    geom_point(aes(x=forum.lbl, y=mn.prev, color=as.factor(quoted)), position=pd) +
-    geom_errorbar(aes(x=forum.lbl, ymin=q25, ymax=q75, color=as.factor(quoted)), position=pd) +
-    labs(title=title,
-         subtitle=sprintf(subtitle, ylabel),
-         colour = "Selected Comments") +
-    theme(legend.position="bottom") +
-    ylab(ylabel) +
-    xlab("Forum") +
-    scale_color_hue(labels = c("Not Selected", "Selected", "Kickoff"))
-}
 
 
 #####

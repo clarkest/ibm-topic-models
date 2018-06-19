@@ -408,7 +408,6 @@ bb %>% filter(liwc.cat %in% different.liwcs) %>%
 # some categories are either rarely used, so remove them from the graph
 # Funct is used much more highly than others, so remove for clarity's sake
 cat.to.remove <- c("Swear", "Sexual", "Anx", "Anger", "Assent", "Body", "Death", "Family", "Ingest", "Funct", "Home", "Nonflu")
-cat.to.remove <- c("Swear", "Sexual", "Anx", "Anger", "Assent", "Body", "Death", "Family", "Ingest", "Home", "Nonflu")
 raw.dists <- read.csv("outputs/liwc_centers.csv", stringsAsFactors = F)
 gather(raw.dists, "Group", "value", 2:6) %>%
   filter(Group != "responded" & !(liwc.cat %in% cat.to.remove)) %>%
